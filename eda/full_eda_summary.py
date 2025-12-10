@@ -59,16 +59,21 @@ def full_eda_summary(df, id_cols=None, date_cols=None, cat_threshold=20):
             id_summary.loc[col, "duplicate_count"] = df.shape[0] - df[col].nunique()
     summary["id"] = id_summary
 
-    #Date columns
+    #Date columns (without coercion)
     if date_cols is None:
         date_cols = []
     date_summary = pd.DataFrame()
     for col in date_cols:
         if col in df.columns:
-            df[col] = pd.to_datetime(df[col], errors="coerce")
-            date_summary.loc[col, "min_date"] = df[col].min()
-            date_summary.loc[col, "max_date"] = df[col].max()
-            date_summary.loc[col, "missing_count"] = df[col].isna().sum()
+            series = df[col].astype(str)  # on garde les valeurs originales
+            date_summary.loc[col, "unique_count"] = series.nunique()
+            date_summary.loc[col, "missing_count"] = series.isna().sum()
+            date_summary.loc[col, "example_values"] = ", ".join(series.dropna().unique()[:5])
+            # Analyse rapide des séparateurs
+            date_summary.loc[col, "dash_count"] = series.str.count("-").sum()
+            date_summary.loc[col, "slash_count"] = series.str.count("/").sum()
+            date_summary.loc[col, "dot_count"] = series.str.count("\.").sum()
+            date_summary.loc[col, "avg_length"] = series.str.len().mean()
     summary["date"] = date_summary
 
     return summary
