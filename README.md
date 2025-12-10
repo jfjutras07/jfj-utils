@@ -31,7 +31,3 @@ jfj_utils/
     utils/
     __init__.py
 
-
-
-Copier le code
-C’est tout.
