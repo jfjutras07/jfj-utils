@@ -19,8 +19,8 @@ jfj_utils/
   preprocessing/
   eda/
   visualization/
-  feature_engineering/
   modeling/
+  tests/
   utils/
   __init__.py
 ```
