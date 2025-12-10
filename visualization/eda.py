@@ -92,3 +92,30 @@ def plot_correlation_heatmap(df, numeric_cols = None, method = 'spearman', figsi
     plt.tight_layout()
     plt.show()
     plt.close()
+
+#--- Function plot_pairplot ---
+def plot_pairplot(df, features, hue=None, diag_kind='kde', corner=True, alpha=0.5, figsize=(10, 10)):
+    """
+    Create a Seaborn pairplot for selected features of a DataFrame.
+
+    Parameters:
+    - df: pandas DataFrame
+    - features: list of numerical feature names to include in the pairplot
+    - hue: optional categorical column name for color grouping
+    - diag_kind: type of plot for the diagonal ('hist' or 'kde')
+    - corner: if True, plots only the lower triangle
+    - alpha: transparency of points
+    - figsize: size of the figure
+    """
+    sns.set(style="ticks")
+    plt.figure(figsize=figsize)
+    
+    pairplot = sns.pairplot(
+        df[features],
+        hue=hue,
+        diag_kind=diag_kind,
+        corner=corner,
+        plot_kws={'alpha': alpha}
+    )
+    pairplot.fig.suptitle("Pairplot of Selected Features", y=1.02)
+    plt.show()
