@@ -22,8 +22,8 @@ jfj_utils/
   modeling/
   tests/
   utils/
-  __init__.py/
-  setup.py/
+  __init__.py
+  setup.py
   README.md
 ```
 
