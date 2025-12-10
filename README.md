@@ -1,33 +1,33 @@
-# jfj-utils
+## jfj-utils
 
-A lightweight and growing collection of Python utilities to support analytics work. This project will gradually include tools for data ingestion, cleaning, preprocessing, visualization, EDA, and more.
+A lightweight and evolving collection of Python utilities designed to support analytics workflows. This library will gradually expand to include tools for data ingestion, cleaning, preprocessing, exploratory data analysis (EDA), visualization, feature engineering, modeling helpers, and general-purpose utilities.
 
----
+## Features and Goals
 
-## What this library aims to provide
+Reusable helper functions for analytics and data science projects
 
-- Simple helper functions you can reuse across projects  
-- A clean structure that can grow over time  
-- Modules for:
-  - ingestion  
-  - preprocessing  
-  - EDA  
-  - visualization  
-  - feature engineering  
-  - modeling helpers  
-  - general utilities  
+A clean, modular project structure that can scale over time
 
----
+Easy integration into notebooks and production code
 
-## Project structure
+Clear separation by functional area
 
+## Project Structure
+```
 jfj_utils/
-    ingestion/
-    preprocessing/
-    eda/
-    visualization/
-    feature_engineering/
-    modeling/
-    utils/
-    __init__.py
+  ingestion/
+  preprocessing/
+  eda/
+  visualization/
+  feature_engineering/
+  modeling/
+  utils/
+  __init__.py
+```
 
+
+Each submodule is intended to contain small, focused utilities related to its theme (e.g., ingestion helpers, visualization wrappers, feature creation functions, etc.).
+
+## Status
+
+Active development — modules will be progressively added and refined.
