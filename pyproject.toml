@@ -38,6 +38,12 @@ viz = [
   "plotly"
 ]
 
+nlp = [
+  "nltk>=3.9",
+  "wordcloud>=1.9",
+  "gensim>=4.3"
+]
+
 ml = [
   "scikit-learn"
 ]
