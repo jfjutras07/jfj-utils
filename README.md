@@ -23,6 +23,7 @@ jfj_utils/
   tests/
   utils/
   __init__.py
+  pyproject.toml
   setup.py
   README.md
 ```
