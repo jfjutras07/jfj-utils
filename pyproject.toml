@@ -1,0 +1,50 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "jfj-utils"
+version = "0.1.0"
+description = "A lightweight and evolving collection of Python utilities designed to support analytics workflows."
+readme = "README.md"
+authors = [
+  { name = "JF Jutras", email = "jfjutras07@hotmail.com" }
+]
+license = { text = "MIT" }
+requires-python = ">=3.9"
+keywords = ["utilities", "analytics", "eda", "data-science", "modeling"]
+
+dependencies = []
+
+[project.urls]
+"Repository" = "https://github.com/jfjutras07/jfj-utils"
+
+[project.optional-dependencies]
+dev = [
+  "pytest",
+  "black",
+  "ruff"
+]
+
+eda = [
+  "pandas",
+  "numpy",
+  "scipy"
+]
+
+viz = [
+  "matplotlib",
+  "seaborn",
+  "plotly"
+]
+
+ml = [
+  "scikit-learn"
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+exclude = ["tests*"]
+
+[tool.setuptools]
+include-package-data = true
