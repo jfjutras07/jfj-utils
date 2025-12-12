@@ -9,12 +9,12 @@ def describe_structure(df, id_cols=None, date_cols=None, cat_threshold=20):
     """
 
     #--- Numeric columns ---
-    print("\n=== Numeric Columns ===")
+    print("\n=== Numeric Columns ===\n")
     numeric_cols = df.select_dtypes(include=[np.number]).columns
     print(df[numeric_cols].describe().transpose())
 
     #--- Boolean columns ---
-    print("\n=== Boolean Columns ===")
+    print("\n=== Boolean Columns ===\n")
     bool_cols = df.select_dtypes(include=["bool"]).columns
     bool_summary = pd.DataFrame()
     for col in bool_cols:
@@ -24,7 +24,7 @@ def describe_structure(df, id_cols=None, date_cols=None, cat_threshold=20):
     print(bool_summary)
 
     #--- Categorical columns ---
-    print("\n=== Categorical Columns ===")
+    print("\n=== Categorical Columns ===\n")
     cat_cols = [col for col in df.select_dtypes(include=["object","category"]).columns
                 if df[col].nunique() <= cat_threshold]
     cat_summary = pd.DataFrame()
@@ -35,7 +35,7 @@ def describe_structure(df, id_cols=None, date_cols=None, cat_threshold=20):
     print(cat_summary)
 
     #--- Text columns ---
-    print("\n=== Text Columns ===")
+    print("\n=== Text Columns ===\n")
     text_cols = [col for col in df.select_dtypes(include=["object"]).columns if col not in cat_cols]
     text_summary = pd.DataFrame()
     for col in text_cols:
@@ -45,7 +45,7 @@ def describe_structure(df, id_cols=None, date_cols=None, cat_threshold=20):
     print(text_summary)
 
     #--- ID columns ---
-    print("\n=== ID Columns ===")
+    print("\n=== ID Columns ===\n")
     if id_cols is None:
         id_cols = []
     id_summary = pd.DataFrame()
@@ -56,7 +56,7 @@ def describe_structure(df, id_cols=None, date_cols=None, cat_threshold=20):
     print(id_summary)
 
     #--- Date columns ---
-    print("\n=== Date Columns ===")
+    print("\n=== Date Columns ===\n")
     if date_cols is None:
         date_cols = []
     date_summary = pd.DataFrame()
