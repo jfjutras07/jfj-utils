@@ -1,8 +1,8 @@
 import pandas as pd
 import numpy as np
 
-#--- Function : full_eda_summary ---
-def full_eda_summary(df, id_cols=None, date_cols=None, cat_threshold=20):
+#--- Function : describe_structure ---
+def describe_structure(df, id_cols=None, date_cols=None, cat_threshold=20):
     """
     Generate a comprehensive EDA summary for a pandas DataFrame.
 
