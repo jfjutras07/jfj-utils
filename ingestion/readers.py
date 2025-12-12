@@ -82,11 +82,9 @@ def check_data(data, n=5):
 def _check_single_df(df, n=5):
     """Helper function for checking a single DataFrame."""
     print("\nColumns:", df.columns.to_list())
-    print("Shape:", df.shape)
-    print("Data types:\n", df.dtypes)
-    print("Missing values:\n", df.isnull().sum())
-    print("Duplicates:", df.duplicated().sum())
-    print(f"\nFirst {n} rows:")
-    print(df.head(n))
+    print("Shape:", df.shape, "\n")
+    print("Data types:\n", df.dtypes, "\n")
+    print("Missing values:\n", df.isnull().sum(), "\n")
+    print("Duplicates:", df.duplicated().sum(), "\n")
     print("\nInfo:")
     df.info()
