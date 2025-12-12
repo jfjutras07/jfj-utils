@@ -81,7 +81,7 @@ def check_data(data, n=5):
 
 def _check_single_df(df, n=5):
     """Helper function for checking a single DataFrame."""
-    print("\nColumns:", df.columns.to_list())
+    print("\nColumns:", df.columns.to_list(), "\n")
     print("Shape:", df.shape, "\n")
     print("Data types:\n", df.dtypes, "\n")
     print("Missing values:\n", df.isnull().sum(), "\n")
