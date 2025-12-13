@@ -54,7 +54,9 @@ def plot_discrete_distribution(df, discrete_cols, top_k=10, bins=10, normalize=T
             bin_centers,
             counts,
             width=np.diff(bin_edges),
-            align='center'
+            align='center',
+            color='lightblue',
+            edgecolor='black'
         )
         axes[1].set_title(f"Distribution of {col} (binned)")
         axes[1].set_xlabel(col)
