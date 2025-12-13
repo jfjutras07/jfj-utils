@@ -171,3 +171,47 @@ def plot_violin_grid(
 
         plt.tight_layout()
         plt.show()
+
+#--- Function : plot_scatter_grid ---
+def plot_scatter_grid(df: pd.DataFrame, x_cols: list, y_cols: list, group_col: str = None,
+                      group_labels: dict = None, n_cols_per_row: int = 2, figsize=(14,6)):
+    """
+    Generic function to plot scatterplots in a grid layout.
+    
+    Parameters:
+    - df: DataFrame containing the data
+    - x_cols: list of columns for x-axis
+    - y_cols: list of columns for y-axis
+    - group_col: optional column to color points by (categorical)
+    - group_labels: optional dict to map group values to readable labels
+    - n_cols_per_row: number of plots per row
+    - figsize: figure size per row
+    """
+    
+    #Determine number of plots
+    num_plots = len(x_cols)
+    n_rows = (num_plots + n_cols_per_row - 1) // n_cols_per_row
+    
+    plt.figure(figsize=(figsize[0], n_rows * figsize[1]))
+    
+    for i, (x, y) in enumerate(zip(x_cols, y_cols)):
+        ax = plt.subplot(n_rows, n_cols_per_row, i+1)
+        
+        if group_col:
+            plot_data = df.copy()
+            if group_labels:
+                plot_data['Group'] = plot_data[group_col].map(group_labels)
+            else:
+                plot_data['Group'] = plot_data[group_col]
+            sns.scatterplot(data=plot_data, x=x, y=y, hue='Group', palette='tab10')
+        else:
+            sns.scatterplot(data=df, x=x, y=y, color='blue')
+        
+        #Titles and labels
+        ax.set_title(f'{y} vs {x}')
+        ax.set_xlabel(x)
+        ax.set_ylabel(y)
+        ax.grid(True)
+    
+    plt.tight_layout()
+    plt.show()
