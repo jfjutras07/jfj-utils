@@ -12,18 +12,9 @@ def plot_discrete_distribution(df, discrete_cols, top_k=10, bins=10, normalize=T
     For each column:
     - Left: Top-k most frequent values (bar plot)
     - Right: Binned distribution
-
-    Parameters:
-    - df: pandas DataFrame
-    - discrete_cols: list of discrete columns to visualize (must be explicitly provided)
-    - top_k: number of most frequent values shown on the left plot
-    - bins: number of bins or explicit bin edges for the right plot
-    - normalize: whether to normalize the binned distribution
     """
 
     plt.style.use('seaborn-v0_8')
-    plt.rcParams['patch.force_edgecolor'] = True
-    plt.rcParams['patch.edgecolor'] = 'black'
 
     for col in discrete_cols:
         if col not in df.columns:
@@ -40,7 +31,7 @@ def plot_discrete_distribution(df, discrete_cols, top_k=10, bins=10, normalize=T
         axes[0].set_title(f"Top {top_k} values of {col}")
         axes[0].set_xlabel(col)
         axes[0].set_ylabel("Count")
-        axes[0].tick_params(axis='x', rotation=45)
+        axes[0].tick_params(axis="x", rotation=45)
 
         #Right: Binned distribution
         counts, bin_edges = np.histogram(series, bins=bins)
@@ -52,14 +43,17 @@ def plot_discrete_distribution(df, discrete_cols, top_k=10, bins=10, normalize=T
             ylabel = "Count"
 
         bin_centers = 0.5 * (bin_edges[:-1] + bin_edges[1:])
+
         axes[1].bar(
             bin_centers,
             counts,
             width=np.diff(bin_edges),
-            align='center',
-            color='lightblue',
-            edgecolor='black'
+            align="center",
+            facecolor="#ADD8E6",   # light blue (explicit, stable)
+            edgecolor="black",
+            linewidth=1
         )
+
         axes[1].set_title(f"Distribution of {col} (binned)")
         axes[1].set_xlabel(col)
         axes[1].set_ylabel(ylabel)
