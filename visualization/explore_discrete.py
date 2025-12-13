@@ -5,7 +5,7 @@ warnings.filterwarnings("ignore")
 
 def plot_discrete_distribution(df, discrete_cols, top_k=10, bins=10, normalize=True):
     """
-    Side-by-side visualization for discrete (non-binary) variables.
+    Plot side-by-side visualizations for discrete (non-binary) variables.
 
     Left: Top-k most frequent values
     Right: Binned distribution
@@ -13,14 +13,14 @@ def plot_discrete_distribution(df, discrete_cols, top_k=10, bins=10, normalize=T
 
     for col in discrete_cols:
         if col not in df.columns:
-            print(f"Warning: {col} not found. Skipping.")
+            print(f"Warning: {col} not found in DataFrame. Skipping.")
             continue
 
-        series = df[col].dro
+        series = df[col].dropna()
 
         fig, axes = plt.subplots(1, 2, figsize=(14, 4))
 
-        # Left: Top-k most frequent values
+        # --- Left: Top-k values ---
         top_counts = series.value_counts().head(top_k)
         axes[0].bar(
             top_counts.index.astype(str),
@@ -34,7 +34,7 @@ def plot_discrete_distribution(df, discrete_cols, top_k=10, bins=10, normalize=T
         axes[0].set_ylabel("Count")
         axes[0].tick_params(axis="x", rotation=45)
 
-        # Right: Binned distribution
+        # --- Right: Binned distribution ---
         counts, bin_edges = np.histogram(series, bins=bins)
         if normalize:
             counts = counts / counts.sum()
