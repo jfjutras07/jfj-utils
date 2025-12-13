@@ -2,12 +2,11 @@ import matplotlib.pyplot as plt
 import warnings
 warnings.filterwarnings("ignore")
 
-def plot_binary_distribution(df, binary_cols):
+def plot_binary_distribution(df, binary_cols, figsize=(8,4)):
     """
-    Plot side-by-side pie charts for binary columns (0/1).
-
-    Left: Proportion
-    Right: Counts
+    Plot two pie charts side by side for each binary column:
+    - Left: Proportion
+    - Right: Counts
     """
     for col in binary_cols:
         if col not in df.columns:
@@ -15,19 +14,18 @@ def plot_binary_distribution(df, binary_cols):
             continue
 
         series = df[col].dropna()
-        counts = series.value_counts().sort_index()  # 0 then 1
+        counts = series.value_counts().sort_index()  # Ensure 0 then 1
         labels = [str(i) for i in counts.index]
         sizes = counts.values
-        colors = ["#ADD8E6", "#87CEFA"]
+        colors = ["#ADD8E6", "#87CEFA"]  # Pale blue and slightly darker
 
-        # Create a figure with 2 axes side by side
-        fig, axes = plt.subplots(1, 2, figsize=(8, 4))
+        fig, axes = plt.subplots(1, 2, figsize=figsize)
 
-        # Left: Proportion
+        #Left: Proportion
         axes[0].pie(
             sizes,
             labels=labels,
-            autopct=lambda p: '{:.1f}%'.format(p) if p > 0 else '',
+            autopct=lambda p: f'{p:.1f}%' if p > 0 else '',
             startangle=90,
             colors=colors,
             wedgeprops={'edgecolor': 'black', 'linewidth': 1}
@@ -35,7 +33,7 @@ def plot_binary_distribution(df, binary_cols):
         axes[0].set_title(f"{col} - Proportion")
         axes[0].set_aspect('equal')
 
-        # Right: Counts
+        #Right: Counts
         total = sizes.sum()
         axes[1].pie(
             sizes,
