@@ -25,7 +25,7 @@ def plot_discrete_distribution(df, discrete_cols, top_k=10, bins=10, normalize=T
 
         fig, axes = plt.subplots(1, 2, figsize=(14, 4))
 
-        #Left: Top-k values
+        # Left: Top-k values
         top_counts = series.value_counts().head(top_k)
         sns.barplot(
             x=top_counts.index.astype(str),
@@ -40,7 +40,7 @@ def plot_discrete_distribution(df, discrete_cols, top_k=10, bins=10, normalize=T
         axes[0].set_ylabel("Count")
         axes[0].tick_params(axis="x", rotation=45)
 
-        #Right: Binned distribution
+        # Right: Binned distribution
         sns.histplot(
             series,
             bins=bins,
