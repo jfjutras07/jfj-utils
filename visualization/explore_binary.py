@@ -20,7 +20,7 @@ def plot_binary_distribution(df, binary_cols):
         sizes = counts.values
         colors = ["#ADD8E6", "#87CEFA"]  # Bleu pâle et légèrement plus foncé
 
-        fig, axes = plt.subplots(1, 2, figsize=(12, 6))  # plus large pour côte-à-côte
+        fig, axes = plt.subplots(1, 2, figsize=(10, 4))  # plus large pour côte-à-côte
 
         # --- Left: Proportion ---
         axes[0].pie(
