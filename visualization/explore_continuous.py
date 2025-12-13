@@ -68,7 +68,7 @@ def qq_plot_numeric(df, numeric_cols=None):
         plt.close()
 
 #--- Function : plot_correlation_heatmap ---
-def plot_correlation_heatmap(df, numeric_cols = None, method = 'spearman', figsize = (8,6), cmap = 'coolwarm', annot = True, fmt = ".2f"):
+def plot_correlation_heatmap(df, numeric_cols = None, method = 'spearman', figsize = (12,8), cmap = 'coolwarm', annot = True, fmt = ".2f"):
     """
     Plot a correlation heatmap for numeric columns in a DataFrame.
 
