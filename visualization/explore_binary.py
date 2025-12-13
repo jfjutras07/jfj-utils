@@ -15,12 +15,16 @@ def plot_binary_distribution(df, binary_cols):
             continue
 
         series = df[col].dropna()
-        counts = series.value_counts().sort_index()  # 0 puis 1
+        counts = series.value_counts().sort_index()  # 0 then 1
         labels = [str(i) for i in counts.index]
         sizes = counts.values
         colors = ["#ADD8E6", "#87CEFA"]
 
         fig, axes = plt.subplots(1, 2, figsize=(10, 4))
+
+        # Adjust axes position to make pies smaller and side by side
+        axes[0].set_position([0.05, 0.1, 0.4, 0.8])  # [left, bottom, width, height]
+        axes[1].set_position([0.55, 0.1, 0.4, 0.8])
 
         # --- Left: Proportion ---
         axes[0].pie(
@@ -29,8 +33,7 @@ def plot_binary_distribution(df, binary_cols):
             autopct=lambda p: '{:.1f}%'.format(p) if p > 0 else '',
             startangle=90,
             colors=colors,
-            wedgeprops={'edgecolor': 'black', 'linewidth': 1},
-            radius=0.7  # <-- réduit la taille du cercle
+            wedgeprops={'edgecolor': 'black', 'linewidth': 1}
         )
         axes[0].set_title(f"{col} - Proportion")
         axes[0].set_aspect('equal')
@@ -43,12 +46,10 @@ def plot_binary_distribution(df, binary_cols):
             autopct=lambda p: f"{int(round(p/100*total))}",
             startangle=90,
             colors=colors,
-            wedgeprops={'edgecolor': 'black', 'linewidth': 1},
-            radius=0.7  # <-- réduit la taille du cercle
+            wedgeprops={'edgecolor': 'black', 'linewidth': 1}
         )
         axes[1].set_title(f"{col} - Counts")
         axes[1].set_aspect('equal')
 
-        plt.tight_layout()
         plt.show()
         plt.close()
