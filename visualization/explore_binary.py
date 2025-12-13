@@ -4,7 +4,7 @@ warnings.filterwarnings("ignore")
 
 def plot_binary_distribution(df, binary_cols):
     """
-    Plot side-by-side pie charts for binary columns (0/1) in the same row.
+    Plot side-by-side pie charts for binary columns (0/1).
 
     Left: Proportion
     Right: Counts
@@ -20,14 +20,11 @@ def plot_binary_distribution(df, binary_cols):
         sizes = counts.values
         colors = ["#ADD8E6", "#87CEFA"]
 
-        fig, axes = plt.subplots(1, 2, figsize=(10, 4))
+        fig = plt.figure(figsize=(10, 4))
 
-        # Adjust axes position to make pies smaller and side by side
-        axes[0].set_position([0.05, 0.1, 0.4, 0.8])  # [left, bottom, width, height]
-        axes[1].set_position([0.55, 0.1, 0.4, 0.8])
-
-        # --- Left: Proportion ---
-        axes[0].pie(
+        # Left pie chart: Proportion
+        ax1 = fig.add_axes([0.05, 0.1, 0.4, 0.8])  # [left, bottom, width, height]
+        ax1.pie(
             sizes,
             labels=labels,
             autopct=lambda p: '{:.1f}%'.format(p) if p > 0 else '',
@@ -35,12 +32,13 @@ def plot_binary_distribution(df, binary_cols):
             colors=colors,
             wedgeprops={'edgecolor': 'black', 'linewidth': 1}
         )
-        axes[0].set_title(f"{col} - Proportion")
-        axes[0].set_aspect('equal')
+        ax1.set_title(f"{col} - Proportion")
+        ax1.set_aspect('equal')
 
-        # --- Right: Counts ---
+        # Right pie chart: Counts
+        ax2 = fig.add_axes([0.55, 0.1, 0.4, 0.8])
         total = sizes.sum()
-        axes[1].pie(
+        ax2.pie(
             sizes,
             labels=labels,
             autopct=lambda p: f"{int(round(p/100*total))}",
@@ -48,8 +46,8 @@ def plot_binary_distribution(df, binary_cols):
             colors=colors,
             wedgeprops={'edgecolor': 'black', 'linewidth': 1}
         )
-        axes[1].set_title(f"{col} - Counts")
-        axes[1].set_aspect('equal')
+        ax2.set_title(f"{col} - Counts")
+        ax2.set_aspect('equal')
 
         plt.show()
         plt.close()
