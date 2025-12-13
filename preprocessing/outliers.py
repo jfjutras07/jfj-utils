@@ -5,24 +5,35 @@ from scipy.stats import zscore
 #--- Function : detect_outliers_zscore ---
 def detect_outliers_zscore(df: pd.DataFrame, columns: list, threshold: float = 3.0) -> dict:
     """
-    Detect outliers using z-score method (works well with normal distributions)
-    Returns a dictionary with column names and row indices of outliers.
+    Count outliers using z-score method (works well with normal distributions).
+    Returns a dictionary with:
+      - number of outliers per column
+      - total number of outliers across all columns
     """
-    outliers = {}
+    outlier_counts = {}
+    total_outliers = 0
+    
     for col in columns:
         if col in df.columns:
             z_scores = zscore(df[col].dropna())
-            outlier_idx = df[col].iloc[z_scores > threshold].index.tolist()
-            outliers[col] = outlier_idx
-    return outliers
+            outlier_count = (z_scores > threshold).sum()
+            outlier_counts[col] = outlier_count
+            total_outliers += outlier_count
+    
+    outlier_counts['Total_outliers'] = total_outliers
+    return outlier_counts
 
 #--- Function : detect_outliers_iqr ---
 def detect_outliers_iqr(df: pd.DataFrame, columns: list, factor: float = 1.5) -> dict:
     """
-    Detect outliers in numerical columns using the IQR method (works well with non-normal or skewed distributions)
-    Returns a dictionary with column names as keys and row indices of outliers as values.
+    Count the number of outliers in numerical columns using the IQR method.
+    Returns a dictionary with:
+      - number of outliers per column
+      - total number of outliers across all columns (key 'Total_outliers')
     """
-    outliers = {}
+    outlier_counts = {}
+    total_outliers = 0
+    
     for col in columns:
         if col in df.columns:
             Q1 = df[col].quantile(0.25)
@@ -30,9 +41,12 @@ def detect_outliers_iqr(df: pd.DataFrame, columns: list, factor: float = 1.5) ->
             IQR = Q3 - Q1
             lower = Q1 - factor * IQR
             upper = Q3 + factor * IQR
-            outlier_idx = df[(df[col] < lower) | (df[col] > upper)].index.tolist()
-            outliers[col] = outlier_idx
-    return outliers
+            outlier_count = df[(df[col] < lower) | (df[col] > upper)].shape[0]
+            outlier_counts[col] = outlier_count
+            total_outliers += outlier_count
+    
+    outlier_counts['Total_outliers'] = total_outliers
+    return outlier_counts
 
 #--- Function : winsorize_columns ---
 def winsorize_columns(df: pd.DataFrame, columns: list, limits: tuple = (0.05, 0.05)) -> pd.DataFrame:
