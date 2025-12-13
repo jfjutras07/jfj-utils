@@ -20,11 +20,11 @@ def plot_binary_distribution(df, binary_cols):
         sizes = counts.values
         colors = ["#ADD8E6", "#87CEFA"]
 
-        fig = plt.figure(figsize=(10, 4))
+        # Create a figure with 2 axes side by side
+        fig, axes = plt.subplots(1, 2, figsize=(8, 4))
 
-        # Left pie chart: Proportion
-        ax1 = fig.add_axes([0.05, 0.1, 0.4, 0.8])  # [left, bottom, width, height]
-        ax1.pie(
+        # Left: Proportion
+        axes[0].pie(
             sizes,
             labels=labels,
             autopct=lambda p: '{:.1f}%'.format(p) if p > 0 else '',
@@ -32,13 +32,12 @@ def plot_binary_distribution(df, binary_cols):
             colors=colors,
             wedgeprops={'edgecolor': 'black', 'linewidth': 1}
         )
-        ax1.set_title(f"{col} - Proportion")
-        ax1.set_aspect('equal')
+        axes[0].set_title(f"{col} - Proportion")
+        axes[0].set_aspect('equal')
 
-        # Right pie chart: Counts
-        ax2 = fig.add_axes([0.55, 0.1, 0.4, 0.8])
+        # Right: Counts
         total = sizes.sum()
-        ax2.pie(
+        axes[1].pie(
             sizes,
             labels=labels,
             autopct=lambda p: f"{int(round(p/100*total))}",
@@ -46,8 +45,9 @@ def plot_binary_distribution(df, binary_cols):
             colors=colors,
             wedgeprops={'edgecolor': 'black', 'linewidth': 1}
         )
-        ax2.set_title(f"{col} - Counts")
-        ax2.set_aspect('equal')
+        axes[1].set_title(f"{col} - Counts")
+        axes[1].set_aspect('equal')
 
+        plt.tight_layout()
         plt.show()
         plt.close()
