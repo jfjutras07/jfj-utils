@@ -3,6 +3,7 @@ import numpy as np
 import warnings
 warnings.filterwarnings("ignore")
 
+#--- Function : plot_discrete_distribution ---
 def plot_discrete_distribution(df, discrete_cols, top_k=10, bins=10, normalize=True):
     """
     Plot side-by-side visualizations for discrete (non-binary) variables.
@@ -20,7 +21,7 @@ def plot_discrete_distribution(df, discrete_cols, top_k=10, bins=10, normalize=T
 
         fig, axes = plt.subplots(1, 2, figsize=(14, 4))
 
-        # --- Left: Top-k values ---
+        #Left: Top-k values
         top_counts = series.value_counts().head(top_k)
         axes[0].bar(
             top_counts.index.astype(str),
@@ -34,7 +35,7 @@ def plot_discrete_distribution(df, discrete_cols, top_k=10, bins=10, normalize=T
         axes[0].set_ylabel("Count")
         axes[0].tick_params(axis="x", rotation=45)
 
-        # --- Right: Binned distribution ---
+        #Right: Binned distribution
         counts, bin_edges = np.histogram(series, bins=bins)
         if normalize:
             counts = counts / counts.sum()
