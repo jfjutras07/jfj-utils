@@ -45,6 +45,8 @@ def plot_discrete_distribution(df, discrete_cols, top_k=10, bins=10, normalize=T
             series,
             bins=bins,
             stat="probability" if normalize else "count",
+            elements = "bars",
+            fill = True,
             color="#ADD8E6",
             edgecolor="black",
             linewidth=1,
