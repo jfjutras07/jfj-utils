@@ -21,7 +21,7 @@ def plot_binary_distribution(df, binary_cols):
         sizes = counts.values
         colors = ["#ADD8E6", "#87CEFA"]  # Bleu pâle et légèrement plus foncé
 
-        fig, axes = plt.subplots(1, 2, figsize=(12, 5))  # 1 ligne, 2 colonnes
+        fig, axes = plt.subplots(1, 2, figsize=(8, 5))  # 1 ligne, 2 colonnes
 
         # --- Left: Proportion ---
         axes[0].pie(
