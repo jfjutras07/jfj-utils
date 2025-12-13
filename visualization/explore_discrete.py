@@ -16,7 +16,7 @@ def plot_discrete_distribution(df, discrete_cols, top_k=10, bins=10, normalize=T
             print(f"Warning: {col} not found. Skipping.")
             continue
 
-        series = df[col].dropna()
+        series = df[col].dro
 
         fig, axes = plt.subplots(1, 2, figsize=(14, 4))
 
