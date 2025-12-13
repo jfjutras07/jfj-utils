@@ -22,6 +22,8 @@ def plot_discrete_distribution(df, discrete_cols, top_k=10, bins=10, normalize=T
     """
 
     plt.style.use('seaborn-v0_8')
+    plt.rcParams['patch.force_edgecolor'] = True
+    plt.rcParams['patch.edgecolor'] = 'black'
 
     for col in discrete_cols:
         if col not in df.columns:
