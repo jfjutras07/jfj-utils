@@ -6,9 +6,8 @@ def plot_binary_distribution(df, binary_cols):
     """
     Plot side-by-side pie charts for binary columns (0/1) in the same row.
 
-    For each binary column:
-    - Left: Proportion
-    - Right: Counts
+    Left: Proportion
+    Right: Counts
     """
     for col in binary_cols:
         if col not in df.columns:
@@ -21,7 +20,7 @@ def plot_binary_distribution(df, binary_cols):
         sizes = counts.values
         colors = ["#ADD8E6", "#87CEFA"]  # Bleu pâle et légèrement plus foncé
 
-        fig, axes = plt.subplots(1, 2, figsize=(8, 5))  # 1 ligne, 2 colonnes
+        fig, axes = plt.subplots(1, 2, figsize=(12, 6))  # plus large pour côte-à-côte
 
         # --- Left: Proportion ---
         axes[0].pie(
@@ -33,6 +32,7 @@ def plot_binary_distribution(df, binary_cols):
             wedgeprops={'edgecolor': 'black', 'linewidth': 1}
         )
         axes[0].set_title(f"{col} - Proportion")
+        axes[0].set_aspect('equal')  # force un cercle
 
         # --- Right: Counts ---
         total = sizes.sum()
@@ -45,6 +45,7 @@ def plot_binary_distribution(df, binary_cols):
             wedgeprops={'edgecolor': 'black', 'linewidth': 1}
         )
         axes[1].set_title(f"{col} - Counts")
+        axes[1].set_aspect('equal')  # force un cercle
 
         plt.tight_layout()
         plt.show()
