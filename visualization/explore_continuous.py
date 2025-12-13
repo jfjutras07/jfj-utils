@@ -1,6 +1,8 @@
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
+from scipy import stats
+import math
 import warnings
 warnings.filterwarnings("ignore")
 warnings.simplefilter(action='ignore', category=RuntimeWarning)
@@ -108,7 +110,6 @@ def plot_pairplot(df, features, hue=None, diag_kind='kde', corner=True, alpha=0.
     - figsize: size of the figure
     """
     sns.set(style="ticks")
-    plt.figure(figsize=figsize)
     
     pairplot = sns.pairplot(
         df[features],
@@ -117,5 +118,56 @@ def plot_pairplot(df, features, hue=None, diag_kind='kde', corner=True, alpha=0.
         corner=corner,
         plot_kws={'alpha': alpha}
     )
+    pairplot.fig.set_size_inches(figsize)
     pairplot.fig.suptitle("Pairplot of Selected Features", y=1.02)
     plt.show()
+
+#--- Function : plot_violin_grid ---
+def plot_violin_grid(
+    df,
+    value_cols,
+    group_col='Economic_status',
+    n_rows=2,
+    n_cols=2,
+    palette='pastel'
+):
+    """
+    Generic function to plot violin plots in a grid layout.
+    
+    Parameters:
+        df: pd.DataFrame containing the data
+        value_cols: list of numeric columns to plot
+        group_col: column representing the grouping variable (e.g., 'Developed' vs 'Developing')
+        n_rows, n_cols: number of rows and columns per figure
+        palette: color palette for violin plots
+    """
+    #Loop through variables in batches that fit the grid
+    for i in range(0, len(value_cols), n_rows * n_cols):
+        batch = value_cols[i:i + n_rows * n_cols]
+        fig, axes = plt.subplots(n_rows, n_cols, figsize=(6*n_cols, 5*n_rows), sharey=False)
+        axes = axes.flatten()  # Flatten in case of multiple rows/columns
+
+        for ax, col in zip(axes, batch):
+            # Violin plot: chosen because it shows the full distribution of the data,
+            # including density, median, and quartiles, allowing comparison between groups
+            sns.violinplot(
+                data=df,
+                x=group_col,
+                y=col,
+                palette=palette,
+                inner='quartile',
+                ax=ax
+            )
+            #Set plot title and axis labels
+            ax.set_title(f'Distribution of {col} by {group_col}')
+            ax.set_xlabel(group_col)
+            ax.set_ylabel(col)
+            # Add grid lines for easier reading
+            ax.grid(axis='y', linestyle='--', alpha=0.5)
+
+        #Remove any empty subplots
+        for j in range(len(batch), len(axes)):
+            fig.delaxes(axes[j])
+
+        plt.tight_layout()
+        plt.show()
