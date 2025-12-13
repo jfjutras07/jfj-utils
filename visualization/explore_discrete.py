@@ -6,8 +6,9 @@ warnings.filterwarnings("ignore")
 def plot_discrete_distribution(df, discrete_cols, top_k=10, bins=10, normalize=True):
     """
     Side-by-side visualization for discrete (non-binary) variables.
+
     Left: Top-k most frequent values
-    Right: Binned distribution (matplotlib for reliable borders)
+    Right: Binned distribution
     """
 
     for col in discrete_cols:
@@ -19,7 +20,7 @@ def plot_discrete_distribution(df, discrete_cols, top_k=10, bins=10, normalize=T
 
         fig, axes = plt.subplots(1, 2, figsize=(14, 4))
 
-        # --- Left: Top-k values ---
+        # Left: Top-k most frequent values
         top_counts = series.value_counts().head(top_k)
         axes[0].bar(
             top_counts.index.astype(str),
@@ -33,7 +34,7 @@ def plot_discrete_distribution(df, discrete_cols, top_k=10, bins=10, normalize=T
         axes[0].set_ylabel("Count")
         axes[0].tick_params(axis="x", rotation=45)
 
-        # --- Right: Binned distribution ---
+        # Right: Binned distribution
         counts, bin_edges = np.histogram(series, bins=bins)
         if normalize:
             counts = counts / counts.sum()
@@ -41,15 +42,15 @@ def plot_discrete_distribution(df, discrete_cols, top_k=10, bins=10, normalize=T
         else:
             ylabel = "Count"
 
-        bin_centers = 0.5 * (bin_edges[:-1] + bin_edges[1:])
+        bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
         axes[1].bar(
             bin_centers,
             counts,
             width=np.diff(bin_edges),
-            align="center",
             color="#ADD8E6",
             edgecolor="black",
-            linewidth=1
+            linewidth=1,
+            align='center'
         )
         axes[1].set_title(f"Distribution of {col} (binned)")
         axes[1].set_xlabel(col)
