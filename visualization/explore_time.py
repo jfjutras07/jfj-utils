@@ -1,7 +1,8 @@
 import matplotlib.pyplot as plt
 import pandas as pd
 
-def plot_line_over_time_generic(
+#--- Function : plot_line_over_time ---
+def plot_line_over_time(
     df: pd.DataFrame,
     time_col: str,
     value_col: str,
