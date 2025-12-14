@@ -2,18 +2,23 @@ import pandas as pd
 import numpy as np
 from scipy.stats import shapiro, normaltest, anderson, kstest, norm
 
-#--- Function : normality_check ---
+#--- normality_check ---
 def normality_check(df, numeric_cols=None):
     """
-    Perform normality tests automatically based on sample size, including Shapiro-Wilk, D’Agostino K^2, 
-    Anderson-Darling, and Kolmogorov-Smirnov.
+    Perform multiple normality tests on numeric columns and return a structured DataFrame.
+    
+    Tests included:
+    - Shapiro-Wilk (n <= 5000)
+    - D’Agostino K^2 (n > 20)
+    - Anderson-Darling (5% significance)
+    - Kolmogorov-Smirnov against normal with same mean/std
     
     Parameters:
     - df: pandas DataFrame
     - numeric_cols: list of numeric columns to test (default: all numeric)
     
     Returns:
-    - results_df: DataFrame with test results for each column
+    - results_df: DataFrame with columns: Column, N, Mean, Std, Shapiro, DAgostino, Anderson, KS
     """
     if numeric_cols is None:
         numeric_cols = df.select_dtypes(include=np.number).columns.tolist()
@@ -26,47 +31,41 @@ def normality_check(df, numeric_cols=None):
         col_mean = s.mean()
         col_std = s.std()
         
-        tests_applied = []
-        p_values = []
-        normal_flags = []
+        #Initialize flags
+        shapiro_flag = np.nan
+        dagostino_flag = np.nan
+        anderson_flag = np.nan
+        ks_flag = np.nan
         
-        #Shapiro-Wilk for small/medium sample
+        #Shapiro-Wilk
         if n <= 5000:
-            stat, p = shapiro(s)
-            tests_applied.append("Shapiro-Wilk")
-            p_values.append(p)
-            normal_flags.append(p > 0.05)
+            _, p = shapiro(s)
+            shapiro_flag = p > 0.05
         
-        #D’Agostino K^2 for n > 20
+        #D’Agostino K^2
         if n > 20:
-            stat, p = normaltest(s)
-            tests_applied.append("D’Agostino K^2")
-            p_values.append(p)
-            normal_flags.append(p > 0.05)
+            _, p = normaltest(s)
+            dagostino_flag = p > 0.05
         
-        #Anderson-Darling (always)
+        #Anderson-Darling (5%)
         ad_result = anderson(s)
         crit_val_5 = ad_result.critical_values[2]  # 5% significance
         ad_stat = ad_result.statistic
-        is_normal_ad = ad_stat < crit_val_5
-        tests_applied.append("Anderson-Darling (5%)")
-        p_values.append(np.nan)
-        normal_flags.append(is_normal_ad)
+        anderson_flag = ad_stat < crit_val_5
         
-        #Kolmogorov-Smirnov against normal with same mean/std
-        ks_stat, ks_p = kstest(s, 'norm', args=(col_mean, col_std))
-        tests_applied.append("Kolmogorov-Smirnov")
-        p_values.append(ks_p)
-        normal_flags.append(ks_p > 0.05)
+        #Kolmogorov-Smirnov against normal
+        _, ks_p = kstest(s, 'norm', args=(col_mean, col_std))
+        ks_flag = ks_p > 0.05
         
         results.append({
             "Column": col,
             "N": n,
             "Mean": col_mean,
             "Std": col_std,
-            "Tests": ", ".join(tests_applied),
-            "P-values": ", ".join([f"{pv:.4f}" if not pd.isna(pv) else "NA" for pv in p_values]),
-            "Normality_flags": ", ".join([str(flag) for flag in normal_flags])
+            "Shapiro-Wilk": shapiro_flag,
+            "D’Agostino K²": dagostino_flag,
+            "Anderson-Darling (5%)": anderson_flag,
+            "Kolmogorov-Smirnov": ks_flag
         })
     
     return pd.DataFrame(results)
