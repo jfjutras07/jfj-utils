@@ -6,12 +6,12 @@ from statsmodels.stats.outliers_influence import variance_inflation_factor
 def check_multicollinearity(df, threshold=5.0):
     """
     Analyze multicollinearity in a dataset using Spearman correlation and VIF.
-    Returns well-formatted tables with clear spacing for display.
+    Returns well-formatted tables for inspection in Jupyter.
 
     Parameters
     ----------
     df : DataFrame
-        Dataset containing numerical features only.
+        Dataset containing numerical features.
     threshold : float, optional
         VIF threshold above which a feature is considered problematic.
 
@@ -19,9 +19,9 @@ def check_multicollinearity(df, threshold=5.0):
     -------
     dict
         {
-            "correlation_matrix": str,  
-            "vif": str,                 
-            "high_vif_features": str,   
+            "correlation_matrix": DataFrame of Spearman correlations,
+            "vif": DataFrame of features with their VIF scores,
+            "high_vif_features": list of feature names with VIF > threshold,
             "has_multicollinearity": bool
         }
     """
@@ -37,7 +37,8 @@ def check_multicollinearity(df, threshold=5.0):
     #VIF calculation
     vif_data = pd.DataFrame({
         "feature": numeric_df.columns,
-        "vif": [variance_inflation_factor(numeric_df.values, i) for i in range(numeric_df.shape[1])]
+        "vif": [variance_inflation_factor(numeric_df.values, i)
+                for i in range(numeric_df.shape[1])]
     }).sort_values("vif", ascending=False).reset_index(drop=True)
     vif_data["vif"] = vif_data["vif"].round(3)
 
@@ -46,8 +47,8 @@ def check_multicollinearity(df, threshold=5.0):
     has_multicollinearity = len(high_vif_features) > 0
 
     return {
-        "correlation_matrix": "\n" + corr_matrix.to_string() + "\n",
-        "vif": "\n" + vif_data.to_string(index=False) + "\n",
-        "high_vif_features": "\n" + str(high_vif_features) + "\n",
+        "correlation_matrix": corr_matrix,       
+        "vif": vif_data,                         
+        "high_vif_features": high_vif_features,  
         "has_multicollinearity": has_multicollinearity
     }
