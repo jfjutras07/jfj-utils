@@ -68,8 +68,8 @@ def check_multicollinearity(df, threshold=5.0, show_heatmap=True, show_vif=True)
 
     #Return dictionary
     return {
-        "correlation_matrix": corr_matrix,
-        "vif": vif_data,
-        "high_vif_features": high_vif_features,
+        "correlation_matrix": corr_matrix "\n",
+        "vif": vif_data "\n",
+        "high_vif_features": high_vif_features "\n",
         "has_multicollinearity": has_multicollinearity
     }
