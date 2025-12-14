@@ -79,6 +79,42 @@ def qq_plot_numeric(df, numeric_cols=None):
     plt.tight_layout()
     plt.show()
 
+#--- Function : residual_scatter_numeric ---
+def residual_scatter_numeric(df, target_col, numeric_cols=None):
+    """
+    Generate scatter plots of numeric columns vs target to check homoscedasticity.
+
+    Parameters:
+    - df: pandas DataFrame
+    - target_col: str, column name of the dependent variable
+    - numeric_cols: list of numeric columns to visualize (default: all numeric except target_col)
+
+    Returns:
+    - None (displays plots)
+    """
+    if numeric_cols is None:
+        numeric_cols = df.select_dtypes(include='number').columns.tolist()
+        numeric_cols = [c for c in numeric_cols if c != target_col]
+
+    plt.style.use('seaborn-v0_8')
+    n_cols = 2
+    n_rows = math.ceil(len(numeric_cols)/n_cols)
+    
+    fig, axes = plt.subplots(n_rows, n_cols, figsize=(12, 5*n_rows))
+    axes = axes.flatten()
+    
+    for i, col in enumerate(numeric_cols):
+        axes[i].scatter(df[col], df[target_col], alpha=0.6)
+        axes[i].set_xlabel(col)
+        axes[i].set_ylabel(target_col)
+        axes[i].set_title(f"{col} vs {target_col}")
+    
+    for j in range(i+1, len(axes)):
+        fig.delaxes(axes[j])
+    
+    plt.tight_layout()
+    plt.show()
+
 #--- Function : plot_correlation_heatmap ---
 def plot_correlation_heatmap(df, numeric_cols = None, method = 'spearman', figsize = (12,8), cmap = 'coolwarm', annot = True, fmt = ".2f"):
     """
