@@ -47,8 +47,8 @@ def check_multicollinearity(df, threshold=5.0):
     has_multicollinearity = len(high_vif_features) > 0
 
     return {
-        "correlation_matrix": corr_matrix,       
-        "vif": vif_data,                         
-        "high_vif_features": high_vif_features,  
+        "correlation_matrix": corr_matrix, "\n",      
+        "vif": vif_data, "\n",                         
+        "high_vif_features": high_vif_features, "\n",    
         "has_multicollinearity": has_multicollinearity
     }
