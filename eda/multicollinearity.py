@@ -5,7 +5,7 @@ from statsmodels.stats.outliers_influence import variance_inflation_factor
 def check_multicollinearity(df, threshold=5.0):
     """
     Analyze multicollinearity in a dataset using correlation matrix and VIF.
-    Returns well-formatted tables for inspection.
+    Returns well-formatted tables with clear separation.
 
     Parameters
     ----------
@@ -44,9 +44,10 @@ def check_multicollinearity(df, threshold=5.0):
     high_vif_features = vif_data[vif_data['vif'] > threshold]['feature'].tolist()
     has_multicollinearity = len(high_vif_features) > 0
 
+    # Add spacing / separation for display
     return {
-        "correlation_matrix": corr_matrix,
-        "vif": vif_data,
-        "high_vif_features": high_vif_features,
+        "correlation_matrix": corr_matrix.copy(),
+        "vif": vif_data.copy(),
+        "high_vif_features": high_vif_features.copy(),
         "has_multicollinearity": has_multicollinearity
     }
