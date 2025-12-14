@@ -44,7 +44,8 @@ def plot_numeric_distribution(df, numeric_cols, bins=40):
 #--- Function : qq_plot_numeric ---
 def qq_plot_numeric(df, numeric_cols=None):
     """
-    Generate Q-Q plots for numeric columns in a DataFrame to check normality.
+    Generate Q-Q plots for numeric columns in a DataFrame to check normality,
+    displaying 2 plots per row.
 
     Parameters:
     - df: pandas DataFrame
@@ -58,16 +59,25 @@ def qq_plot_numeric(df, numeric_cols=None):
     
     plt.style.use('seaborn-v0_8')
     
-    for col in numeric_cols:
+    n_cols = 2
+    n_rows = math.ceil(len(numeric_cols) / n_cols)
+    
+    fig, axes = plt.subplots(n_rows, n_cols, figsize=(12, 5*n_rows))
+    axes = axes.flatten()
+    
+    for i, col in enumerate(numeric_cols):
         col_data = df[col].dropna()
-        fig, ax = plt.subplots(figsize = (6, 6))
-        stats.probplot(col_data, dist="norm", plot=ax)
-        ax.set_title(f"Q-Q Plot of {col}")
-        plt.xlabel("Theoretical Quantiles")
-        plt.ylabel("Sample Quantiles")
-        plt.tight_layout()
-        plt.show()
-        plt.close()
+        stats.probplot(col_data, dist="norm", plot=axes[i])
+        axes[i].set_title(f"Q-Q Plot of {col}")
+        axes[i].set_xlabel("Theoretical Quantiles")
+        axes[i].set_ylabel("Sample Quantiles")
+    
+    #Hide any unused subplots
+    for j in range(i+1, len(axes)):
+        fig.delaxes(axes[j])
+    
+    plt.tight_layout()
+    plt.show()
 
 #--- Function : plot_correlation_heatmap ---
 def plot_correlation_heatmap(df, numeric_cols = None, method = 'spearman', figsize = (12,8), cmap = 'coolwarm', annot = True, fmt = ".2f"):
