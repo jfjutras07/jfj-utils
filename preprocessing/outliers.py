@@ -2,27 +2,6 @@ import pandas as pd
 from scipy.stats.mstats import winsorize
 from scipy.stats import zscore
 
-#--- Function : detect_outliers_zscore ---
-def detect_outliers_zscore(df: pd.DataFrame, columns: list, threshold: float = 3.0) -> dict:
-    """
-    Count outliers using z-score method (works well with normal distributions).
-    Returns a dictionary with:
-      - number of outliers per column
-      - total number of outliers across all columns
-    """
-    outlier_counts = {}
-    total_outliers = 0
-    
-    for col in columns:
-        if col in df.columns:
-            z_scores = zscore(df[col].dropna())
-            outlier_count = (z_scores > threshold).sum()
-            outlier_counts[col] = outlier_count
-            total_outliers += outlier_count
-    
-    outlier_counts['Total_outliers'] = total_outliers
-    return outlier_counts
-
 #--- Function : detect_outliers_iqr ---
 def detect_outliers_iqr(df: pd.DataFrame, columns: list, factor: float = 1.5) -> dict:
     """
@@ -42,6 +21,27 @@ def detect_outliers_iqr(df: pd.DataFrame, columns: list, factor: float = 1.5) ->
             lower = Q1 - factor * IQR
             upper = Q3 + factor * IQR
             outlier_count = df[(df[col] < lower) | (df[col] > upper)].shape[0]
+            outlier_counts[col] = outlier_count
+            total_outliers += outlier_count
+    
+    outlier_counts['Total_outliers'] = total_outliers
+    return outlier_counts
+    
+#--- Function : detect_outliers_zscore ---
+def detect_outliers_zscore(df: pd.DataFrame, columns: list, threshold: float = 3.0) -> dict:
+    """
+    Count outliers using z-score method (works well with normal distributions).
+    Returns a dictionary with:
+      - number of outliers per column
+      - total number of outliers across all columns
+    """
+    outlier_counts = {}
+    total_outliers = 0
+    
+    for col in columns:
+        if col in df.columns:
+            z_scores = zscore(df[col].dropna())
+            outlier_count = (z_scores > threshold).sum()
             outlier_counts[col] = outlier_count
             total_outliers += outlier_count
     
