@@ -7,6 +7,32 @@ import warnings
 warnings.filterwarnings("ignore")
 warnings.simplefilter(action='ignore', category=RuntimeWarning)
 
+#--- Function : plot_correlation_heatmap ---
+def plot_correlation_heatmap(df, numeric_cols = None, method = 'spearman', figsize = (12,8), cmap = 'coolwarm', annot = True, fmt = ".2f"):
+    """
+    Plot a correlation heatmap for numeric columns in a DataFrame.
+
+    Parameters:
+    - df: pandas DataFrame
+    - numeric_cols: list of numeric columns to include (default: all numeric columns)
+    - method: correlation method ('pearson', 'spearman', 'kendall')
+    - figsize: figure size
+    - cmap: colormap for heatmap
+    - annot: whether to annotate the correlation coefficients
+    - fmt: string formatting for annotations
+    """
+    if numeric_cols is None:
+        numeric_cols = df.select_dtypes(include='number').columns.tolist()
+
+    corr_matrix = df[numeric_cols].corr(method=method)
+
+    plt.figure(figsize = figsize)
+    sns.heatmap(corr_matrix, annot = annot, fmt = fmt, cmap = cmap)
+    plt.title(f"{method.capitalize()} Correlation Heatmap")
+    plt.tight_layout()
+    plt.show()
+    plt.close()
+
 #--- Function : plot_numeric_distribution ---
 def plot_numeric_distribution(df, numeric_cols, bins=40):
     """
@@ -41,107 +67,6 @@ def plot_numeric_distribution(df, numeric_cols, bins=40):
         plt.show()
         plt.close()
 
-#--- Function : qq_plot_numeric ---
-def qq_plot_numeric(df, numeric_cols=None):
-    """
-    Generate Q-Q plots for numeric columns in a DataFrame to check normality,
-    displaying 2 plots per row.
-
-    Parameters:
-    - df: pandas DataFrame
-    - numeric_cols: list of numeric columns to visualize (default: all numeric)
-
-    Returns:
-    - None (displays plots)
-    """
-    if numeric_cols is None:
-        numeric_cols = df.select_dtypes(include='number').columns.tolist()
-    
-    plt.style.use('seaborn-v0_8')
-    
-    n_cols = 2
-    n_rows = math.ceil(len(numeric_cols) / n_cols)
-    
-    fig, axes = plt.subplots(n_rows, n_cols, figsize=(12, 5*n_rows))
-    axes = axes.flatten()
-    
-    for i, col in enumerate(numeric_cols):
-        col_data = df[col].dropna()
-        stats.probplot(col_data, dist="norm", plot=axes[i])
-        axes[i].set_title(f"Q-Q Plot of {col}")
-        axes[i].set_xlabel("Theoretical Quantiles")
-        axes[i].set_ylabel("Sample Quantiles")
-    
-    #Hide any unused subplots
-    for j in range(i+1, len(axes)):
-        fig.delaxes(axes[j])
-    
-    plt.tight_layout()
-    plt.show()
-
-#--- Function : scatter_numeric ---
-def scatter_numeric(df, target_col, numeric_cols=None):
-    """
-    Generate scatter plots of numeric columns vs the target variable to explore
-    potential relationships and variance patterns.
-
-    Parameters:
-    - df: pandas DataFrame
-    - target_col: str, column name of the dependent variable
-    - numeric_cols: list of numeric columns to visualize (default: all numeric except target_col)
-
-    Returns:
-    - None (displays plots)
-    """
-    if numeric_cols is None:
-        numeric_cols = df.select_dtypes(include='number').columns.tolist()
-        numeric_cols = [c for c in numeric_cols if c != target_col]
-
-    plt.style.use('seaborn-v0_8')
-    n_cols = 2
-    n_rows = math.ceil(len(numeric_cols)/n_cols)
-    
-    fig, axes = plt.subplots(n_rows, n_cols, figsize=(12, 5*n_rows))
-    axes = axes.flatten()
-    
-    for i, col in enumerate(numeric_cols):
-        axes[i].scatter(df[col], df[target_col], alpha=0.6)
-        axes[i].set_xlabel(col)
-        axes[i].set_ylabel(target_col)
-        axes[i].set_title(f"{col} vs {target_col}")
-    
-    for j in range(i+1, len(axes)):
-        fig.delaxes(axes[j])
-    
-    plt.tight_layout()
-    plt.show()
-
-#--- Function : plot_correlation_heatmap ---
-def plot_correlation_heatmap(df, numeric_cols = None, method = 'spearman', figsize = (12,8), cmap = 'coolwarm', annot = True, fmt = ".2f"):
-    """
-    Plot a correlation heatmap for numeric columns in a DataFrame.
-
-    Parameters:
-    - df: pandas DataFrame
-    - numeric_cols: list of numeric columns to include (default: all numeric columns)
-    - method: correlation method ('pearson', 'spearman', 'kendall')
-    - figsize: figure size
-    - cmap: colormap for heatmap
-    - annot: whether to annotate the correlation coefficients
-    - fmt: string formatting for annotations
-    """
-    if numeric_cols is None:
-        numeric_cols = df.select_dtypes(include='number').columns.tolist()
-
-    corr_matrix = df[numeric_cols].corr(method=method)
-
-    plt.figure(figsize = figsize)
-    sns.heatmap(corr_matrix, annot = annot, fmt = fmt, cmap = cmap)
-    plt.title(f"{method.capitalize()} Correlation Heatmap")
-    plt.tight_layout()
-    plt.show()
-    plt.close()
-
 #--- Function plot_pairplot ---
 def plot_pairplot(df, features, hue=None, diag_kind='kde', corner=True, alpha=0.5, figsize=(10, 10)):
     """
@@ -167,6 +92,50 @@ def plot_pairplot(df, features, hue=None, diag_kind='kde', corner=True, alpha=0.
     )
     pairplot.fig.set_size_inches(figsize)
     pairplot.fig.suptitle("Pairplot of Selected Features", y=1.02)
+    plt.show()
+
+#--- Function : plot_scatter_grid ---
+def plot_scatter_grid(df: pd.DataFrame, x_cols: list, y_cols: list, group_col: str = None,
+                      group_labels: dict = None, n_cols_per_row: int = 2, figsize=(14,6)):
+    """
+    Generic function to plot scatterplots in a grid layout.
+    
+    Parameters:
+    - df: DataFrame containing the data
+    - x_cols: list of columns for x-axis
+    - y_cols: list of columns for y-axis
+    - group_col: optional column to color points by (categorical)
+    - group_labels: optional dict to map group values to readable labels
+    - n_cols_per_row: number of plots per row
+    - figsize: figure size per row
+    """
+    
+    #Determine number of plots
+    num_plots = len(x_cols)
+    n_rows = (num_plots + n_cols_per_row - 1) // n_cols_per_row
+    
+    plt.figure(figsize=(figsize[0], n_rows * figsize[1]))
+    
+    for i, (x, y) in enumerate(zip(x_cols, y_cols)):
+        ax = plt.subplot(n_rows, n_cols_per_row, i+1)
+        
+        if group_col:
+            plot_data = df.copy()
+            if group_labels:
+                plot_data['Group'] = plot_data[group_col].map(group_labels)
+            else:
+                plot_data['Group'] = plot_data[group_col]
+            sns.scatterplot(data=plot_data, x=x, y=y, hue='Group', palette='tab10')
+        else:
+            sns.scatterplot(data=df, x=x, y=y, color='blue')
+        
+        #Titles and labels
+        ax.set_title(f'{y} vs {x}')
+        ax.set_xlabel(x)
+        ax.set_ylabel(y)
+        ax.grid(True)
+    
+    plt.tight_layout()
     plt.show()
 
 #--- Function : plot_violin_grid ---
@@ -219,46 +188,40 @@ def plot_violin_grid(
         plt.tight_layout()
         plt.show()
 
-#--- Function : plot_scatter_grid ---
-def plot_scatter_grid(df: pd.DataFrame, x_cols: list, y_cols: list, group_col: str = None,
-                      group_labels: dict = None, n_cols_per_row: int = 2, figsize=(14,6)):
+#--- Function : qq_plot_numeric ---
+def qq_plot_numeric(df, numeric_cols=None):
     """
-    Generic function to plot scatterplots in a grid layout.
-    
+    Generate Q-Q plots for numeric columns in a DataFrame to check normality,
+    displaying 2 plots per row.
+
     Parameters:
-    - df: DataFrame containing the data
-    - x_cols: list of columns for x-axis
-    - y_cols: list of columns for y-axis
-    - group_col: optional column to color points by (categorical)
-    - group_labels: optional dict to map group values to readable labels
-    - n_cols_per_row: number of plots per row
-    - figsize: figure size per row
+    - df: pandas DataFrame
+    - numeric_cols: list of numeric columns to visualize (default: all numeric)
+
+    Returns:
+    - None (displays plots)
     """
+    if numeric_cols is None:
+        numeric_cols = df.select_dtypes(include='number').columns.tolist()
     
-    #Determine number of plots
-    num_plots = len(x_cols)
-    n_rows = (num_plots + n_cols_per_row - 1) // n_cols_per_row
+    plt.style.use('seaborn-v0_8')
     
-    plt.figure(figsize=(figsize[0], n_rows * figsize[1]))
+    n_cols = 2
+    n_rows = math.ceil(len(numeric_cols) / n_cols)
     
-    for i, (x, y) in enumerate(zip(x_cols, y_cols)):
-        ax = plt.subplot(n_rows, n_cols_per_row, i+1)
-        
-        if group_col:
-            plot_data = df.copy()
-            if group_labels:
-                plot_data['Group'] = plot_data[group_col].map(group_labels)
-            else:
-                plot_data['Group'] = plot_data[group_col]
-            sns.scatterplot(data=plot_data, x=x, y=y, hue='Group', palette='tab10')
-        else:
-            sns.scatterplot(data=df, x=x, y=y, color='blue')
-        
-        #Titles and labels
-        ax.set_title(f'{y} vs {x}')
-        ax.set_xlabel(x)
-        ax.set_ylabel(y)
-        ax.grid(True)
+    fig, axes = plt.subplots(n_rows, n_cols, figsize=(12, 5*n_rows))
+    axes = axes.flatten()
+    
+    for i, col in enumerate(numeric_cols):
+        col_data = df[col].dropna()
+        stats.probplot(col_data, dist="norm", plot=axes[i])
+        axes[i].set_title(f"Q-Q Plot of {col}")
+        axes[i].set_xlabel("Theoretical Quantiles")
+        axes[i].set_ylabel("Sample Quantiles")
+    
+    #Hide any unused subplots
+    for j in range(i+1, len(axes)):
+        fig.delaxes(axes[j])
     
     plt.tight_layout()
     plt.show()
@@ -321,6 +284,43 @@ def residuals_fitted(model, df=None, predictors=None, n_cols=2, resid_attr='resi
     #Hide unused subplots if any
     for j in range(i+1, len(axes)):
         axes[j].set_visible(False)
+    
+    plt.tight_layout()
+    plt.show()
+
+#--- Function : scatter_numeric ---
+def scatter_numeric(df, target_col, numeric_cols=None):
+    """
+    Generate scatter plots of numeric columns vs the target variable to explore
+    potential relationships and variance patterns.
+
+    Parameters:
+    - df: pandas DataFrame
+    - target_col: str, column name of the dependent variable
+    - numeric_cols: list of numeric columns to visualize (default: all numeric except target_col)
+
+    Returns:
+    - None (displays plots)
+    """
+    if numeric_cols is None:
+        numeric_cols = df.select_dtypes(include='number').columns.tolist()
+        numeric_cols = [c for c in numeric_cols if c != target_col]
+
+    plt.style.use('seaborn-v0_8')
+    n_cols = 2
+    n_rows = math.ceil(len(numeric_cols)/n_cols)
+    
+    fig, axes = plt.subplots(n_rows, n_cols, figsize=(12, 5*n_rows))
+    axes = axes.flatten()
+    
+    for i, col in enumerate(numeric_cols):
+        axes[i].scatter(df[col], df[target_col], alpha=0.6)
+        axes[i].set_xlabel(col)
+        axes[i].set_ylabel(target_col)
+        axes[i].set_title(f"{col} vs {target_col}")
+    
+    for j in range(i+1, len(axes)):
+        fig.delaxes(axes[j])
     
     plt.tight_layout()
     plt.show()
