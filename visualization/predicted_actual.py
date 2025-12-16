@@ -1,8 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-#--- Function : plot_predicted_vs_actual ---
-def plot_predicted_vs_actual(y_true, y_pred, feature_names=None, model_name="Model"):
+#--- Function : predicted_actual ---
+def predicted_actual(y_true, y_pred, feature_names=None, model_name="Model"):
     """
     Generic visualization for regression models comparing predicted vs actual values.
     Works for single-target and multi-target regression.
