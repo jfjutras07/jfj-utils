@@ -16,6 +16,7 @@ Clear separation by functional area
 ```
 jfj_utils/
   ingestion/
+    jfjf
   preprocessing/
   eda/
   visualization/
