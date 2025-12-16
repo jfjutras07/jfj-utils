@@ -79,10 +79,11 @@ def qq_plot_numeric(df, numeric_cols=None):
     plt.tight_layout()
     plt.show()
 
-#--- Function : residual_scatter_numeric ---
-def residual_scatter_numeric(df, target_col, numeric_cols=None):
+#--- Function : scatter_numeric ---
+def scatter_numeric(df, target_col, numeric_cols=None):
     """
-    Generate scatter plots of numeric columns vs target to check homoscedasticity.
+    Generate scatter plots of numeric columns vs the target variable to explore
+    potential relationships and variance patterns.
 
     Parameters:
     - df: pandas DataFrame
@@ -258,6 +259,68 @@ def plot_scatter_grid(df: pd.DataFrame, x_cols: list, y_cols: list, group_col: s
         ax.set_xlabel(x)
         ax.set_ylabel(y)
         ax.grid(True)
+    
+    plt.tight_layout()
+    plt.show()
+
+#--- Function residuals_fitted ---
+def residuals_fitted(model, df=None, predictors=None, n_cols=2, resid_attr='resid', fitted_attr='fittedvalues'):
+    """
+    Generic residuals vs fitted values plots for any model with residuals and fitted values.
+
+    Parameters
+    ----------
+    model : object
+        Fitted model object containing residuals and fitted values.
+    df : pandas.DataFrame, optional
+        Dataset used to fit the model, required if predictors are provided.
+    predictors : list of str, optional
+        List of variable names in df to plot residuals against.
+        If None, plots residuals vs fitted values only.
+    n_cols : int
+        Number of columns in subplot grid.
+    resid_attr : str
+        Attribute name in the model object for residuals (default 'resid').
+    fitted_attr : str
+        Attribute name in the model object for fitted values (default 'fittedvalues').
+
+    Returns
+    -------
+    None
+    """
+    
+    #Extract residuals and fitted values
+    resid = getattr(model, resid_attr)
+    fitted = getattr(model, fitted_attr)
+    
+    #If no predictors, just plot residuals vs fitted values
+    if predictors is None:
+        plt.figure(figsize=(8, 6))
+        plt.scatter(fitted, resid, alpha=0.7)
+        plt.axhline(0, color='red', linestyle='--')
+        plt.xlabel('Fitted values')
+        plt.ylabel('Residuals')
+        plt.title('Residuals vs Fitted Values')
+        plt.show()
+        return
+    
+    #Otherwise, plot residuals vs each predictor
+    n_plots = len(predictors)
+    n_rows = math.ceil(n_plots / n_cols)
+    
+    fig, axes = plt.subplots(n_rows, n_cols, figsize=(6*n_cols, 5*n_rows))
+    axes = axes.flatten()
+    
+    for i, var in enumerate(predictors):
+        axes[i].scatter(df[var], resid, alpha=0.7)
+        axes[i].axhline(0, color='red', linestyle='--')
+        axes[i].set_xlabel(var)
+        axes[i].set_ylabel('Residuals')
+        axes[i].set_title(f'Residuals vs {var}')
+    
+    #Hide unused subplots if any
+    for j in range(i+1, len(axes)):
+        axes[j].set_visible(False)
     
     plt.tight_layout()
     plt.show()
