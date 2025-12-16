@@ -1,25 +1,5 @@
 import pandas as pd
 
-#--- Function : missing_summary ---
-def missing_summary(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Returns a summary table of missing values in a DataFrame.
-    
-    Columns:
-        - missing_count: number of missing values per column
-        - missing_percent: percentage of missing values per column
-    Sorted by missing_count descending.
-    """
-    missing_count = df.isnull().sum()
-    missing_percent = 100 * missing_count / len(df)
-    
-    summary = pd.DataFrame({
-        "missing_count": missing_count,
-        "missing_percent": missing_percent
-    }).sort_values(by="missing_count", ascending=False)
-    
-    return summary
-
 #--- Function : missing_stats ---
 def missing_stats(df: pd.DataFrame) -> dict:
     """
@@ -40,3 +20,23 @@ def missing_stats(df: pd.DataFrame) -> dict:
         "num_columns_missing": num_columns_missing,
         "num_rows_missing": num_rows_missing
     }
+
+#--- Function : missing_summary ---
+def missing_summary(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Returns a summary table of missing values in a DataFrame.
+    
+    Columns:
+        - missing_count: number of missing values per column
+        - missing_percent: percentage of missing values per column
+    Sorted by missing_count descending.
+    """
+    missing_count = df.isnull().sum()
+    missing_percent = 100 * missing_count / len(df)
+    
+    summary = pd.DataFrame({
+        "missing_count": missing_count,
+        "missing_percent": missing_percent
+    }).sort_values(by="missing_count", ascending=False)
+    
+    return summary
