@@ -29,10 +29,10 @@ def clean_names(df: pd.DataFrame, first_col: str = 'first_name', last_col: str =
     """
 
     #Standardize missing values for both first and last names
-    df[first_col] = df[first_col].astype(str).str.strip().replace(['nan', 'None', '', 'NaN', '<na>'], pd.NA)
-    df[last_col] = df[last_col].astype(str).str.strip().replace(['nan', 'None', '', 'NaN', '<na>'], pd.NA)
+    df[first_col] = df[first_col].astype(str).str.strip().replace(['nan','None','', 'NaN','<na>'], pd.NA)
+    df[last_col] = df[last_col].astype(str).str.strip().replace(['nan','None','', 'NaN','<na>'], pd.NA)
 
-    #Helper function: proper_case
+    #--- Helper function: proper_case ---
     def proper_case(name: str) -> str:
         """
         Capitalize names properly, handling:
@@ -46,9 +46,9 @@ def clean_names(df: pd.DataFrame, first_col: str = 'first_name', last_col: str =
 
         def cap_part(part: str) -> str:
             #Handle Mc prefix
-            part = re.sub(r"\b(Mc)(\w)", lambda m: m.group(1) + m.group(2).upper(), part, flags=re.IGNORECASE)
+            part = re.sub(r"\b(Mc)(\w)", lambda m: m.group(1)+m.group(2).upper(), part, flags=re.IGNORECASE)
             #Handle apostrophes
-            part = re.sub(r"(\b\w)'(\w)", lambda m: m.group(1).upper() + "'" + m.group(2).upper(), part)
+            part = re.sub(r"(\b\w)'(\w)", lambda m: m.group(1).upper()+"'"+m.group(2).upper(), part)
             #Default capitalization
             return part.capitalize()
 
@@ -62,19 +62,17 @@ def clean_names(df: pd.DataFrame, first_col: str = 'first_name', last_col: str =
 
     #Split multi-part first names
     split_names = df[first_col].str.split(' ', n=1, expand=True)
-    df['first_name_clean'] = split_names[0]  # Keep first part as first_name
+    df['first_name_clean'] = split_names[0]
     df['last_extracted'] = split_names[1] if split_names.shape[1] > 1 else pd.NA
 
     #Merge with original last name intelligently
     df['last_name_clean'] = df.apply(
-        lambda row: row[last_col]
-        if pd.notna(row[last_col]) and str(row[last_col]).strip() != str(row['last_extracted']).strip()
-        else row['last_extracted'],
+        lambda row: row[last_col] if pd.notna(row[last_col]) and str(row[last_col]).strip() != str(row['last_extracted']).strip() else row['last_extracted'],
         axis=1
     )
 
     #Convert all placeholders, empty strings, or None to pd.NA
-    df['last_name_clean'] = df['last_name_clean'].replace([None, '', 'nan', 'None', '<na>'], pd.NA)
+    df['last_name_clean'] = df['last_name_clean'].replace([None,'','nan','None','<na>'], pd.NA)
 
     #Capitalize last name after merging
     df['last_name_clean'] = df['last_name_clean'].apply(proper_case)
@@ -83,6 +81,7 @@ def clean_names(df: pd.DataFrame, first_col: str = 'first_name', last_col: str =
     df.drop(columns=['last_extracted'], inplace=True)
 
     return df
+
 
 #--- Function: clean_names_multiple ---
 def clean_names_multiple(dfs: Dict[str, pd.DataFrame], first_col: str = 'first_name', last_col: str = 'last_name') -> Dict[str, pd.DataFrame]:
@@ -108,10 +107,10 @@ def clean_names_multiple(dfs: Dict[str, pd.DataFrame], first_col: str = 'first_n
         df_clean = clean_names(df, first_col=first_col, last_col=last_col)
 
         #Drop original columns
-        df_clean.drop(columns=[first_col, last_col], inplace=True)
+        df_clean.drop(columns=[first_col,last_col], inplace=True)
 
         #Rename cleaned columns to original names
-        df_clean.rename(columns={'first_name_clean': 'first_name', 'last_name_clean': 'last_name'}, inplace=True)
+        df_clean.rename(columns={'first_name_clean':'first_name','last_name_clean':'last_name'}, inplace=True)
 
         #Ensure missing last_name values remain pd.NA
         df_clean['last_name'] = df_clean['last_name'].apply(lambda x: pd.NA if pd.isna(x) else x)
