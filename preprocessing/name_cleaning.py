@@ -3,119 +3,71 @@ import re
 from typing import Dict
 
 #--- Function: clean_names ---
-def clean_names(df: pd.DataFrame, first_col: str = 'first_name', last_col: str = 'last_name') -> pd.DataFrame:
+def clean_names(df: pd.DataFrame, first_col: str='first_name', last_col: str='last_name') -> pd.DataFrame:
     """
     Clean first and last name columns in a DataFrame.
-
-    Cleaning steps:
+    Steps:
     - Strip whitespace and standardize missing values
-    - Proper capitalization (handles hyphens, apostrophes, Mc/Mac prefixes)
+    - Proper capitalization (hyphens, apostrophes, Mc/Mac prefixes)
     - Split multi-part first names if needed
-    - Merge extracted last name with original last name intelligently
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-        Input DataFrame containing name columns.
-    first_col : str, default 'first_name'
-        Name of the first name column.
-    last_col : str, default 'last_name'
-        Name of the last name column.
-
-    Returns
-    -------
-    pd.DataFrame
-        DataFrame with cleaned 'first_name_clean' and 'last_name_clean' columns.
+    - Merge extracted last name with original last name
     """
-
-    #Standardize missing values for both first and last names
+    #Standardize missing values
     df[first_col] = df[first_col].astype(str).str.strip().replace(['nan','None','', 'NaN','<na>'], pd.NA)
     df[last_col] = df[last_col].astype(str).str.strip().replace(['nan','None','', 'NaN','<na>'], pd.NA)
 
-    #--- Helper function: proper_case ---
+    #--- Helper: proper_case ---
     def proper_case(name: str) -> str:
-        """
-        Capitalize names properly, handling:
-        - Hyphens (Anne-Marie)
-        - Apostrophes (O'Neil)
-        - Mc/Mac prefixes (McDonald)
-        - Multiple parts in a name
-        """
         if pd.isna(name) or str(name).strip() == '':
             return pd.NA
-
         def cap_part(part: str) -> str:
-            #Handle Mc prefix
             part = re.sub(r"\b(Mc)(\w)", lambda m: m.group(1)+m.group(2).upper(), part, flags=re.IGNORECASE)
-            #Handle apostrophes
             part = re.sub(r"(\b\w)'(\w)", lambda m: m.group(1).upper()+"'"+m.group(2).upper(), part)
-            #Default capitalization
             return part.capitalize()
-
-        #Split by hyphen, capitalize each sub-part, then join
         parts = [cap_part(p) for p in name.split('-')]
         return '-'.join(parts)
 
-    #Apply proper capitalization
+    #Apply capitalization
     df[first_col] = df[first_col].apply(proper_case)
     df[last_col] = df[last_col].apply(proper_case)
 
-    #Split multi-part first names
+    #Split first names
     split_names = df[first_col].str.split(' ', n=1, expand=True)
     df['first_name_clean'] = split_names[0]
     df['last_extracted'] = split_names[1] if split_names.shape[1] > 1 else pd.NA
 
-    #Merge with original last name intelligently
+    #Merge last name
     df['last_name_clean'] = df.apply(
-        lambda row: row[last_col] if pd.notna(row[last_col]) and str(row[last_col]).strip() != str(row['last_extracted']).strip() else row['last_extracted'],
+        lambda row: row[last_col] if pd.notna(row[last_col]) and str(row[last_col]).strip()!=str(row['last_extracted']).strip() else row['last_extracted'],
         axis=1
     )
 
-    #Convert all placeholders, empty strings, or None to pd.NA
+    #Ensure missing values are pd.NA
     df['last_name_clean'] = df['last_name_clean'].replace([None,'','nan','None','<na>'], pd.NA)
 
-    #Capitalize last name after merging
+    #Capitalize last name
     df['last_name_clean'] = df['last_name_clean'].apply(proper_case)
 
-    #Drop temporary column
     df.drop(columns=['last_extracted'], inplace=True)
-
     return df
 
-
 #--- Function: clean_names_multiple ---
-def clean_names_multiple(dfs: Dict[str, pd.DataFrame], first_col: str = 'first_name', last_col: str = 'last_name') -> Dict[str, pd.DataFrame]:
+def clean_names_multiple(dfs: Dict[str,pd.DataFrame], first_col: str='first_name', last_col: str='last_name') -> Dict[str,pd.DataFrame]:
     """
-    Apply name cleaning to multiple DataFrames stored in a dictionary.
-
-    Parameters
-    ----------
-    dfs : dict
-        Dictionary of DataFrames {file_name: DataFrame}.
-    first_col : str, default 'first_name'
-        Name of the first name column.
-    last_col : str, default 'last_name'
-        Name of the last name column.
-
-    Returns
-    -------
-    dict
-        Dictionary with cleaned DataFrames.
+    Apply clean_names to multiple DataFrames in a dictionary.
     """
     for key, df in dfs.items():
-        #Apply single DataFrame cleaning
         df_clean = clean_names(df, first_col=first_col, last_col=last_col)
 
         #Drop original columns
         df_clean.drop(columns=[first_col,last_col], inplace=True)
 
-        #Rename cleaned columns to original names
+        #Rename cleaned columns
         df_clean.rename(columns={'first_name_clean':'first_name','last_name_clean':'last_name'}, inplace=True)
 
-        #Ensure missing last_name values remain pd.NA
-        df_clean['last_name'] = df_clean['last_name'].apply(lambda x: pd.NA if pd.isna(x) else x)
+        #Final fix: all missing last_name values must be pd.NA
+        df_clean['last_name'] = df_clean['last_name'].apply(lambda x: pd.NA if pd.isna(x) or str(x).strip()=='' else x)
 
-        #Update dictionary
         dfs[key] = df_clean
 
     return dfs
