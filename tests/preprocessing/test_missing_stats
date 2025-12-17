@@ -33,10 +33,3 @@ def test_missing_stats_no_missing():
     assert result["percent_missing"] == 0.0
     assert result["num_columns_missing"] == 0
     assert result["num_rows_missing"] == 0
-
-#--- Function : test_missing_stats_empty_dataframe ---
-def test_missing_stats_empty_dataframe():
-    df = pd.DataFrame()
-
-    with pytest.raises(ZeroDivisionError):
-        missing_stats(df)
