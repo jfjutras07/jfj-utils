@@ -64,16 +64,43 @@ def clean_names(df: pd.DataFrame, first_col: str = 'first_name', last_col: str =
 
     return df
 
-# --- Function : clean_names_multiple ---
+from typing import Dict
+import pandas as pd
+from .name_cleaning import clean_names
+
+# --- Function: clean_names_multiple ---
 def clean_names_multiple(dfs: Dict[str, pd.DataFrame], first_col: str = 'first_name', last_col: str = 'last_name') -> Dict[str, pd.DataFrame]:
+    """
+    Apply name cleaning to multiple DataFrames stored in a dictionary.
+
+    Parameters
+    ----------
+    dfs : dict
+        Dictionary of DataFrames {file_name: DataFrame}.
+    first_col : str, default 'first_name'
+        Name of the first name column.
+    last_col : str, default 'last_name'
+        Name of the last name column.
+
+    Returns
+    -------
+    dict
+        Dictionary with cleaned DataFrames.
+    """
     for key, df in dfs.items():
+        #Apply the single DataFrame cleaning function
         df_clean = clean_names(df, first_col=first_col, last_col=last_col)
+
+        #Drop original columns
         df_clean.drop(columns=[first_col, last_col], inplace=True)
+
+        #Rename cleaned columns to original names
         df_clean.rename(columns={'first_name_clean': 'first_name', 'last_name_clean': 'last_name'}, inplace=True)
 
-        #Forcer NA correct
+        #Ensure missing last_name values remain pd.NA
         df_clean['last_name'] = df_clean['last_name'].apply(lambda x: pd.NA if pd.isna(x) else x)
 
+        #Update the dictionary
         dfs[key] = df_clean
-    return dfs
 
+    return dfs
