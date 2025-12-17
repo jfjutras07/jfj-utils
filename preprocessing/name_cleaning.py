@@ -66,14 +66,14 @@ def clean_names(df: pd.DataFrame, first_col: str = 'first_name', last_col: str =
 
 # --- Function : clean_names_multiple ---
 def clean_names_multiple(dfs: Dict[str, pd.DataFrame], first_col: str = 'first_name', last_col: str = 'last_name') -> Dict[str, pd.DataFrame]:
-    """
-    Apply name cleaning to multiple DataFrames stored in a dictionary.
-    """
     for key, df in dfs.items():
         df_clean = clean_names(df, first_col=first_col, last_col=last_col)
-        #Replace original columns
         df_clean.drop(columns=[first_col, last_col], inplace=True)
         df_clean.rename(columns={'first_name_clean': 'first_name', 'last_name_clean': 'last_name'}, inplace=True)
-        dfs[key] = df_clean
 
+        #Forcer NA correct
+        df_clean['last_name'] = df_clean['last_name'].apply(lambda x: pd.NA if pd.isna(x) else x)
+
+        dfs[key] = df_clean
     return dfs
+
