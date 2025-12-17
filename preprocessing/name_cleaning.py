@@ -23,12 +23,18 @@ def clean_names(df: pd.DataFrame, first_col: str = 'first_name', last_col: str =
             return pd.NA
 
         def cap_part(part: str) -> str:
-            # Handle Mc/Mac prefixes
+            #Handle Mc/Mac prefixes
             part = re.sub(r'\b(Mc)(\w)', lambda m: m.group(1) + m.group(2).upper(), part, flags=re.IGNORECASE)
-            # Handle apostrophes
+            #Handle apostrophes
             part = re.sub(r"(\b\w)'(\w)", lambda m: m.group(1).upper() + "'" + m.group(2).upper(), part)
-            # Capitalize each sub-part (default)
-            return '-'.join([p[0].upper() + p[1:].lower() if len(p) > 1 else p.upper() for p in part.split('-')])
+            #Capitalize hyphen parts without overwriting Mc prefix
+            subparts = []
+            for p in part.split('-'):
+                if p.startswith('Mc') and len(p) > 2:
+                    subparts.append(p[:2] + p[2:].capitalize())  # Keep Mc + capitalize rest
+                else:
+                    subparts.append(p[0].upper() + p[1:].lower() if len(p) > 1 else p.upper())
+            return '-'.join(subparts)
 
         #Split by hyphen, capitalize each sub-part, join back
         return '-'.join([cap_part(p) for p in name.split('-')])
