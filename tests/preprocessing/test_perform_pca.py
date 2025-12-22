@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from ingestion.readers import perform_pca
+from preprocessing.pca import perform_pca
 
 #--- Function : test_perform_pca_basic ---
 def test_perform_pca_basic():
