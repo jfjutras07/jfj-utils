@@ -93,6 +93,8 @@ Active development — modules will be progressively added and refined.
 
 ### Visualization: High-level plotting utilities for exploring data and communicating analytical results.
 
+*choropleth_map.py*
+
 *confusion_matrix.py*
 - `plot_logreg_results`
 
