@@ -152,11 +152,20 @@ Active development — modules will be progressively added and refined.
 *binary_classifier_evaluation.py*
 - `evaluate_binary_classifier`
 
-*regularization.py*
-- `fit_regularized_models`
+*classification.py*
+- `logistic_regression`
 
 *regression.py*
+- `cox_regression`
+- `gamma_regression`
+- `linear_regression`
+- `poisson_regression`
+- `polynomial_regression`
+- `quantile_regression`
 - `robust_regression`
+
+*regularization.py*
+- `fit_regularized_models`
 
 ### Utils: Shared low-level utilities used across the library.
 
