@@ -134,7 +134,7 @@ Active development — modules will be progressively added and refined.
 - `fit_regularized_models`
 
 *regression.py*
-- `robust_ancova`
+- `robust_regression`
 
 ### Utils: Shared low-level utilities used across the library.
 
