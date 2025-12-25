@@ -4,6 +4,7 @@ import statsmodels.api as sm
 from statsmodels.formula.api import ols
 from statsmodels.multivariate.manova import MANOVA
 from statsmodels.stats.anova import AnovaRM
+from statsmodels.stats.multicomp import pairwise_tukeyhsd
 
 #--- Function: ancova_test ---
 def ancova_test(df, dv, factor, covariates):
@@ -414,6 +415,52 @@ def repeated_anova(df, subject, within, dv):
     print(anova_table)
     
     return anova_table
+
+#--- Function: tukey_posthoc ---
+def tukey_posthoc(df, column, group, alpha=0.05):
+    """
+    Perform Tukey's HSD post-hoc test for pairwise comparisons after ANOVA.
+
+    Example:
+    --------
+    # Compare students' test scores across three classes
+    data = pd.DataFrame({
+        'score': [85, 90, 88, 92, 78, 80, 82, 75, 70],
+        'class': ['A', 'A', 'A', 'B', 'B', 'B', 'C', 'C', 'C']
+    })
+    tukey_result = tukey_posthoc(data, column='score', group='class')
+
+    Parameters:
+    -----------
+    df : pd.DataFrame
+        Dataset containing the numeric column and grouping variable.
+    column : str
+        Name of the numeric column to test.
+    group : str
+        Name of the categorical grouping column.
+    alpha : float, optional
+        Significance level (default 0.05).
+
+    Returns:
+    --------
+    tukey_result : TukeyHSDResults
+        Object containing pairwise comparisons with mean differences, p-values, and confidence intervals.
+    """
+    # Ensure column is numeric
+    if not pd.api.types.is_numeric_dtype(df[column]):
+        raise ValueError(f"Column {column} must be numeric.")
+    
+    #Ensure group is categorical
+    df[group] = df[group].astype('category')
+    
+    #Perform Tukey HSD
+    tukey_result = pairwise_tukeyhsd(endog=df[column], groups=df[group], alpha=alpha)
+    
+    #Print summary
+    print(f"Tukey HSD post-hoc test for {column} by {group}")
+    print(tukey_result.summary())
+    
+    return tukey_result
 
 #--- Function: two_sample_ttest ---
 def two_sample_ttest(df, column, group, group1, group2):
