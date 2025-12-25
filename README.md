@@ -74,7 +74,8 @@ Active development — modules will be progressively added and refined.
 *check_normality.py*
 - `normality_check`
 - `numeric_skew_kurt`
-
+- `test_homogeneity`
+  
 *date_formats.py*
 - `detect_date_patterns`
 
@@ -85,7 +86,16 @@ Active development — modules will be progressively added and refined.
 - `check_multicollinearity`
 
 *stats_non_param.py*
+- `dunn_friedman_posthoc`
+- `dunn_posthoc`
+- `friedman_test`
+- `kruskal_wallis_test`
 - `mann_whitney_cliff`
+- `one_sample_wilcoxon`
+- `paired_wilcoxon`
+- `permanova_test`
+- `quade_test_placeholder`
+- `art_test_placeholder`
 
 *stats_param.py*
 - `ancova_test`
