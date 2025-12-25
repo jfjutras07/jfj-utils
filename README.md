@@ -87,6 +87,17 @@ Active development — modules will be progressively added and refined.
 *stats_non_param.py*
 - `mann_whitney_cliff`
 
+*stats_param.py*
+- `ancova_test`
+- `anova_test`
+- `f_test_variance`
+- `mancova_test`
+- `manova_test`
+- `one_sample_ttest`
+- `paired_ttest`
+- `repeated_anova`
+- `two_sample_ttest`
+
 *topic_sentiment_analysis.py*
 - `topic_sentiment_analysis`
 
