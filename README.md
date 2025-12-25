@@ -96,6 +96,7 @@ Active development — modules will be progressively added and refined.
 - `one_sample_ttest`
 - `paired_ttest`
 - `repeated_anova`
+- `tukey_posthoc`
 - `two_sample_ttest`
 
 *topic_sentiment_analysis.py*
