@@ -86,7 +86,6 @@ Active development — modules will be progressively added and refined.
 
 *stats_non_param.py*
 - `mann_whitney_cliff`
-- `robust_ancova`
 
 *topic_sentiment_analysis.py*
 - `topic_sentiment_analysis`
@@ -133,6 +132,9 @@ Active development — modules will be progressively added and refined.
 
 *regularization.py*
 - `fit_regularized_models`
+
+*regression.py*
+- `robust_ancova`
 
 ### Utils: Shared low-level utilities used across the library.
 
