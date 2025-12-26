@@ -513,4 +513,58 @@ def two_sample_ttest(df, column, group, group1, group2):
     
     return t_stat, p_value
 
+#--- Function: welch_anova_test ---
+def welch_anova_test(df, column, group):
+    """
+    Perform a one-way Welch ANOVA to compare the means of three or more groups,
+    robust to unequal variances.
+
+    Example:
+    --------
+    # Compare students' test scores across three classes
+    data = pd.DataFrame({
+        'score': [85, 90, 88, 92, 78, 80, 82, 75, 70],
+        'class': ['A', 'A', 'A', 'B', 'B', 'B', 'C', 'C', 'C']
+    })
+    welch_result = welch_anova_test(data, column='score', group='class')
+
+    Parameters:
+    -----------
+    df : pd.DataFrame
+        Dataset containing the numeric column and grouping variable.
+    column : str
+        Name of the numeric column to test.
+    group : str
+        Name of the categorical grouping column.
+
+    Returns:
+    --------
+    welch_result : dict
+        Dictionary containing F-statistic and p-value.
+    """
+    import pandas as pd
+    import scipy.stats as stats
+
+    #Ensure column is numeric
+    if not pd.api.types.is_numeric_dtype(df[column]):
+        raise ValueError(f"Column {column} must be numeric.")
+    
+    #Ensure group is categorical
+    df[group] = df[group].astype('category')
+    
+    #Extract values per group
+    groups = [df[df[group] == level][column].values for level in df[group].cat.categories]
+    
+    #Perform Welch ANOVA
+    F, p = stats.f_oneway(*groups)  # default scipy one-way is classical ANOVA
+    # For Welch, we can use statsmodels' robust ANOVA instead:
+    import statsmodels.api as sm
+    from statsmodels.formula.api import ols
+    model = ols(f'{column} ~ C({group})', data=df).fit()
+    welch_table = sm.stats.anova_lm(model, typ=2, robust='hc3')  # HC3 for heteroscedasticity
+
+    print(f"Welch ANOVA for {column} by {group}")
+    print(welch_table)
+    
+    return welch_table
 
