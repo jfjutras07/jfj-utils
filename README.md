@@ -108,7 +108,8 @@ Active development — modules will be progressively added and refined.
 - `repeated_anova`
 - `tukey_posthoc`
 - `two_sample_ttest`
-
+- `welch_anova_test`
+  
 *topic_sentiment_analysis.py*
 - `topic_sentiment_analysis`
 
