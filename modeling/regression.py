@@ -1,7 +1,6 @@
 import pandas as pd
 import statsmodels.api as sm
 import statsmodels.formula.api as smf
-!pip install lifelines
 import lifelines
 from lifelines import CoxPHFitter
 
