@@ -111,8 +111,6 @@ def dunn_posthoc(df, column, group, p_adjust='bonferroni'):
     print(dunn_result)
     
     return dunn_result
-import pandas as pd
-from scipy import stats
 
 #--- Function: friedman_test ---
 def friedman_test(df, dv, subject, within):
