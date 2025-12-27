@@ -89,6 +89,7 @@ Active development — modules will be progressively added and refined.
 - `dunn_friedman_posthoc`
 - `dunn_posthoc`
 - `friedman_test`
+- `games_howell_posthoc`
 - `kruskal_wallis_test`
 - `mann_whitney_cliff`
 - `one_sample_wilcoxon`
