@@ -1,3 +1,4 @@
+import pingouin as pg
 import pandas as pd
 from scipy import stats
 from scipy.stats import mannwhitneyu
@@ -168,6 +169,52 @@ def friedman_test(df, dv, subject, within):
     print(f"Friedman statistic = {stat:.4f}, p-value = {p_value:.4f}")
     
     return stat, p_value
+
+#--- Function: games_howell_posthoc ---
+def games_howell_posthoc(df, column, group):
+    """
+    Perform Games-Howell post-hoc test for pairwise comparisons after a one-way ANOVA
+    when the assumption of homogeneity of variances is violated.
+
+    Example:
+    --------
+    # Compare students' test scores across three classes
+    data = pd.DataFrame({
+        'score': [85, 90, 88, 92, 78, 80, 82, 75, 70],
+        'class': ['A', 'A', 'A', 'B', 'B', 'B', 'C', 'C', 'C']
+    })
+    gh_result = games_howell_posthoc(data, column='score', group='class')
+
+    Parameters:
+    -----------
+    df : pd.DataFrame
+        Dataset containing the numeric column and grouping variable.
+    column : str
+        Name of the numeric column to test.
+    group : str
+        Name of the categorical grouping column.
+
+    Returns:
+    --------
+    gh_result : pandas.DataFrame
+        Pairwise comparisons table including mean differences, t-statistics, degrees of freedom, and p-values.
+    """
+    i
+    #Ensure column is numeric
+    if not pd.api.types.is_numeric_dtype(df[column]):
+        raise ValueError(f"Column {column} must be numeric.")
+    
+    #Ensure group is categorical
+    df[group] = df[group].astype('category')
+    
+    #Perform Games-Howell post-hoc test
+    gh_result = pg.pairwise_gameshowell(dv=column, between=group, data=df)
+    
+    #Print results
+    print(f"Games-Howell post-hoc test for {column} by {group}")
+    print(gh_result)
+    
+    return gh_result
 
 #--- Function: kruskal_wallis_test ---
 def kruskal_wallis_test(df, column, group):
