@@ -1,6 +1,6 @@
 ## jfj-utils
 
-A lightweight and evolving collection of Python utilities designed to support analytics workflows. This library will gradually expand to include tools for data ingestion, cleaning, preprocessing, exploratory data analysis (EDA), visualization, feature engineering, modeling helpers, and general-purpose utilities.
+A lightweight and evolving collection of Python utilities designed to support analytics workflows. This library will gradually expand to include tools for data ingestion, cleaning, preprocessing, exploratory data analysis (EDA), visualization, feature engineering, modeling helpers, optimization, and general-purpose utilities.
 
 ## Features and Goals
 
@@ -20,6 +20,7 @@ jfj_utils/
   eda/
   visualization/
   modeling/
+  optimization/
   tests/
   utils/
   __init__.py
@@ -168,6 +169,8 @@ Active development — modules will be progressively added and refined.
 
 *regularization.py*
 - `fit_regularized_models`
+
+### Optimization : Prescriptive analytics tools for simulation, decision support, and optimization.
 
 ### Utils: Shared low-level utilities used across the library.
 
