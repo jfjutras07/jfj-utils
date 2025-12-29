@@ -52,6 +52,8 @@ def plot_box_grid(
             ax.set_xlabel(batch[0])
             ax.set_ylabel(y_col)
             ax.grid(axis='y',linestyle='--',alpha=0.5)
+            #Rotate x labels for readability
+            ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha='right')
             plt.tight_layout()
             plt.show()
         else:
@@ -76,6 +78,8 @@ def plot_box_grid(
                 ax.set_xlabel(grp)
                 ax.set_ylabel(y_col)
                 ax.grid(axis='y',linestyle='--',alpha=0.5)
+                #Rotate x labels
+                ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha='right')
 
             #Remove unused axes
             for j in range(len(batch), len(axes)):
