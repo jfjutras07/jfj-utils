@@ -216,7 +216,7 @@ def plot_violin_grid(
     df,
     value_cols,
     group_col='Economic_status',
-    n_rows=2,
+    n_rows=1,
     n_cols=2,
     palette='pastel'
 ):
@@ -225,54 +225,50 @@ def plot_violin_grid(
     
     Parameters:
         df: pd.DataFrame containing the data
-        value_cols: list of numeric columns to plot
-        group_col: column OR list of columns representing grouping variables
+        value_cols: list with ONE numeric column (dependent variable)
+        group_col: list of grouping variables (independent variables)
         n_rows, n_cols: number of rows and columns per figure
         palette: color palette for violin plots
     """
 
-    #Ensure group_col is a list
+    #Force list behavior
     if isinstance(group_col, str):
-        group_cols = [group_col]
-    else:
-        group_cols = group_col
+        group_col = [group_col]
 
-    #Loop over grouping variables
-    for gcol in group_cols:
+    y_col = value_cols[0]
 
-        #Loop through variables in batches that fit the grid
-        for i in range(0, len(value_cols), n_rows * n_cols):
-            batch = value_cols[i:i + n_rows * n_cols]
+    #Loop through grouping variables in batches of 2 (2 per row)
+    for i in range(0, len(group_col), n_rows * n_cols):
+        batch = group_col[i:i + n_rows * n_cols]
 
-            fig, axes = plt.subplots(
-                n_rows,
-                n_cols,
-                figsize=(6 * n_cols, 5 * n_rows),
-                sharey=False
+        fig, axes = plt.subplots(
+            n_rows,
+            n_cols,
+            figsize=(6*n_cols, 5*n_rows),
+            sharey=True
+        )
+        axes = axes.flatten()
+
+        for ax, grp in zip(axes, batch):
+            sns.violinplot(
+                data=df,
+                x=grp,
+                y=y_col,
+                palette=palette,
+                inner='quartile',
+                ax=ax
             )
-            axes = axes.flatten()
+            ax.set_title(f'{y_col} by {grp}')
+            ax.set_xlabel(grp)
+            ax.set_ylabel(y_col)
+            ax.grid(axis='y', linestyle='--', alpha=0.5)
 
-            for ax, col in zip(axes, batch):
-                sns.violinplot(
-                    data=df,
-                    x=gcol,
-                    y=col,
-                    palette=palette,
-                    inner='quartile',
-                    ax=ax
-                )
+        #Remove unused axes
+        for j in range(len(batch), len(axes)):
+            fig.delaxes(axes[j])
 
-                ax.set_title(f'Distribution of {col} by {gcol}')
-                ax.set_xlabel(gcol)
-                ax.set_ylabel(col)
-                ax.grid(axis='y', linestyle='--', alpha=0.5)
-
-            #Remove empty subplots
-            for j in range(len(batch), len(axes)):
-                fig.delaxes(axes[j])
-
-            plt.tight_layout()
-            plt.show()
+        plt.tight_layout()
+        plt.show()
 
 #--- Function : qq_plot_numeric ---
 def qq_plot_numeric(df, numeric_cols=None):
