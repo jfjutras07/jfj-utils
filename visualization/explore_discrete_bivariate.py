@@ -170,6 +170,56 @@ def plot_discrete_lollipop_bivariate(df, col, hue_col, normalize=True, figsize=(
     ax.set_xlabel(xlabel)
     ax.set_ylabel(col)
     ax.set_title(f"Lollipop plot of {col} by {hue_col}")
+
+    # --- Function: plot_stacked_grid ---
+def plot_stacked_grid(df, dependent_var, group_vars, figsize=(8,5), colors=None):
+    """
+    Stacked bar plots for a dependent variable across multiple independent variables.
+
+    Parameters:
+    - df: DataFrame
+    - dependent_var: categorical variable to stack
+    - group_vars: list of independent categorical variables
+    - figsize: tuple, size of each individual plot
+    - colors: list of colors for the stacks
+    """
+    if isinstance(group_vars, str):
+        group_vars = [group_vars]
+
+    for col in group_vars:
+        if col not in df.columns or dependent_var not in df.columns:
+            print(f"Warning: {col} or {dependent_var} not found. Skipping.")
+            continue
+
+        categories = sorted(df[col].dropna().unique())
+        stack_values = sorted(df[dependent_var].dropna().unique())
+
+        #Pivot table for counts
+        temp = df.groupby([col, dependent_var]).size().reset_index(name='count')
+        pivot_table = temp.pivot(index=col, columns=dependent_var, values='count').reindex(categories, fill_value=0)
+
+        if colors is None:
+            colors = plt.cm.tab20.colors[:len(stack_values)]
+
+        fig, ax = plt.subplots(figsize=figsize)
+        bottom = np.zeros(len(categories))
+
+        for i, val in enumerate(stack_values):
+            counts = pivot_table[val].values
+            ax.bar(categories, counts, bottom=bottom, label=str(val), color=colors[i % len(colors)], edgecolor='black')
+            for xi, c, b in zip(categories, counts, bottom):
+                if c > 0:
+                    ax.text(xi, b + c/2, str(c), ha='center', va='center', fontsize=9, color='black')
+            bottom += counts
+
+        ax.set_ylabel("Count")
+        ax.set_title(f"{dependent_var} by {col}")
+        ax.legend(title=dependent_var, bbox_to_anchor=(1.05, 1), loc='upper left')
+        plt.xticks(rotation=45)
+        plt.tight_layout()
+        plt.show()
+        plt.close()
+
     ax.legend(title=hue_col, bbox_to_anchor=(1.05,1), loc='upper left')
     plt.tight_layout()
     plt.show()
