@@ -105,9 +105,13 @@ def plot_discrete_distribution_grid(df, discrete_cols, n_cols=2, figsize=(12,8))
     plt.show()
     plt.close()
 
-
-#--- Function : plot_discrete_dot_distribution ---
+# --- Function: plot_discrete_dot_distribution ---
 def plot_discrete_dot_distribution(df, discrete_cols, normalize=True, figsize=(10,4)):
+    """
+    Dot plot for discrete variables.
+    Automatically orders numeric variables ascending on Y-axis,
+    keeps categorical variables sorted by frequency.
+    """
 
     for col in discrete_cols:
         if col not in df.columns:
@@ -115,21 +119,32 @@ def plot_discrete_dot_distribution(df, discrete_cols, normalize=True, figsize=(1
             continue
 
         series = df[col].dropna()
-        counts = series.value_counts().sort_values(ascending=True)
+
+        # Détection automatique : numérique vs texte
+        if pd.api.types.is_numeric_dtype(series):
+            counts = series.value_counts().sort_index()  # ordre croissant pour numérique
+        else:
+            counts = series.value_counts().sort_values(ascending=True)  # ordre fréquence pour texte
 
         if normalize:
             counts = counts / counts.sum()
             xlabel = "Proportion"
-            fmt = "{:.2f}"
         else:
             xlabel = "Count"
-            fmt = "{:.0f}"
 
         fig, ax = plt.subplots(figsize=figsize)
-        ax.plot(counts.values, counts.index.astype(str), 'o', color="#1f77b4")
 
-        for y, x in zip(counts.index.astype(str), counts.values):
-            ax.text(x, y, f" {fmt.format(x)}", va="center", fontsize=9)
+        ax.plot(
+            counts.values,
+            counts.index.astype(str),
+            'o',
+            color="#1f77b4"
+        )
+
+        # Labels sur les dots
+        for x, y in zip(counts.values, counts.index.astype(str)):
+            ax.text(x, y, f" {x:.2f}" if normalize else f" {int(x)}",
+                    va="center", fontsize=9)
 
         ax.set_title(f"Dot plot of {col}")
         ax.set_xlabel(xlabel)
