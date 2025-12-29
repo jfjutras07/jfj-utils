@@ -144,8 +144,8 @@ Active development — modules will be progressively added and refined.
 *explore_discrete_bivariate.py*
 - `plot_discrete_bivariate`
 - `plot_discrete_bivariate_grid`
-- `plot_discrete_lollipop_bivariate`
 - `plot_discrete_dot_bivariate`
+- `plot_discrete_lollipop_bivariate`
 
 *explore_time.py*
 - `plot_line_over_time`
