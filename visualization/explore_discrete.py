@@ -21,7 +21,7 @@ def get_counts(series, ascending_numeric=True):
 def plot_discrete_distribution(df, discrete_cols, figsize=(10,4)):
     """
     Simple bar plot for discrete (non-binary) variables.
-    Displays counts on top of each bar.
+    Displays counts on top of each bar with dynamic offset.
     """
     for col in discrete_cols:
         if col not in df.columns:
@@ -40,9 +40,11 @@ def plot_discrete_distribution(df, discrete_cols, figsize=(10,4)):
         ax.set_ylabel("Count")
         ax.tick_params(axis="x", rotation=45)
 
-        # Data labels
+        # Dynamic offset to prevent labels from overlapping the chart border
+        offset = counts.values.max() * 0.02
         for bar in bars:
-            ax.text(bar.get_x() + bar.get_width()/2, bar.get_height(),
+            ax.text(bar.get_x() + bar.get_width()/2,
+                    bar.get_height() + offset,
                     f"{int(bar.get_height())}", ha="center", va="bottom", fontsize=9)
 
         plt.tight_layout()
@@ -54,6 +56,7 @@ def plot_discrete_distribution_grid(df, discrete_cols, n_cols=2, figsize=(12,8))
     """
     Bar plots for multiple discrete variables arranged in a grid.
     Automatically orders numeric variables ascending.
+    Displays counts on top of each bar.
     """
     cols = [col for col in discrete_cols if col in df.columns]
     if not cols:
@@ -75,11 +78,13 @@ def plot_discrete_distribution_grid(df, discrete_cols, n_cols=2, figsize=(12,8))
         ax.set_ylabel("Count")
         ax.tick_params(axis="x", rotation=45)
 
+        offset = counts.values.max() * 0.02
         for bar in bars:
-            ax.text(bar.get_x() + bar.get_width()/2, bar.get_height(),
+            ax.text(bar.get_x() + bar.get_width()/2,
+                    bar.get_height() + offset,
                     f"{int(bar.get_height())}", ha="center", va="bottom", fontsize=9)
 
-    # Remove empty subplots
+    #Remove empty subplots
     for i in range(len(cols), len(axes)):
         fig.delaxes(axes[i])
 
@@ -91,8 +96,8 @@ def plot_discrete_distribution_grid(df, discrete_cols, n_cols=2, figsize=(12,8))
 def plot_discrete_dot_distribution(df, discrete_cols, normalize=True, figsize=(10,4)):
     """
     Dot plot for discrete variables.
-    Automatically orders numeric variables ascending on Y-axis,
-    keeps categorical variables sorted by frequency.
+    Numeric variables are ordered ascending, categorical by frequency.
+    Displays values next to each dot.
     """
     for col in discrete_cols:
         if col not in df.columns:
@@ -111,7 +116,7 @@ def plot_discrete_dot_distribution(df, discrete_cols, normalize=True, figsize=(1
         fig, ax = plt.subplots(figsize=figsize)
         ax.plot(counts.values, counts.index.astype(str), 'o', color="#1f77b4")
 
-        # Labels on dots
+        #Labels next to dots
         for x, y in zip(counts.values, counts.index.astype(str)):
             ax.text(x, y, f" {x:.2f}" if normalize else f" {int(x)}",
                     va="center", fontsize=9)
@@ -128,8 +133,8 @@ def plot_discrete_dot_distribution(df, discrete_cols, normalize=True, figsize=(1
 def plot_discrete_lollipop_distribution(df, discrete_cols, normalize=True, figsize=(10,4)):
     """
     Lollipop plot for discrete variables.
-    Automatically orders numeric variables ascending on Y-axis,
-    keeps categorical variables sorted by frequency.
+    Numeric variables are ordered ascending, categorical by frequency.
+    Displays values next to each lollipop with dynamic offset.
     """
     for col in discrete_cols:
         if col not in df.columns:
@@ -152,8 +157,9 @@ def plot_discrete_lollipop_distribution(df, discrete_cols, normalize=True, figsi
                   color="gray", linewidth=1)
         ax.plot(counts.values, counts.index.astype(str), 'o', color="#1f77b4")
 
+        offset = counts.values.max() * 0.02  # Offset for labels
         for y, x in zip(counts.index.astype(str), counts.values):
-            ax.text(x, y, f" {fmt.format(x)}", va="center", fontsize=9)
+            ax.text(x + offset, y, f" {fmt.format(x)}", va="center", fontsize=9)
 
         ax.set_title(f"Lollipop plot of {col}")
         ax.set_xlabel(xlabel)
