@@ -248,7 +248,7 @@ def plot_pairplot(df, features, hue=None, diag_kind='kde', corner=True, alpha=0.
     pairplot.fig.suptitle("Pairplot of Selected Features", y=1.02)
     plt.show()
 
-#--- Function : plot_scatter_grid ---
+#---Function:plot_scatter_grid---
 def plot_scatter_grid(df: pd.DataFrame, x_cols: list, y_cols: list, group_col: str = None,
                       group_labels: dict = None, n_cols_per_row: int = 2, figsize=(14,6)):
     """
@@ -263,34 +263,58 @@ def plot_scatter_grid(df: pd.DataFrame, x_cols: list, y_cols: list, group_col: s
     - n_cols_per_row: number of plots per row
     - figsize: figure size per row
     """
-    
-    #Determine number of plots
+
     num_plots = len(x_cols)
-    n_rows = (num_plots + n_cols_per_row - 1) // n_cols_per_row
-    
-    plt.figure(figsize=(figsize[0], n_rows * figsize[1]))
-    
-    for i, (x, y) in enumerate(zip(x_cols, y_cols)):
-        ax = plt.subplot(n_rows, n_cols_per_row, i+1)
-        
+
+    #Single plot: bigger figure
+    if num_plots == 1:
+        fig, ax = plt.subplots(figsize=(10,6))
+        x, y = x_cols[0], y_cols[0]
         if group_col:
             plot_data = df.copy()
             if group_labels:
                 plot_data['Group'] = plot_data[group_col].map(group_labels)
             else:
                 plot_data['Group'] = plot_data[group_col]
-            sns.scatterplot(data=plot_data, x=x, y=y, hue='Group', palette='tab10')
+            sns.scatterplot(data=plot_data, x=x, y=y, hue='Group', palette='tab10', s=60)
         else:
-            sns.scatterplot(data=df, x=x, y=y, color='blue')
-        
-        #Titles and labels
+            sns.scatterplot(data=df, x=x, y=y, color='blue', s=60)
+
         ax.set_title(f'{y} vs {x}')
         ax.set_xlabel(x)
         ax.set_ylabel(y)
         ax.grid(True)
+        plt.tight_layout()
+        plt.show()
     
-    plt.tight_layout()
-    plt.show()
+    else:
+        n_rows = (num_plots + n_cols_per_row - 1) // n_cols_per_row
+        fig, axes = plt.subplots(n_rows, n_cols_per_row, figsize=(figsize[0], n_rows * figsize[1]))
+        axes = axes.flatten()
+
+        for i, (x, y) in enumerate(zip(x_cols, y_cols)):
+            ax = axes[i]
+            if group_col:
+                plot_data = df.copy()
+                if group_labels:
+                    plot_data['Group'] = plot_data[group_col].map(group_labels)
+                else:
+                    plot_data['Group'] = plot_data[group_col]
+                sns.scatterplot(data=plot_data, x=x, y=y, hue='Group', palette='tab10', s=40, ax=ax)
+            else:
+                sns.scatterplot(data=df, x=x, y=y, color='blue', s=40, ax=ax)
+
+            ax.set_title(f'{y} vs {x}')
+            ax.set_xlabel(x)
+            ax.set_ylabel(y)
+            ax.grid(True)
+
+        #Hide unused subplots
+        for j in range(len(x_cols), len(axes)):
+            axes[j].set_visible(False)
+
+        plt.tight_layout()
+        plt.show()
 
 #---Function:plot_violin_grid---
 def plot_violin_grid(
@@ -323,34 +347,56 @@ def plot_violin_grid(
     for i in range(0,len(group_col),plots_per_fig):
         batch=group_col[i:i+plots_per_fig]
 
-        fig,axes=plt.subplots(
-            n_rows,
-            n_cols,
-            figsize=(6*n_cols,5*n_rows),
-            sharey=True
-        )
-        axes=axes.flatten()
-
-        for ax,grp in zip(axes,batch):
+        if len(batch)==1:
+            #Single plot: bigger figure
+            fig, ax = plt.subplots(figsize=(8,6))
             sns.violinplot(
                 data=df,
-                x=grp,
+                x=batch[0],
                 y=y_col,
                 palette=palette,
                 inner='quartile',
                 ax=ax
             )
-            ax.set_title(f'{y_col} by {grp}')
-            ax.set_xlabel(grp)
+            ax.set_title(f'{y_col} by {batch[0]}')
+            ax.set_xlabel(batch[0])
             ax.set_ylabel(y_col)
             ax.grid(axis='y',linestyle='--',alpha=0.5)
+            #Rotate x labels for readability
+            ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha='right')
+            plt.tight_layout()
+            plt.show()
+        else:
+            #Multiple plots: use grid
+            fig, axes = plt.subplots(
+                n_rows,
+                n_cols,
+                figsize=(6*n_cols,5*n_rows),
+                sharey=True
+            )
+            axes=axes.flatten()
 
-        #Explicitly remove unused axes(keeps layout fixed)
-        for j in range(len(batch),plots_per_fig):
-            axes[j].set_visible(False)
+            for ax,grp in zip(axes,batch):
+                sns.violinplot(
+                    data=df,
+                    x=grp,
+                    y=y_col,
+                    palette=palette,
+                    inner='quartile',
+                    ax=ax
+                )
+                ax.set_title(f'{y_col} by {grp}')
+                ax.set_xlabel(grp)
+                ax.set_ylabel(y_col)
+                ax.grid(axis='y',linestyle='--',alpha=0.5)
+                ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha='right')
 
-        plt.tight_layout()
-        plt.show()
+            #Remove unused axes
+            for j in range(len(batch), len(axes)):
+                axes[j].set_visible(False)
+
+            plt.tight_layout()
+            plt.show()
 
 #--- Function : qq_plot_numeric ---
 def qq_plot_numeric(df, numeric_cols=None):
