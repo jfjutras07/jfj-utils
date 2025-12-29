@@ -185,7 +185,6 @@ def plot_stacked_grid(df, dependent_var, group_vars, n_rows=2, n_cols=2, palette
         n_rows, n_cols: int, number of rows and columns per figure grid
         palette: color palette
     """
-
     if isinstance(group_vars, str):
         group_vars = [group_vars]
     
@@ -233,11 +232,11 @@ def plot_stacked_grid(df, dependent_var, group_vars, n_rows=2, n_cols=2, palette
                 ax.set_xlabel(' / '.join(sub_vars))
                 ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha='right')
             
-            # Remove unused axes
+            #Remove unused axes
             for j in range(len(batch), len(axes)):
                 axes[j].set_visible(False)
             
-            # Legend outside
+            #Legend outside
             handles, labels = axes[0].get_legend_handles_labels()
             fig.legend(handles, labels, title=dependent_var, bbox_to_anchor=(1.05,1), loc='upper left')
             plt.tight_layout()
