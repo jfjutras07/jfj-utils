@@ -38,10 +38,16 @@ def plot_box_grid(
     for i in range(0,len(group_col),plots_per_fig):
         batch=group_col[i:i+plots_per_fig]
 
+        #Adjust figsize: bigger if only one graph
+        if len(batch)==1:
+            figsize=(8,6)
+        else:
+            figsize=(6*n_cols,5*n_rows)
+
         fig,axes=plt.subplots(
             n_rows,
             n_cols,
-            figsize=(6*n_cols,5*n_rows),
+            figsize=figsize,
             sharey=True
         )
         axes=axes.flatten()
