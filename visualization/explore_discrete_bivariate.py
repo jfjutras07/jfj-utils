@@ -5,130 +5,148 @@ import numpy as np
 import warnings
 warnings.filterwarnings("ignore")
 
-# --- Helper function to sort counts based on type ---
+# --- Helper function ---
 def get_counts(series, ascending_numeric=True):
-    """
-    Returns a Series with counts:
-    - Numeric series are sorted ascending by value
-    - Non-numeric series are sorted ascending by frequency
-    """
+    """Return counts for a series. Numeric: sorted ascending; categorical: sorted by frequency."""
     if pd.api.types.is_numeric_dtype(series):
         return series.value_counts().sort_index(ascending=ascending_numeric)
     else:
         return series.value_counts().sort_values(ascending=True)
 
-#--- Bivariate Bar Plot ---
-def plot_discrete_bivariate_bar(df, col, hue_col='Gender', figsize=(8,4)):
-    """
-    Bar plot for discrete variable by hue (e.g., Gender).
-    Displays counts inside each bar, centered, with separate colors.
-    """
+# --- Function: plot_discrete_bivariate ---
+def plot_discrete_bivariate(df, col, hue_col, figsize=(8,4), colors=None):
+    """Bar plot of a discrete variable grouped by hue_col."""
+    if colors is None:
+        colors = ["#ADD8E6", "#90EE90"]
     if col not in df.columns or hue_col not in df.columns:
         print(f"Warning: {col} or {hue_col} not found. Skipping.")
         return
 
-    colors = {'Male': '#ADD8E6', 'Female': '#90EE90'}
-    categories = df[col].dropna().unique()
+    categories = sorted(df[col].dropna().unique())
+    hue_values = sorted(df[hue_col].dropna().unique())
     x = np.arange(len(categories))
-    width = 0.35
+    width = 0.8 / len(hue_values)
 
     fig, ax = plt.subplots(figsize=figsize)
-    for i, gender in enumerate(df[hue_col].unique()):
-        counts = df[df[hue_col]==gender][col].value_counts()
-        counts = counts.reindex(categories, fill_value=0)
-        ax.bar(x + (i-0.5)*width, counts.values, width, label=gender, color=colors[gender], edgecolor='black')
+    for i, val in enumerate(hue_values):
+        counts = df[df[hue_col]==val][col].value_counts().reindex(categories, fill_value=0)
+        ax.bar(x + i*width, counts.values, width=width, label=str(val), color=colors[i % len(colors)], edgecolor="black")
+        for xi, c in zip(x + i*width, counts.values):
+            ax.text(xi, c/2, str(c), ha="center", va="center", fontsize=9, color="black")
 
-        # Labels inside bars, centered
-        for xi, val in zip(x + (i-0.5)*width, counts.values):
-            ax.text(xi, val/2, str(val), ha='center', va='center', fontsize=9, color='black')
-
-    ax.set_xticks(x)
+    ax.set_xticks(x + width*(len(hue_values)-1)/2)
     ax.set_xticklabels(categories, rotation=45)
-    ax.set_ylabel('Count')
-    ax.set_title(f'{col} by {hue_col}')
-    ax.legend()
+    ax.set_ylabel("Count")
+    ax.set_title(f"{col} by {hue_col}")
+    ax.legend(title=hue_col, bbox_to_anchor=(1.05, 1), loc='upper left')
+
     plt.tight_layout()
     plt.show()
     plt.close()
 
-#--- Bivariate Dot Plot ---
-def plot_discrete_dot_bivariate(df, col, hue_col='Gender', normalize=True, figsize=(8,4)):
-    """
-    Dot plot for discrete variables bivariately.
-    Two dots per category (Male/Female), slightly offset vertically.
-    """
+# --- Function: plot_discrete_bivariate_grid ---
+def plot_discrete_bivariate_grid(df, discrete_cols, hue_col, n_cols=2, figsize=(12,8), colors=None):
+    """Grid of bivariate bar plots for multiple discrete variables."""
+    if colors is None:
+        colors = ["#ADD8E6", "#90EE90"]
+    cols = [c for c in discrete_cols if c in df.columns]
+    if not cols:
+        print("No valid columns found.")
+        return
+
+    n_rows = math.ceil(len(cols)/n_cols)
+    fig, axes = plt.subplots(n_rows, n_cols, figsize=figsize)
+    axes = axes.flatten() if len(cols) > 1 else [axes]
+
+    for ax, col in zip(axes, cols):
+        categories = sorted(df[col].dropna().unique())
+        hue_values = sorted(df[hue_col].dropna().unique())
+        x = np.arange(len(categories))
+        width = 0.8 / len(hue_values)
+
+        for i, val in enumerate(hue_values):
+            counts = df[df[hue_col]==val][col].value_counts().reindex(categories, fill_value=0)
+            ax.bar(x + i*width, counts.values, width=width, label=str(val), color=colors[i % len(colors)], edgecolor="black")
+            for xi, c in zip(x + i*width, counts.values):
+                ax.text(xi, c/2, str(c), ha="center", va="center", fontsize=9, color="black")
+
+        ax.set_xticks(x + width*(len(hue_values)-1)/2)
+        ax.set_xticklabels(categories, rotation=45)
+        ax.set_ylabel("Count")
+        ax.set_title(f"{col} by {hue_col}")
+        ax.legend(title=hue_col, bbox_to_anchor=(1.05, 1), loc='upper left')
+
+    for i in range(len(cols), len(axes)):
+        fig.delaxes(axes[i])
+
+    plt.tight_layout()
+    plt.show()
+    plt.close()
+
+# --- Function: plot_discrete_dot_bivariate ---
+def plot_discrete_dot_bivariate(df, col, hue_col, normalize=True, figsize=(8,4), colors=None):
+    """Dot plot for a discrete variable grouped by hue_col."""
+    if colors is None:
+        colors = ["#ADD8E6", "#90EE90"]
     if col not in df.columns or hue_col not in df.columns:
         print(f"Warning: {col} or {hue_col} not found. Skipping.")
         return
 
-    colors = {'Male': '#ADD8E6', 'Female': '#90EE90'}
-    offsets = {'Male': -0.15, 'Female': 0.15}
-
-    categories = df[col].dropna().unique()
     fig, ax = plt.subplots(figsize=figsize)
+    hue_values = sorted(df[hue_col].dropna().unique())
 
-    for gender in df[hue_col].unique():
-        subset = df[df[hue_col]==gender]
-        counts = subset[col].value_counts()
-        counts = counts.reindex(categories, fill_value=0)
+    for i, val in enumerate(hue_values):
+        series = df[df[hue_col]==val][col].dropna()
+        counts = get_counts(series)
         if normalize:
             counts = counts / counts.sum()
+            xlabel = "Proportion"
+        else:
+            xlabel = "Count"
+        ax.plot(counts.values, counts.index.astype(str), 'o', color=colors[i % len(colors)], label=str(val))
+        for x, y in zip(counts.values, counts.index.astype(str)):
+            ax.text(x, y, f" {x:.2f}" if normalize else f" {int(x)}", va="center", fontsize=9)
 
-        for i, cat in enumerate(counts.index):
-            x = counts[cat]
-            y = i + offsets[gender]
-            ax.plot(x, y, 'o', color=colors[gender], label=gender if i==0 else "")
-            ax.text(x, y, f"{x:.2f}" if normalize else f"{int(x)}", va='center', fontsize=9, color='black')
-
-    ax.set_yticks(range(len(categories)))
-    ax.set_yticklabels([str(c) for c in categories])
-    ax.set_xlabel('Proportion' if normalize else 'Count')
+    ax.set_xlabel(xlabel)
     ax.set_ylabel(col)
-    ax.set_title(f'Dot plot of {col} by {hue_col}')
-    ax.legend()
+    ax.set_title(f"{col} by {hue_col}")
+    ax.legend(title=hue_col, bbox_to_anchor=(1.05, 1), loc='upper left')
     plt.tight_layout()
     plt.show()
     plt.close()
 
-#--- Bivariate Lollipop Plot ---
-def plot_discrete_lollipop_bivariate(df, col, hue_col='Gender', normalize=True, figsize=(8,4)):
-    """
-    Lollipop plot for discrete variables bivariately.
-    Two lines per category (Male/Female), slightly offset vertically.
-    """
+# --- Function: plot_discrete_lollipop_bivariate ---
+def plot_discrete_lollipop_bivariate(df, col, hue_col, normalize=True, figsize=(8,4), colors=None):
+    """Lollipop plot for a discrete variable grouped by hue_col."""
+    if colors is None:
+        colors = ["#ADD8E6", "#90EE90"]
     if col not in df.columns or hue_col not in df.columns:
         print(f"Warning: {col} or {hue_col} not found. Skipping.")
         return
 
-    colors = {'Male': '#ADD8E6', 'Female': '#90EE90'}
-    offsets = {'Male': -0.15, 'Female': 0.15}
-
-    categories = df[col].dropna().unique()
     fig, ax = plt.subplots(figsize=figsize)
+    hue_values = sorted(df[hue_col].dropna().unique())
 
-    for gender in df[hue_col].unique():
-        subset = df[df[hue_col]==gender]
-        counts = subset[col].value_counts()
-        counts = counts.reindex(categories, fill_value=0)
+    for i, val in enumerate(hue_values):
+        series = df[df[hue_col]==val][col].dropna()
+        counts = get_counts(series)
         if normalize:
             counts = counts / counts.sum()
+            xlabel = "Proportion"
             fmt = "{:.2f}"
         else:
+            xlabel = "Count"
             fmt = "{:.0f}"
+        ax.hlines(y=counts.index.astype(str), xmin=0, xmax=counts.values,
+                  color="gray", linewidth=1)
+        ax.plot(counts.values, counts.index.astype(str), 'o', color=colors[i % len(colors)], label=str(val))
+        for y, x in zip(counts.index.astype(str), counts.values):
+            ax.text(x, y, f" {fmt.format(x)}", va="center", fontsize=9)
 
-        for i, cat in enumerate(counts.index):
-            val = counts[cat]
-            y = i + offsets[gender]
-            ax.hlines(y=y, xmin=0, xmax=val, color=colors[gender], linewidth=4)
-            ax.plot(val, y, 'o', color=colors[gender])
-            ax.text(val, y, fmt.format(val), va='center', fontsize=9, color='black')
-
-    ax.set_yticks(range(len(categories)))
-    ax.set_yticklabels([str(c) for c in categories])
-    ax.set_xlabel('Proportion' if normalize else 'Count')
+    ax.set_xlabel(xlabel)
     ax.set_ylabel(col)
-    ax.set_title(f'Lollipop plot of {col} by {hue_col}')
-    ax.legend(df[hue_col].unique())
+    ax.set_title(f"{col} by {hue_col}")
+    ax.legend(title=hue_col, bbox_to_anchor=(1.05, 1), loc='upper left')
     plt.tight_layout()
     plt.show()
     plt.close()
