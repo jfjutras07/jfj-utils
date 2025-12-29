@@ -40,7 +40,7 @@ def plot_box_grid(
 
         if len(batch)==1:
             #Single plot: bigger figure
-            fig, ax = plt.subplots(figsize=(8,6))
+            fig, ax = plt.subplots(figsize=(10,6))
             sns.boxplot(
                 data=df,
                 x=batch[0],
@@ -349,7 +349,7 @@ def plot_violin_grid(
 
         if len(batch)==1:
             #Single plot: bigger figure
-            fig, ax = plt.subplots(figsize=(8,6))
+            fig, ax = plt.subplots(figsize=(10,6))
             sns.violinplot(
                 data=df,
                 x=batch[0],
