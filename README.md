@@ -137,6 +137,8 @@ Active development — modules will be progressively added and refined.
 
 *explore_discrete.py*
 - `plot_discrete_distribution`
+- `plot_discrete_dot_distribution`
+- `plot_discrete_lollipop_distribution`
 
 *explore_time.py*
 - `plot_line_over_time`
