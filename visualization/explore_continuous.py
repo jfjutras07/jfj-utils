@@ -211,12 +211,12 @@ def plot_scatter_grid(df: pd.DataFrame, x_cols: list, y_cols: list, group_col: s
     plt.tight_layout()
     plt.show()
 
-#--- Function : plot_violin_grid ---
+#---Function:plot_violin_grid---
 def plot_violin_grid(
     df,
     value_cols,
     group_col='Economic_status',
-    n_rows=1,
+    n_rows=2,
     n_cols=2,
     palette='pastel'
 ):
@@ -224,32 +224,33 @@ def plot_violin_grid(
     Generic function to plot violin plots in a grid layout.
     
     Parameters:
-        df: pd.DataFrame containing the data
-        value_cols: list with ONE numeric column (dependent variable)
-        group_col: list of grouping variables (independent variables)
-        n_rows, n_cols: number of rows and columns per figure
-        palette: color palette for violin plots
+        df:pd.DataFrame containing the data
+        value_cols:list with ONE numeric column (dependent variable)
+        group_col:list of grouping variables (independent variables)
+        n_rows,n_cols:number of rows and columns per figure
+        palette:color palette for violin plots
     """
 
     #Force list behavior
-    if isinstance(group_col, str):
-        group_col = [group_col]
+    if isinstance(group_col,str):
+        group_col=[group_col]
 
-    y_col = value_cols[0]
+    y_col=value_cols[0]
+    plots_per_fig=n_rows*n_cols
 
-    #Loop through grouping variables in batches of 2 (2 per row)
-    for i in range(0, len(group_col), n_rows * n_cols):
-        batch = group_col[i:i + n_rows * n_cols]
+    #Loop through grouping variables in fixed-size grids
+    for i in range(0,len(group_col),plots_per_fig):
+        batch=group_col[i:i+plots_per_fig]
 
-        fig, axes = plt.subplots(
+        fig,axes=plt.subplots(
             n_rows,
             n_cols,
-            figsize=(6*n_cols, 5*n_rows),
+            figsize=(6*n_cols,5*n_rows),
             sharey=True
         )
-        axes = axes.flatten()
+        axes=axes.flatten()
 
-        for ax, grp in zip(axes, batch):
+        for ax,grp in zip(axes,batch):
             sns.violinplot(
                 data=df,
                 x=grp,
@@ -261,11 +262,11 @@ def plot_violin_grid(
             ax.set_title(f'{y_col} by {grp}')
             ax.set_xlabel(grp)
             ax.set_ylabel(y_col)
-            ax.grid(axis='y', linestyle='--', alpha=0.5)
+            ax.grid(axis='y',linestyle='--',alpha=0.5)
 
-        #Remove unused axes
-        for j in range(len(batch), len(axes)):
-            fig.delaxes(axes[j])
+        #Explicitly remove unused axes(keeps layout fixed)
+        for j in range(len(batch),plots_per_fig):
+            axes[j].set_visible(False)
 
         plt.tight_layout()
         plt.show()
