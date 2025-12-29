@@ -1,4 +1,5 @@
 import pandas as pd
+import seaborn as sns
 import math
 import matplotlib.pyplot as plt
 import numpy as np
@@ -171,56 +172,83 @@ def plot_discrete_lollipop_bivariate(df, col, hue_col, normalize=True, figsize=(
     ax.set_ylabel(col)
     ax.set_title(f"Lollipop plot of {col} by {hue_col}")
 
-    # --- Function: plot_stacked_grid ---
-def plot_stacked_grid(df, dependent_var, group_vars, figsize=(8,5), colors=None):
+# --- Function: plot_stacked_grid ---
+def plot_stacked_grid(
+    df,
+    dependent_var,
+    group_vars,
+    n_rows=2,
+    n_cols=2,
+    palette='pastel'
+):
     """
-    Stacked bar plots for a dependent variable across multiple independent variables.
+    Stacked bar plots for a categorical dependent variable across multiple independent variables.
+    Layout adapts: single plot takes full space, multiple plots use grid (2x2 default).
 
     Parameters:
-    - df: DataFrame
-    - dependent_var: categorical variable to stack
-    - group_vars: list of independent categorical variables
-    - figsize: tuple, size of each individual plot
-    - colors: list of colors for the stacks
+        df: pd.DataFrame
+        dependent_var: categorical variable to stack
+        group_vars: list of categorical independent variables
+        n_rows, n_cols: rows and columns per figure grid
+        palette: seaborn color palette
     """
+    #Force list behavior
     if isinstance(group_vars, str):
         group_vars = [group_vars]
 
-    for col in group_vars:
-        if col not in df.columns or dependent_var not in df.columns:
-            print(f"Warning: {col} or {dependent_var} not found. Skipping.")
-            continue
+    plots_per_fig = n_rows * n_cols
+    stack_levels = sorted(df[dependent_var].dropna().unique())
+    palette_colors = sns.color_palette(palette, n_colors=len(stack_levels))
 
-        categories = sorted(df[col].dropna().unique())
-        stack_values = sorted(df[dependent_var].dropna().unique())
+    for i in range(0, len(group_vars), plots_per_fig):
+        batch = group_vars[i:i+plots_per_fig]
 
-        #Pivot table for counts
-        temp = df.groupby([col, dependent_var]).size().reset_index(name='count')
-        pivot_table = temp.pivot(index=col, columns=dependent_var, values='count').reindex(categories, fill_value=0)
+        if len(batch) == 1:
+            # Single plot takes full figure
+            fig, ax = plt.subplots(figsize=(10,6))
+            col = batch[0]
+            categories = sorted(df[col].dropna().unique())
+            pivot = df.groupby([col, dependent_var]).size().unstack(fill_value=0).reindex(columns=stack_levels, index=categories, fill_value=0)
+            bottom = np.zeros(len(categories))
+            for j, level in enumerate(stack_levels):
+                counts = pivot[level].values
+                ax.bar(categories, counts, bottom=bottom, label=str(level), color=palette_colors[j], edgecolor='black')
+                for xi, c, b in zip(categories, counts, bottom):
+                    if c > 0:
+                        ax.text(xi, b + c/2, str(c), ha='center', va='center', fontsize=9)
+                bottom += counts
+            ax.set_ylabel("Count")
+            ax.set_title(f"{dependent_var} by {col}")
+            ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha='right')
+            ax.grid(axis='y', linestyle='--', alpha=0.5)
+            plt.legend(title=dependent_var, bbox_to_anchor=(1.02,1), loc='upper left')
+            plt.tight_layout()
+            plt.show()
 
-        if colors is None:
-            colors = plt.cm.tab20.colors[:len(stack_values)]
+        else:
+            # Multiple plots: use grid
+            fig, axes = plt.subplots(n_rows, n_cols, figsize=(6*n_cols, 5*n_rows), sharey=True)
+            axes = axes.flatten()
+            for ax, col in zip(axes, batch):
+                categories = sorted(df[col].dropna().unique())
+                pivot = df.groupby([col, dependent_var]).size().unstack(fill_value=0).reindex(columns=stack_levels, index=categories, fill_value=0)
+                bottom = np.zeros(len(categories))
+                for j, level in enumerate(stack_levels):
+                    counts = pivot[level].values
+                    ax.bar(categories, counts, bottom=bottom, label=str(level), color=palette_colors[j], edgecolor='black')
+                    for xi, c, b in zip(categories, counts, bottom):
+                        if c > 0:
+                            ax.text(xi, b + c/2, str(c), ha='center', va='center', fontsize=9)
+                    bottom += counts
+                ax.set_ylabel("Count")
+                ax.set_title(f"{dependent_var} by {col}")
+                ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha='right')
+                ax.grid(axis='y', linestyle='--', alpha=0.5)
 
-        fig, ax = plt.subplots(figsize=figsize)
-        bottom = np.zeros(len(categories))
+            # Remove unused axes
+            for j in range(len(batch), len(axes)):
+                axes[j].set_visible(False)
 
-        for i, val in enumerate(stack_values):
-            counts = pivot_table[val].values
-            ax.bar(categories, counts, bottom=bottom, label=str(val), color=colors[i % len(colors)], edgecolor='black')
-            for xi, c, b in zip(categories, counts, bottom):
-                if c > 0:
-                    ax.text(xi, b + c/2, str(c), ha='center', va='center', fontsize=9, color='black')
-            bottom += counts
-
-        ax.set_ylabel("Count")
-        ax.set_title(f"{dependent_var} by {col}")
-        ax.legend(title=dependent_var, bbox_to_anchor=(1.05, 1), loc='upper left')
-        plt.xticks(rotation=45)
-        plt.tight_layout()
-        plt.show()
-        plt.close()
-
-    ax.legend(title=hue_col, bbox_to_anchor=(1.05,1), loc='upper left')
-    plt.tight_layout()
-    plt.show()
-    plt.close()
+            plt.tight_layout()
+            plt.legend(title=dependent_var, bbox_to_anchor=(1.02,1), loc='upper left')
+            plt.show()
