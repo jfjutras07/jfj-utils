@@ -38,39 +38,51 @@ def plot_box_grid(
     for i in range(0,len(group_col),plots_per_fig):
         batch=group_col[i:i+plots_per_fig]
 
-        #Adjust figsize: bigger if only one graph
         if len(batch)==1:
-            figsize=(8,6)
-        else:
-            figsize=(6*n_cols,5*n_rows)
-
-        fig,axes=plt.subplots(
-            n_rows,
-            n_cols,
-            figsize=figsize,
-            sharey=True
-        )
-        axes=axes.flatten()
-
-        for ax,grp in zip(axes,batch):
+            #Single plot: bigger figure
+            fig, ax = plt.subplots(figsize=(8,6))
             sns.boxplot(
                 data=df,
-                x=grp,
+                x=batch[0],
                 y=y_col,
                 palette=palette,
                 ax=ax
             )
-            ax.set_title(f'{y_col} by {grp}')
-            ax.set_xlabel(grp)
+            ax.set_title(f'{y_col} by {batch[0]}')
+            ax.set_xlabel(batch[0])
             ax.set_ylabel(y_col)
             ax.grid(axis='y',linestyle='--',alpha=0.5)
+            plt.tight_layout()
+            plt.show()
+        else:
+            #Multiple plots: use grid
+            fig, axes = plt.subplots(
+                n_rows,
+                n_cols,
+                figsize=(6*n_cols,5*n_rows),
+                sharey=True
+            )
+            axes = axes.flatten()
 
-        #Explicitly remove unused axes(keeps layout fixed)
-        for j in range(len(batch),plots_per_fig):
-            axes[j].set_visible(False)
+            for ax, grp in zip(axes, batch):
+                sns.boxplot(
+                    data=df,
+                    x=grp,
+                    y=y_col,
+                    palette=palette,
+                    ax=ax
+                )
+                ax.set_title(f'{y_col} by {grp}')
+                ax.set_xlabel(grp)
+                ax.set_ylabel(y_col)
+                ax.grid(axis='y',linestyle='--',alpha=0.5)
 
-        plt.tight_layout()
-        plt.show()
+            #Remove unused axes
+            for j in range(len(batch), len(axes)):
+                axes[j].set_visible(False)
+
+            plt.tight_layout()
+            plt.show()
 
 #--- Function : plot_correlation_heatmap ---
 def plot_correlation_heatmap(df, numeric_cols = None, method = 'spearman', figsize = (12,8), cmap = 'coolwarm', annot = True, fmt = ".2f"):
