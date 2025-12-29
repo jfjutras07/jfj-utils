@@ -50,16 +50,18 @@ def plot_discrete_distribution(df, discrete_cols, figsize=(10,4)):
         plt.close()
 
 #--- Function : plot_discrete_distribution_grid ---
-def plot_discrete_distribution_grid(df, discrete_cols, n_cols=2, figsize=(14, 8)):
+def plot_discrete_distribution_grid(df, discrete_cols, n_cols=2, figsize=(12,8)):
     """
-    Bar plots for multiple discrete variables displayed in a grid (default 2x2).
+    Bar plots for multiple discrete (non-binary) variables.
+    Automatically arranged in a 2x2-style grid (n_cols=2 by default).
     Displays counts on top of each bar.
     """
 
-    # Keep only existing columns
+    # Keep only valid columns
     cols = [col for col in discrete_cols if col in df.columns]
-    if not cols:
-        print("No valid columns provided.")
+
+    if len(cols) == 0:
+        print("No valid discrete columns found.")
         return
 
     n_rows = math.ceil(len(cols) / n_cols)
@@ -80,6 +82,7 @@ def plot_discrete_distribution_grid(df, discrete_cols, n_cols=2, figsize=(14, 8)
         )
 
         ax.set_title(col)
+        ax.set_xlabel("")
         ax.set_ylabel("Count")
         ax.tick_params(axis="x", rotation=45)
 
@@ -95,12 +98,13 @@ def plot_discrete_distribution_grid(df, discrete_cols, n_cols=2, figsize=(14, 8)
             )
 
     # Remove empty subplots
-    for ax in axes[len(cols):]:
-        ax.axis("off")
+    for i in range(len(cols), len(axes)):
+        fig.delaxes(axes[i])
 
     plt.tight_layout()
     plt.show()
     plt.close()
+
 
 #--- Function : plot_discrete_dot_distribution ---
 def plot_discrete_dot_distribution(df, discrete_cols, normalize=True, figsize=(10,4)):
