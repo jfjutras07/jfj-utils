@@ -33,6 +33,62 @@ def plot_correlation_heatmap(df, numeric_cols = None, method = 'spearman', figsi
     plt.show()
     plt.close()
 
+# --- Function : plot_numeric_bivariate ---
+def plot_numeric_bivariate(df, numeric_cols, hue='Gender', bins=40):
+    """
+    Plot histograms + KDE and boxplots for numeric columns,
+    split by a categorical variable (e.g., Gender).
+
+    Parameters:
+    - df: pandas DataFrame
+    - numeric_cols: list of numeric columns to visualize
+    - hue: categorical column to split distributions
+    - bins: number of bins for histogram
+    """
+    import seaborn as sns
+    plt.style.use('seaborn-v0_8')
+    
+    palette = {"Male": "#ADD8E6", "Female": "#90EE90"}  # light blue / light green
+    
+    for col in numeric_cols:
+        if col not in df.columns:
+            print(f"Warning: {col} not found. Skipping.")
+            continue
+        
+        fig, axes = plt.subplots(1, 2, figsize=(14, 4))
+        
+        # Histogram + KDE
+        sns.histplot(
+            data=df,
+            x=col,
+            hue=hue,
+            kde=True,
+            bins=bins,
+            palette=palette,
+            alpha=0.6,
+            multiple="dodge",
+            ax=axes[0]
+        )
+        axes[0].set_title(f"Distribution of {col} by {hue}")
+        axes[0].set_xlabel(col)
+        axes[0].set_ylabel("Count")
+        
+        # Boxplot
+        sns.boxplot(
+            x=hue,
+            y=col,
+            data=df,
+            palette=palette,
+            ax=axes[1]
+        )
+        axes[1].set_title(f"{col} by {hue}")
+        axes[1].set_xlabel(hue)
+        axes[1].set_ylabel(col)
+        
+        plt.tight_layout()
+        plt.show()
+        plt.close()
+
 #--- Function : plot_numeric_distribution ---
 def plot_numeric_distribution(df, numeric_cols, bins=40):
     """
