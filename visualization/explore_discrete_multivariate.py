@@ -172,8 +172,8 @@ def plot_discrete_lollipop_bivariate(df, col, hue_col, normalize=True, figsize=(
     ax.set_ylabel(col)
     ax.set_title(f"Lollipop plot of {col} by {hue_col}")
 
-# --- Function: plot_stacked_grid ---
-def plot_stacked_grid(df, dependent_var, group_vars, n_rows=2, n_cols=2, palette='Set2'):
+#---Function: plot_stacked_grid---
+def plot_stacked_grid(df, dependent_var, group_vars, n_rows=2, n_cols=2, palette='pastel'):
     """
     Plots stacked bar charts of a dependent variable grouped by multiple independent variables.
     
@@ -183,7 +183,7 @@ def plot_stacked_grid(df, dependent_var, group_vars, n_rows=2, n_cols=2, palette
         group_vars: list, first element = main grouping (one chart per unique value),
                     remaining elements = sub-groups (stacked bars)
         n_rows, n_cols: int, number of rows and columns per figure grid
-        palette: color palette
+        palette: color palette (same as violin plots)
     """
     if isinstance(group_vars, str):
         group_vars = [group_vars]
@@ -197,12 +197,16 @@ def plot_stacked_grid(df, dependent_var, group_vars, n_rows=2, n_cols=2, palette
     
     #Single chart: take full figure
     if n_graphs == 1:
-        fig, ax = plt.subplots(figsize=(8,6))
+        fig, ax = plt.subplots(figsize=(10,6))
         df_subset = df[df[main_var]==unique_main[0]]
         counts = df_subset.groupby(sub_vars + [dependent_var]).size().unstack(fill_value=0)
         bottoms = np.zeros(len(counts))
         for i, val in enumerate(counts.columns):
             ax.bar(counts.index, counts[val], bottom=bottoms, color=colors[i % len(colors)], label=str(val))
+            #Labels inside bars
+            for xi, c, bottom in zip(range(len(counts)), counts[val].values, bottoms):
+                if c > 0:
+                    ax.text(xi, bottom + c/2, str(c), ha="center", va="center", color="black", fontsize=10)
             bottoms += counts[val].values
         ax.set_title(f'{dependent_var} Distribution - {unique_main[0]}')
         ax.set_ylabel('Count')
@@ -226,6 +230,10 @@ def plot_stacked_grid(df, dependent_var, group_vars, n_rows=2, n_cols=2, palette
                 bottoms = np.zeros(len(counts))
                 for j, val in enumerate(counts.columns):
                     ax.bar(counts.index, counts[val], bottom=bottoms, color=colors[j % len(colors)], label=str(val))
+                    #Labels inside bars
+                    for xi, c, bottom in zip(range(len(counts)), counts[val].values, bottoms):
+                        if c > 0:
+                            ax.text(xi, bottom + c/2, str(c), ha="center", va="center", color="black", fontsize=9)
                     bottoms += counts[val].values
                 ax.set_title(f'{main_var}: {main_val}')
                 ax.set_ylabel('Count')
