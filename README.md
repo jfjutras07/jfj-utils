@@ -126,6 +126,7 @@ Active development — modules will be progressively added and refined.
 - `plot_binary_distribution`
 
 *explore_continuous.py*
+- `plot_box_grid`
 - `plot_correlation_heatmap`
 - `plot_numeric_bivariate`
 - `plot_numeric_distribution`
