@@ -36,58 +36,76 @@ def plot_correlation_heatmap(df, numeric_cols = None, method = 'spearman', figsi
 # --- Function : plot_numeric_bivariate ---
 def plot_numeric_bivariate(df, numeric_cols, hue='Gender', bins=40):
     """
-    Plot histograms + KDE and boxplots for numeric columns,
-    split by a categorical variable (e.g., Gender).
+    Plot histograms + KDE for two numeric columns individually,
+    and a combined boxplot for both columns split by a categorical variable (e.g., Gender).
 
     Parameters:
     - df: pandas DataFrame
-    - numeric_cols: list of numeric columns to visualize
+    - numeric_cols: list of two numeric columns to visualize
     - hue: categorical column to split distributions
     - bins: number of bins for histogram
     """
     import seaborn as sns
     plt.style.use('seaborn-v0_8')
     
-    palette = {"Male": "#ADD8E6", "Female": "#90EE90"}  # light blue / light green
+    if len(numeric_cols) != 2:
+        print("Error: numeric_cols must contain exactly 2 columns.")
+        return
     
-    for col in numeric_cols:
-        if col not in df.columns:
-            print(f"Warning: {col} not found. Skipping.")
-            continue
-        
-        fig, axes = plt.subplots(1, 2, figsize=(14, 4))
-        
-        # Histogram + KDE
-        sns.histplot(
-            data=df,
-            x=col,
-            hue=hue,
-            kde=True,
-            bins=bins,
-            palette=palette,
-            alpha=0.6,
-            multiple="dodge",
-            ax=axes[0]
-        )
-        axes[0].set_title(f"Distribution of {col} by {hue}")
-        axes[0].set_xlabel(col)
-        axes[0].set_ylabel("Count")
-        
-        # Boxplot
-        sns.boxplot(
-            x=hue,
-            y=col,
-            data=df,
-            palette=palette,
-            ax=axes[1]
-        )
-        axes[1].set_title(f"{col} by {hue}")
-        axes[1].set_xlabel(hue)
-        axes[1].set_ylabel(col)
-        
-        plt.tight_layout()
-        plt.show()
-        plt.close()
+    col1, col2 = numeric_cols
+    palette = {"Male": "#ADD8E6", "Female": "#90EE90"}  # light blue / light green
+
+    fig, axes = plt.subplots(1, 3, figsize=(18, 4))
+
+    # Histogram + KDE for first column
+    sns.histplot(
+        data=df,
+        x=col1,
+        hue=hue,
+        kde=True,
+        bins=bins,
+        palette=palette,
+        alpha=0.6,
+        multiple="dodge",
+        ax=axes[0]
+    )
+    axes[0].set_title(f"{col1} distribution by {hue}")
+    axes[0].set_xlabel(col1)
+    axes[0].set_ylabel("Count")
+
+    # Histogram + KDE for second column
+    sns.histplot(
+        data=df,
+        x=col2,
+        hue=hue,
+        kde=True,
+        bins=bins,
+        palette=palette,
+        alpha=0.6,
+        multiple="dodge",
+        ax=axes[1]
+    )
+    axes[1].set_title(f"{col2} distribution by {hue}")
+    axes[1].set_xlabel(col2)
+    axes[1].set_ylabel("Count")
+
+    # Combined boxplot
+    df_melt = df[[col1, col2, hue]].melt(id_vars=hue, value_vars=[col1, col2], var_name="Variable", value_name="Value")
+    sns.boxplot(
+        x="Variable",
+        y="Value",
+        hue=hue,
+        data=df_melt,
+        palette=palette,
+        ax=axes[2]
+    )
+    axes[2].set_title(f"Boxplot of {col1} and {col2} by {hue}")
+    axes[2].set_xlabel("Variable")
+    axes[2].set_ylabel("Value")
+
+    plt.tight_layout()
+    plt.show()
+    plt.close()
 
 #--- Function : plot_numeric_distribution ---
 def plot_numeric_distribution(df, numeric_cols, bins=40):
