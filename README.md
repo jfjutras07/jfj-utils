@@ -127,6 +127,7 @@ Active development — modules will be progressively added and refined.
 
 *explore_continuous.py*
 - `plot_correlation_heatmap`
+- `plot_numeric_bivariate`
 - `plot_numeric_distribution`
 - `plot_pairplot`
 - `plot_scatter_grid`
