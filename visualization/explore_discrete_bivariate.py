@@ -83,19 +83,20 @@ def plot_discrete_bivariate_grid(df, discrete_cols, hue_col, n_cols=2, figsize=(
     plt.show()
     plt.close()
 
-# --- Function: plot_discrete_dot_bivariate ---
-def plot_discrete_lollipop_bivariate(df, col, hue_col, normalize=True, figsize=(8,4), colors=None):
-    """Lollipop plot for a discrete variable grouped by hue_col, with side-by-side lollipops."""
+# --- Function : plot_discrete_dot_bivariate ---
+def plot_discrete_dot_bivariate(df, col, hue_col, normalize=True, figsize=(8,4), colors=None):
+    """
+    Dot plot for discrete variable grouped by hue_col.
+    Values displayed next to dots; legend outside.
+    """
     if colors is None:
-        colors = ["#ADD8E6", "#90EE90"]
+        colors = ["#ADD8E6", "#90EE90"]  # pale blue, pale green
     if col not in df.columns or hue_col not in df.columns:
         print(f"Warning: {col} or {hue_col} not found. Skipping.")
         return
 
     categories = sorted(df[col].dropna().unique())
     hue_values = sorted(df[hue_col].dropna().unique())
-    x = np.arange(len(categories))
-    width = 0.4  # horizontal offset for side-by-side
 
     fig, ax = plt.subplots(figsize=figsize)
 
@@ -109,20 +110,67 @@ def plot_discrete_lollipop_bivariate(df, col, hue_col, normalize=True, figsize=(
         else:
             xlabel = "Count"
             fmt = "{:.0f}"
-        # shift positions for side-by-side
-        positions = x - width/2 + i*width
-        ax.hlines(y=categories, xmin=0, xmax=[counts.get(cat,0) for cat in categories],
-                  color="gray", linewidth=1)
-        ax.plot([counts.get(cat,0) for cat in categories], categories, 'o', 
-                color=colors[i % len(colors)], label=str(val))
-        for xi, cat in zip([counts.get(cat,0) for cat in categories], categories):
-            ax.text(xi, cat, f" {fmt.format(xi)}", va="center", fontsize=9)
 
+        # Plot dots for all categories
+        x_vals = [counts.get(cat,0) for cat in categories]
+        ax.plot(x_vals, categories, 'o', color=colors[i % len(colors)], label=str(val))
+
+        # Labels next to dots
+        for x, cat in zip(x_vals, categories):
+            ax.text(x, cat, f" {fmt.format(x)}", va="center", fontsize=9)
+
+    ax.set_title(f"Dot plot of {col} by {hue_col}")
     ax.set_xlabel(xlabel)
     ax.set_ylabel(col)
-    ax.set_title(f"{col} by {hue_col}")
     ax.legend(title=hue_col, bbox_to_anchor=(1.05, 1), loc='upper left')
     plt.tight_layout()
     plt.show()
     plt.close()
 
+# --- Function : plot_discrete_lollipop_bivariate ---
+def plot_discrete_lollipop_bivariate(df, col, hue_col, normalize=True, figsize=(8,4), colors=None):
+    """
+    Lollipop plot for discrete variable grouped by hue_col.
+    Lines not superimposed; legend outside.
+    """
+    if colors is None:
+        colors = ["#ADD8E6", "#90EE90"]  # pale blue, pale green
+    if col not in df.columns or hue_col not in df.columns:
+        print(f"Warning: {col} or {hue_col} not found. Skipping.")
+        return
+
+    categories = sorted(df[col].dropna().unique())
+    hue_values = sorted(df[hue_col].dropna().unique())
+
+    fig, ax = plt.subplots(figsize=figsize)
+
+    for i, val in enumerate(hue_values):
+        series = df[df[hue_col]==val][col].dropna()
+        counts = get_counts(series)
+        if normalize:
+            counts = counts / counts.sum()
+            xlabel = "Proportion"
+            fmt = "{:.2f}"
+        else:
+            xlabel = "Count"
+            fmt = "{:.0f}"
+
+        y_pos = np.arange(len(categories)) + (i*0.2)  # small offset to avoid overlap
+        x_vals = [counts.get(cat,0) for cat in categories]
+
+        ax.hlines(y=y_pos, xmin=0, xmax=x_vals, color=colors[i % len(colors)], linewidth=2)
+        ax.plot(x_vals, y_pos, 'o', color=colors[i % len(colors)], label=str(val))
+
+        # Labels next to lollipops
+        for x, y in zip(x_vals, y_pos):
+            ax.text(x, y, f" {fmt.format(x)}", va="center", fontsize=9)
+
+    ax.set_yticks(np.arange(len(categories)) + 0.1)
+    ax.set_yticklabels(categories)
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(col)
+    ax.set_title(f"Lollipop plot of {col} by {hue_col}")
+    ax.legend(title=hue_col, bbox_to_anchor=(1.05,1), loc='upper left')
+    plt.tight_layout()
+    plt.show()
+    plt.close()
