@@ -102,11 +102,7 @@ def anova_test(df, column, group):
     #Build and fit model
     model = ols(f'{column} ~ C({group})', data=df).fit()
     anova_table = sm.stats.anova_lm(model, typ=2)
-    
-    #Print results
-    print(f"One-way ANOVA for {column} by {group}")
-    print(anova_table)
-    
+     
     return anova_table
 
 #---Function: f_test_variance---
