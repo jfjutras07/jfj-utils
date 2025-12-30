@@ -58,10 +58,6 @@ def ancova_test(df, dv, factor, covariates):
     model = ols(formula, data=df).fit()
     anova_table = sm.stats.anova_lm(model, typ=2)
     
-    #Print results
-    print(f"ANCOVA for {dv} by {factor} adjusting for {', '.join(covariates)}")
-    print(anova_table)
-    
     return anova_table
 
 #---Function: anova_test---
@@ -601,10 +597,6 @@ def welch_anova_test(df, column, group):
     
     #Perform Welch ANOVA using HC3 robust covariance
     welch_table = sm.stats.anova_lm(model, typ=2, robust='hc3')
-    
-    #Print results
-    print(f"Welch ANOVA for {column} by {group}")
-    print(welch_table)
     
     return welch_table
 
