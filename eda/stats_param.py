@@ -319,10 +319,6 @@ def multi_factor_anova(df, dv, factors):
     model = ols(formula, data=df).fit()
     anova_table = sm.stats.anova_lm(model, typ=2)
     
-    #Print results
-    print(f"Multi-factor ANOVA for {dv} by {', '.join(factors)}")
-    print(anova_table)
-    
     return anova_table
 
 #---Function: one_sample_ttest---
