@@ -98,6 +98,7 @@ Active development — modules will be progressively added and refined.
 - `f_test_variance`
 - `mancova_test`
 - `manova_test`
+- `multi_factor_anova`
 - `one_sample_ttest`
 - `paired_ttest`
 - `repeated_anova`
