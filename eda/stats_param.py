@@ -278,6 +278,57 @@ def manova_test(df, dependent_vars, factors):
     
     return manova_result
 
+#---Function: multi_factor_anova---
+def multi_factor_anova(df, dv, factors):
+    """
+    Perform a multi-factor ANOVA to compare means across multiple categorical factors.
+
+    Example:
+    --------
+    #Compare BasePay across JobTitle and Gender
+    data = pd.DataFrame({
+        'BasePay': [85000, 90000, 88000, 92000, 78000, 80000, 82000, 75000],
+        'JobTitle': ['A', 'A', 'B', 'B', 'C', 'C', 'A', 'B'],
+        'Gender': ['M', 'F', 'M', 'F', 'M', 'F', 'F', 'M']
+    })
+    multi_factor_anova(data, dv='BasePay', factors=['JobTitle', 'Gender'])
+
+    Parameters:
+    -----------
+    df : pd.DataFrame
+        Dataset containing the dependent variable and categorical factors.
+    dv : str
+        Name of the numeric dependent variable.
+    factors : list of str
+        List of categorical factor column names.
+
+    Returns:
+    --------
+    anova_table : pandas.DataFrame
+        ANOVA summary table containing F-statistics and p-values.
+    """
+    #Ensure DV is numeric
+    if not pd.api.types.is_numeric_dtype(df[dv]):
+        raise ValueError(f"Dependent variable {dv} must be numeric.")
+    
+    #Ensure factors are categorical
+    for f in factors:
+        df[f] = df[f].astype('category')
+    
+    #Build formula
+    factor_formula = ' + '.join([f'C({f})' for f in factors])
+    formula = f'{dv} ~ {factor_formula}'
+    
+    #Fit model
+    model = ols(formula, data=df).fit()
+    anova_table = sm.stats.anova_lm(model, typ=2)
+    
+    #Print results
+    print(f"Multi-factor ANOVA for {dv} by {', '.join(factors)}")
+    print(anova_table)
+    
+    return anova_table
+
 #---Function: one_sample_ttest---
 def one_sample_ttest(df, column, popmean):
     """
