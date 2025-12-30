@@ -93,7 +93,7 @@ def plot_box_plot(
     df,
     value_cols,
     category_col,
-    hue_col='Gender',
+    hue_col,
     palette='pastel',
     figsize=(16, 6)
 ):
@@ -109,7 +109,7 @@ def plot_box_plot(
         category_col : str
             Main categorical variable displayed on the x-axis (e.g., JobTitle)
         hue_col : str
-            Secondary grouping variable used for color split (default: Gender)
+            Secondary grouping variable used for color split
         palette : str or dict
             Color palette for hue categories
         figsize : tuple
