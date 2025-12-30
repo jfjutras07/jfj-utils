@@ -168,6 +168,60 @@ def plot_correlation_heatmap(df, numeric_cols = None, method = 'spearman', figsi
     plt.show()
     plt.close()
 
+#---Function:plot_heatmap_grid---
+def plot_heatmap_grid(
+    df,
+    value_col,
+    index_col,
+    columns_col=None,
+    aggfunc='median',
+    cmap='Blues',
+    fmt=".0f",
+    figsize=(10,6)
+):
+    """
+    Generic function to plot a heatmap of aggregated numeric values.
+
+    Parameters:
+        df: pd.DataFrame containing the data
+        value_col: numeric column to visualize (dependent variable)
+        index_col: column to use as rows
+        columns_col: column to use as columns (optional, for 2D heatmap)
+        aggfunc: aggregation function for pivot_table ('median', 'mean', etc.)
+        cmap: color map for heatmap
+        fmt: string format for annotations
+        figsize: figure size
+    """
+
+    #Create pivot table
+    if columns_col is not None:
+        pivot = df.pivot_table(
+            index=index_col,
+            columns=columns_col,
+            values=value_col,
+            aggfunc=aggfunc
+        )
+    else:
+        # Only index, single column heatmap
+        pivot = df.groupby(index_col)[value_col].agg(aggfunc).to_frame()
+
+    #Plot heatmap
+    plt.figure(figsize=figsize)
+    sns.heatmap(
+        pivot,
+        annot=True,
+        fmt=fmt,
+        cmap=cmap,
+        linewidths=0.5
+    )
+    plt.title(f"{aggfunc.capitalize()} {value_col} by {index_col}" + (f" and {columns_col}" if columns_col else ""))
+    plt.ylabel(index_col)
+    if columns_col:
+        plt.xlabel(columns_col)
+    else:
+        plt.xlabel(value_col)
+    plt.show()
+
 # --- Function : plot_numeric_bivariate ---
 def plot_numeric_bivariate(df, numeric_cols, hue='Gender', bins=40):
     """
