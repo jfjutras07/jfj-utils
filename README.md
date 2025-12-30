@@ -129,6 +129,7 @@ Active development — modules will be progressively added and refined.
 - `plot_box_grid`
 - `plot_box_plot`
 - `plot_correlation_heatmap`
+- `plot_heatmap_grid`
 - `plot_numeric_bivariate`
 - `plot_numeric_distribution`
 - `plot_pairplot`
