@@ -6,7 +6,7 @@ from statsmodels.multivariate.manova import MANOVA
 from statsmodels.stats.anova import AnovaRM
 from statsmodels.stats.multicomp import pairwise_tukeyhsd
 
-#--- Function: ancova_test ---
+#---Function: ancova_test---
 def ancova_test(df, dv, factor, covariates):
     """
     Perform an ANCOVA to compare means between groups while adjusting for covariates.
@@ -37,7 +37,7 @@ def ancova_test(df, dv, factor, covariates):
     anova_table : pandas.DataFrame
         ANCOVA summary table with F-statistics and p-values.
     """
-    #Ensure DV is numeric
+    #Check dependent variable
     if not pd.api.types.is_numeric_dtype(df[dv]):
         raise ValueError(f"Dependent variable {dv} must be numeric.")
     
@@ -64,7 +64,7 @@ def ancova_test(df, dv, factor, covariates):
     
     return anova_table
 
-#--- Function: anova_test ---
+#---Function: anova_test---
 def anova_test(df, column, group):
     """
     Perform a one-way ANOVA to compare the means of three or more groups.
@@ -92,14 +92,14 @@ def anova_test(df, column, group):
     anova_table : pandas.DataFrame
         ANOVA summary table containing F-statistic and p-value.
     """
-    #Ensure column is numeric
+    #Check column is numeric
     if not pd.api.types.is_numeric_dtype(df[column]):
         raise ValueError(f"Column {column} must be numeric.")
     
     #Ensure group is categorical
     df[group] = df[group].astype('category')
     
-    #Build ANOVA model
+    #Build and fit model
     model = ols(f'{column} ~ C({group})', data=df).fit()
     anova_table = sm.stats.anova_lm(model, typ=2)
     
@@ -109,7 +109,7 @@ def anova_test(df, column, group):
     
     return anova_table
 
-#--- Function: f_test_variance ---
+#---Function: f_test_variance---
 def f_test_variance(df, column, group, group1, group2):
     """
     Perform an F-test to compare the variances of two groups.
@@ -143,20 +143,20 @@ def f_test_variance(df, column, group, group1, group2):
     p_value : float
         Two-tailed p-value for the F-test.
     """
-    #Ensure column is numeric
+    #Check column is numeric
     if not pd.api.types.is_numeric_dtype(df[column]):
         raise ValueError(f"Column {column} must be numeric.")
     
-    #Extract groups and drop NaN values
+    #Extract groups and drop NaN
     data1 = df[df[group] == group1][column].dropna()
     data2 = df[df[group] == group2][column].dropna()
     
-    #Compute F-statistic
+    #Compute variances
     var1 = data1.var(ddof=1)
     var2 = data2.var(ddof=1)
     f_stat = var1 / var2
     
-    #Two-tailed p-value
+    #Compute two-tailed p-value
     dfn = len(data1) - 1
     dfd = len(data2) - 1
     if f_stat > 1:
@@ -170,7 +170,7 @@ def f_test_variance(df, column, group, group1, group2):
     
     return f_stat, p_value
 
-#--- Function: mancova_test ---
+#---Function: mancova_test---
 def mancova_test(df, dependent_vars, factor, covariates):
     """
     Perform a MANCOVA to compare multiple dependent variables across groups while adjusting for covariates.
@@ -202,10 +202,10 @@ def mancova_test(df, dependent_vars, factor, covariates):
     mancova_result : MANOVA
         Fitted MANCOVA object with summary results.
     """
-    #Ensure dependent variables and covariates are numeric
-    for dv in dependent_vars + covariates:
-        if not pd.api.types.is_numeric_dtype(df[dv]):
-            raise ValueError(f"{dv} must be numeric.")
+    #Check dependent variables and covariates are numeric
+    for col in dependent_vars + covariates:
+        if not pd.api.types.is_numeric_dtype(df[col]):
+            raise ValueError(f"{col} must be numeric.")
     
     #Ensure factor is categorical
     df[factor] = df[factor].astype('category')
@@ -213,7 +213,9 @@ def mancova_test(df, dependent_vars, factor, covariates):
     #Build formula
     dv_formula = ' + '.join(dependent_vars)
     cov_formula = ' + '.join(covariates)
-    formula = f'{dv_formula} ~ {factor} + {cov_formula}'
+    formula = f"{dv_formula} ~ C({factor})"
+    if covariates:
+        formula += " + " + cov_formula
     
     #Fit MANCOVA
     mancova_result = MANOVA.from_formula(formula, data=df)
@@ -224,7 +226,7 @@ def mancova_test(df, dependent_vars, factor, covariates):
     
     return mancova_result
 
-#--- Function: manova_test ---
+#---Function: manova_test---
 def manova_test(df, dependent_vars, factors):
     """
     Perform a MANOVA to compare multiple dependent variables across one or more categorical factors.
@@ -253,30 +255,30 @@ def manova_test(df, dependent_vars, factors):
     manova_result : MANOVA
         Fitted MANOVA object with summary results.
     """
-    # Ensure dependent variables are numeric
+    #Check dependent variables are numeric
     for dv in dependent_vars:
         if not pd.api.types.is_numeric_dtype(df[dv]):
             raise ValueError(f"Dependent variable {dv} must be numeric.")
     
-    # Ensure factors are categorical
+    #Ensure factors are categorical
     for f in factors:
         df[f] = df[f].astype('category')
     
-    # Build formula
+    #Build formula
     dv_formula = ' + '.join(dependent_vars)
     factor_formula = ' + '.join([f'C({f})' for f in factors])
-    formula = f'{dv_formula} ~ {factor_formula}'
+    formula = f"{dv_formula} ~ {factor_formula}"
     
-    # Fit MANOVA
+    #Fit MANOVA
     manova_result = MANOVA.from_formula(formula, data=df)
     
-    # Print summary
+    #Print summary
     print(f"MANOVA for {', '.join(dependent_vars)} by {', '.join(factors)}")
     print(manova_result.mv_test())
     
     return manova_result
 
-#--- Function: one_sample_ttest ---
+#---Function: one_sample_ttest---
 def one_sample_ttest(df, column, popmean):
     """
     Perform a one-sample t-test.
@@ -303,7 +305,7 @@ def one_sample_ttest(df, column, popmean):
     p_value : float
         Two-tailed p-value for the test.
     """
-    #Ensure column is numeric
+    #Check column is numeric
     if not pd.api.types.is_numeric_dtype(df[column]):
         raise ValueError(f"Column {column} must be numeric.")
     
@@ -316,7 +318,7 @@ def one_sample_ttest(df, column, popmean):
     
     return t_stat, p_value
 
-#--- Function: paired_ttest ---
+#---Function: paired_ttest---
 def paired_ttest(df, column_before, column_after):
     """
     Perform a paired (dependent) t-test between two related measurements.
@@ -346,17 +348,17 @@ def paired_ttest(df, column_before, column_after):
     p_value : float
         Two-tailed p-value for the test.
     """
-    #Ensure columns are numeric
+    #Check columns are numeric
     if not pd.api.types.is_numeric_dtype(df[column_before]):
         raise ValueError(f"Column {column_before} must be numeric.")
     if not pd.api.types.is_numeric_dtype(df[column_after]):
         raise ValueError(f"Column {column_after} must be numeric.")
     
-    #Drop NaN values
+    #Drop NaNs
     data_before = df[column_before].dropna()
     data_after = df[column_after].dropna()
     
-    #Ensure same length after dropping NaNs
+    #Check same length
     if len(data_before) != len(data_after):
         raise ValueError("Columns must have the same number of observations after dropping NaNs.")
     
@@ -369,7 +371,7 @@ def paired_ttest(df, column_before, column_after):
     
     return t_stat, p_value
 
-#--- Function: repeated_anova ---
+#---Function: repeated_anova---
 def repeated_anova(df, subject, within, dv):
     """
     Perform a repeated measures ANOVA on a dataset with repeated measurements.
@@ -382,7 +384,7 @@ def repeated_anova(df, subject, within, dv):
         'time': ['morning', 'afternoon', 'evening'] * 3,
         'stress': [5, 6, 4, 7, 6, 5, 6, 5, 5]
     })
-    anova_result = repeated_anova(data, subject='participant', within='time', dv='stress')
+    anova_table = repeated_anova(data, subject='participant', within='time', dv='stress')
 
     Parameters:
     -----------
@@ -400,11 +402,11 @@ def repeated_anova(df, subject, within, dv):
     anova_table : pandas.DataFrame
         Repeated measures ANOVA summary table.
     """
-    #Ensure DV is numeric
+    #Check DV is numeric
     if not pd.api.types.is_numeric_dtype(df[dv]):
         raise ValueError(f"Dependent variable {dv} must be numeric.")
     
-    #Ensure subject and within factor are categorical
+    #Ensure subject and within factors are categorical
     df[subject] = df[subject].astype('category')
     df[within] = df[within].astype('category')
     
@@ -418,7 +420,7 @@ def repeated_anova(df, subject, within, dv):
     
     return anova_table
 
-#--- Function: tukey_posthoc ---
+#---Function: tukey_posthoc---
 def tukey_posthoc(df, column, group, alpha=0.05):
     """
     Perform Tukey's HSD post-hoc test for pairwise comparisons after ANOVA.
@@ -448,7 +450,7 @@ def tukey_posthoc(df, column, group, alpha=0.05):
     tukey_result : TukeyHSDResults
         Object containing pairwise comparisons with mean differences, p-values, and confidence intervals.
     """
-    # Ensure column is numeric
+    #Check column is numeric
     if not pd.api.types.is_numeric_dtype(df[column]):
         raise ValueError(f"Column {column} must be numeric.")
     
@@ -464,7 +466,7 @@ def tukey_posthoc(df, column, group, alpha=0.05):
     
     return tukey_result
 
-#--- Function: two_sample_ttest ---
+#---Function: two_sample_ttest---
 def two_sample_ttest(df, column, group, group1, group2):
     """
     Perform an independent two-sample t-test between two groups.
@@ -498,11 +500,11 @@ def two_sample_ttest(df, column, group, group1, group2):
     p_value : float
         Two-tailed p-value for the test.
     """
-    #Ensure column is numeric
+    #Check column is numeric
     if not pd.api.types.is_numeric_dtype(df[column]):
         raise ValueError(f"Column {column} must be numeric.")
     
-    #Extract groups and drop NaN values
+    #Extract the two groups and drop NaNs
     data1 = df[df[group] == group1][column].dropna()
     data2 = df[df[group] == group2][column].dropna()
     
@@ -515,7 +517,7 @@ def two_sample_ttest(df, column, group, group1, group2):
     
     return t_stat, p_value
 
-#--- Function: welch_anova_test ---
+#---Function: welch_anova_test---
 def welch_anova_test(df, column, group):
     """
     Perform a one-way Welch ANOVA to compare the means of three or more groups,
@@ -541,32 +543,26 @@ def welch_anova_test(df, column, group):
 
     Returns:
     --------
-    welch_result : dict
-        Dictionary containing F-statistic and p-value.
+    welch_table : pandas.DataFrame
+        Welch ANOVA summary table.
     """
-    import pandas as pd
-    import scipy.stats as stats
-
-    #Ensure column is numeric
+    #Check column is numeric
     if not pd.api.types.is_numeric_dtype(df[column]):
         raise ValueError(f"Column {column} must be numeric.")
     
     #Ensure group is categorical
     df[group] = df[group].astype('category')
     
-    #Extract values per group
-    groups = [df[df[group] == level][column].values for level in df[group].cat.categories]
-    
-    #Perform Welch ANOVA
-    F, p = stats.f_oneway(*groups)  # default scipy one-way is classical ANOVA
-    # For Welch, we can use statsmodels' robust ANOVA instead:
-    import statsmodels.api as sm
-    from statsmodels.formula.api import ols
+    #Build OLS model
     model = ols(f'{column} ~ C({group})', data=df).fit()
-    welch_table = sm.stats.anova_lm(model, typ=2, robust='hc3')  # HC3 for heteroscedasticity
-
+    
+    #Perform Welch ANOVA using HC3 robust covariance
+    welch_table = sm.stats.anova_lm(model, typ=2, robust='hc3')
+    
+    #Print results
     print(f"Welch ANOVA for {column} by {group}")
     print(welch_table)
     
     return welch_table
+
 
