@@ -88,6 +88,60 @@ def plot_box_grid(
             plt.tight_layout()
             plt.show()
 
+#---Function: plot_box_plot---
+def plot_box_plot(
+    df,
+    value_cols,
+    category_col,
+    hue_col='Gender',
+    palette='pastel',
+    figsize=(16, 6)
+):
+    """
+    Generic function to plot a single boxplot figure with one categorical axis
+    and a hue-based split (e.g., Gender).
+
+    Parameters:
+        df : pd.DataFrame
+            Data containing the variables
+        value_cols : list
+            List with ONE numeric column (dependent variable)
+        category_col : str
+            Main categorical variable displayed on the x-axis (e.g., JobTitle)
+        hue_col : str
+            Secondary grouping variable used for color split (default: Gender)
+        palette : str or dict
+            Color palette for hue categories
+        figsize : tuple
+            Size of the figure
+    """
+
+    #Force list behavior for value_cols
+    y_col = value_cols[0]
+
+    plt.figure(figsize=figsize)
+
+    sns.boxplot(
+        data=df,
+        x=category_col,
+        y=y_col,
+        hue=hue_col,
+        palette=palette,
+        dodge=True
+    )
+
+    plt.title(f'{y_col} by {category_col} and {hue_col}')
+    plt.xlabel(category_col)
+    plt.ylabel(y_col)
+    plt.grid(axis='y', linestyle='--', alpha=0.5)
+
+    #Improve readability of categorical axis
+    plt.xticks(rotation=30, ha='right')
+
+    plt.legend(title=hue_col)
+    plt.tight_layout()
+    plt.show()
+
 #--- Function : plot_correlation_heatmap ---
 def plot_correlation_heatmap(df, numeric_cols = None, method = 'spearman', figsize = (12,8), cmap = 'coolwarm', annot = True, fmt = ".2f"):
     """
