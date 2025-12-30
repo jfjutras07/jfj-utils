@@ -67,7 +67,9 @@ Active development — modules will be progressively added and refined.
 - `normality_check`
 - `numeric_skew_kurt`
 - `test_homogeneity`
-  
+
+*chi_square_test.py*
+
 *date_formats.py*
 - `detect_date_patterns`
 
