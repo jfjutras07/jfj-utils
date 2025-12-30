@@ -15,21 +15,19 @@ Clear separation by functional area
 ## Project Structure
 ```
 jfj_utils/
-  ingestion/
-  preprocessing/
+  data_preprocessing/
   eda/
-  visualization/
+  ingestion/
   modeling/
   optimization/
   tests/
+  visualization
   utils/
   __init__.py
   pyproject.toml
   setup.py
   README.md
 ```
-
-
 Each submodule is intended to contain small, focused utilities related to its theme (e.g., ingestion helpers, visualization wrappers, feature creation functions, etc.).
 
 ## Status
@@ -38,14 +36,7 @@ Active development — modules will be progressively added and refined.
 
 ## API Overview
 
-### Ingestion: Utilities for loading, validating, and structuring raw data from files and folders.
-
-*readers.py*
-- `check_data`
-- `read_folder`
-- `read_table`
-
-### Preprocessing: Functions for cleaning, transforming, and preparing datasets for analysis and modeling.
+### Data_preprocessing: Functions for cleaning, transforming, and preparing datasets for analysis and modeling.
 
 *missing.py*
 - `missing_stats`
@@ -115,6 +106,35 @@ Active development — modules will be progressively added and refined.
 *topic_sentiment_analysis.py*
 - `topic_sentiment_analysis`
 
+### Ingestion: Utilities for loading, validating, and structuring raw data from files and folders.
+
+*readers.py*
+- `check_data`
+- `read_folder`
+- `read_table`
+
+### Modeling: Helpers for fitting, evaluating, and comparing statistical and machine learning models.
+
+*binary_classifier_evaluation.py*
+- `evaluate_binary_classifier`
+
+*classification.py*
+- `logistic_regression`
+
+*regression.py*
+- `cox_regression`
+- `gamma_regression`
+- `linear_regression`
+- `poisson_regression`
+- `polynomial_regression`
+- `quantile_regression`
+- `robust_regression`
+
+*regularization.py*
+- `fit_regularized_models`
+
+### Optimization : Prescriptive analytics tools for simulation, decision support, and optimization.
+
 ### Visualization: High-level plotting utilities for exploring data and communicating analytical results.
 
 *choropleth_map.py*
@@ -163,28 +183,6 @@ Active development — modules will be progressively added and refined.
 
 *text_exploration.py*
 - `text_exploration_basic`
-
-### Modeling: Helpers for fitting, evaluating, and comparing statistical and machine learning models.
-
-*binary_classifier_evaluation.py*
-- `evaluate_binary_classifier`
-
-*classification.py*
-- `logistic_regression`
-
-*regression.py*
-- `cox_regression`
-- `gamma_regression`
-- `linear_regression`
-- `poisson_regression`
-- `polynomial_regression`
-- `quantile_regression`
-- `robust_regression`
-
-*regularization.py*
-- `fit_regularized_models`
-
-### Optimization : Prescriptive analytics tools for simulation, decision support, and optimization.
 
 ### Utils: Shared low-level utilities used across the library.
 
