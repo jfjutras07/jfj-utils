@@ -141,6 +141,8 @@ Active development — modules will be progressively added and refined.
 
 *choropleth_map.py*
 
+*chi_square_heatmap.py*
+
 *confusion_matrix.py*
 - `plot_logreg_results`
 
