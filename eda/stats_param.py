@@ -225,51 +225,53 @@ def mancova_test(df, dependent_vars, factor, covariates):
     return mancova_result
 
 #--- Function: manova_test ---
-def manova_test(df, dependent_vars, factor):
+def manova_test(df, dependent_vars, factors):
     """
-    Perform a MANOVA to compare multiple dependent variables across groups.
+    Perform a MANOVA to compare multiple dependent variables across one or more categorical factors.
 
     Example:
     --------
-    # Compare math and science scores across two schools
+    # Compare BasePay across JobTitle and Gender
     data = pd.DataFrame({
-        'math': [85, 90, 88, 92, 78, 80, 82, 75],
-        'science': [80, 85, 87, 90, 70, 75, 78, 72],
-        'school': ['A', 'A', 'A', 'A', 'B', 'B', 'B', 'B']
+        'BasePay': [85000, 90000, 88000, 92000, 78000, 80000, 82000, 75000],
+        'JobTitle': ['A', 'A', 'B', 'B', 'C', 'C', 'A', 'B'],
+        'Gender': ['M', 'F', 'M', 'F', 'M', 'F', 'F', 'M']
     })
-    manova_result = manova_test(data, dependent_vars=['math', 'science'], factor='school')
+    manova_result = manova_test(data, dependent_vars=['BasePay'], factors=['JobTitle', 'Gender'])
 
     Parameters:
     -----------
     df : pd.DataFrame
-        Dataset containing dependent variables and grouping factor.
+        Dataset containing dependent variables and categorical factors.
     dependent_vars : list of str
         List of numeric dependent variable column names.
-    factor : str
-        Categorical independent variable (factor).
+    factors : list of str
+        List of categorical independent variables (factors).
 
     Returns:
     --------
     manova_result : MANOVA
         Fitted MANOVA object with summary results.
     """
-    #Ensure dependent variables are numeric
+    # Ensure dependent variables are numeric
     for dv in dependent_vars:
         if not pd.api.types.is_numeric_dtype(df[dv]):
             raise ValueError(f"Dependent variable {dv} must be numeric.")
     
-    #Ensure factor is categorical
-    df[factor] = df[factor].astype('category')
+    # Ensure factors are categorical
+    for f in factors:
+        df[f] = df[f].astype('category')
     
-    #Build formula
+    # Build formula
     dv_formula = ' + '.join(dependent_vars)
-    formula = f'{dv_formula} ~ {factor}'
+    factor_formula = ' + '.join([f'C({f})' for f in factors])
+    formula = f'{dv_formula} ~ {factor_formula}'
     
-    #Fit MANOVA
+    # Fit MANOVA
     manova_result = MANOVA.from_formula(formula, data=df)
     
-    #Print summary
-    print(f"MANOVA for {', '.join(dependent_vars)} by {factor}")
+    # Print summary
+    print(f"MANOVA for {', '.join(dependent_vars)} by {', '.join(factors)}")
     print(manova_result.mv_test())
     
     return manova_result
