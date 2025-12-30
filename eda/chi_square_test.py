@@ -1,6 +1,6 @@
-    import pandas as pd
-    import numpy as np
-    from scipy.stats import chi2_contingency
+import pandas as pd
+import numpy as np
+from scipy.stats import chi2_contingency
 
 #--- Function: chi_square_test ---
 def chi_square_test(df, col1, col2):
