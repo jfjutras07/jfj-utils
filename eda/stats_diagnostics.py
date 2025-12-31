@@ -81,15 +81,7 @@ def stats_diagnostics(df, numeric_cols=None, group_col=None, model=None, predict
             })
         hom_df = pd.DataFrame(hom_res)
 
-    # --- Print tables separately with titles ---
-    print("=== Normality Tests ===")
-    print(normal_df.to_string(index=False))
-
-    if not hom_df.empty:
-        print("\n=== Homogeneity Tests ===")
-        print(hom_df.to_string(index=False))
-
-    # --- Store in results dict ---
+    # --- Store results in a dict ---
     results['normality'] = normal_df
     results['homogeneity'] = hom_df
 
