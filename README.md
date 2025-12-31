@@ -130,6 +130,7 @@ Active development — modules will be progressively added and refined.
 *regression.py*
 - `cox_regression`
 - `gamma_regression`
+- `linear_mixed_model`
 - `linear_regression`
 - `poisson_regression`
 - `polynomial_regression`
