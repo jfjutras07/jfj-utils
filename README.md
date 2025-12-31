@@ -63,6 +63,8 @@ Active development — modules will be progressively added and refined.
 - `best_transformation`
 - `best_transformation_for_df`
 
+*calculate_vif.py*
+
 *check_normality.py*
 - `normality_check`
 - `numeric_skew_kurt`
