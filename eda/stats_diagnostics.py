@@ -2,12 +2,12 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import math
-from scipy.stats import shapiro, normaltest, anderson, kstest, levene, bartlett, stats
+from scipy.stats import shapiro, normaltest, anderson, kstest, levene, bartlett, probplot
 
 #--- Function: stats_diagnostics ---
 def stats_diagnostics(df, numeric_cols=None, group_col=None, model=None, predictors=None):
     """
-    Perform a full set of diagnostics:
+    Perform a full set of statistics diagnostics:
 
     1. Q-Q plots for numeric columns (2 per row)
     2. Residuals vs fitted plots (if model provided)
@@ -44,7 +44,7 @@ def stats_diagnostics(df, numeric_cols=None, group_col=None, model=None, predict
     axes = axes.flatten()
     for i, col in enumerate(numeric_cols):
         col_data = df[col].dropna()
-        stats.probplot(col_data, dist="norm", plot=axes[i])
+        probplot(col_data, dist="norm", plot=axes[i])
         axes[i].set_title(f"Q-Q Plot of {col}")
         axes[i].set_xlabel("Theoretical Quantiles")
         axes[i].set_ylabel("Sample Quantiles")
