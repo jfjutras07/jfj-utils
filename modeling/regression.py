@@ -42,8 +42,6 @@ def cox_regression(df, duration_col, event_col, covariates):
     model : lifelines CoxPHFitter
         Fitted Cox Proportional Hazards model.
     """
-    from lifelines import CoxPHFitter
-
     if not covariates:
         raise ValueError("At least one covariate must be provided.")
 
@@ -52,7 +50,7 @@ def cox_regression(df, duration_col, event_col, covariates):
     cph.print_summary()
     return cph
 
-# --- Function : gamma_regression ---
+#---Function: gamma_regression---
 def gamma_regression(df, outcome, predictors, link='log'):
     """
     Perform Gamma regression for positive continuous skewed data.
@@ -76,13 +74,13 @@ def gamma_regression(df, outcome, predictors, link='log'):
     if not predictors:
         raise ValueError("At least one predictor must be provided.")
     
-    formula = f"{outcome} ~ " + " + ".join(predictors)
+    formula = f"{outcome} ~ " + " * ".join(predictors)
     link_func = sm.families.links.log() if link=='log' else sm.families.links.identity()
     model = smf.glm(formula=formula, data=df, family=sm.families.Gamma(link=link_func)).fit()
     print(model.summary())
-    return model 
+    return model
 
-# --- Function : linear_regression ---
+#---Function: linear_regression---
 def linear_regression(df, outcome, predictors):
     """
     Perform a multiple linear regression.
@@ -104,12 +102,12 @@ def linear_regression(df, outcome, predictors):
     if not predictors:
         raise ValueError("At least one predictor must be provided.")
     
-    formula = f"{outcome} ~ " + " + ".join(predictors)
+    formula = f"{outcome} ~ " + " * ".join(predictors)
     model = smf.ols(formula, data=df).fit()
     print(model.summary())
-    return model 
+    return model
 
-# --- Function : poisson_regression ---
+#---Function: poisson_regression---
 def poisson_regression(df, outcome, predictors):
     """
     Perform a Poisson regression for count data.
@@ -117,16 +115,6 @@ def poisson_regression(df, outcome, predictors):
     When to use:
     - Dependent variable is count (0,1,2,...).
     - Counts are not overdispersed (variance ≈ mean).
-
-    Example:
-    --------
-    #Fit a Poisson regression of counts y on x1 and x2
-    data = pd.DataFrame({
-        'x1': [1, 2, 3, 4, 5],
-        'x2': [2, 3, 2, 5, 4],
-        'y': [0, 1, 3, 4, 5]
-    })
-    model = poisson_regression(data, outcome='y', predictors=['x1', 'x2'])
 
     Parameters:
     -----------
@@ -145,13 +133,9 @@ def poisson_regression(df, outcome, predictors):
     if not predictors:
         raise ValueError("At least one predictor must be provided.")
 
-    #Build formula string
-    formula = f"{outcome} ~ " + " + ".join(predictors)
-
-    #Fit Poisson regression
+    formula = f"{outcome} ~ " + " * ".join(predictors)
     model = smf.poisson(formula, data=df).fit()
     print(model.summary())
-
     return model
 
 # --- Function : polynomial_regression ---
@@ -225,7 +209,7 @@ def quantile_regression(df, outcome, predictor, quantile=0.5):
     print(model.summary())
     return model
 
-# --- Function : robust_regression ---
+#---Function: robust_regression---
 def robust_regression(df, outcome, factor, covariates, estimator=sm.robust.norms.HuberT):
     """
     Perform a robust ANCOVA-like regression using RLM (Robust Linear Model).
@@ -249,11 +233,12 @@ def robust_regression(df, outcome, factor, covariates, estimator=sm.robust.norms
         Fitted robust linear model.
     """
     df[factor] = df[factor].astype('category')
-    formula = f"{outcome} ~ {factor}"
+
     if covariates:
-        formula += " + " + " + ".join(covariates)
-    
+        formula = f"{outcome} ~ C({factor}) * (" + " + ".join(covariates) + ")"
+    else:
+        formula = f"{outcome} ~ C({factor})"
+
     model = smf.rlm(formula=formula, data=df, M=estimator()).fit()
     print(model.summary())
-    return model  
-
+    return model
