@@ -7,36 +7,11 @@ from statsmodels.stats.anova import AnovaRM
 from statsmodels.stats.multicomp import pairwise_tukeyhsd
 
 #---Function: ancova_test---
-def ancova_test(df, dv, factor, covariates):
+def ancova_test(df, dv, factor, covariates, return_model=False):
     """
     Perform an ANCOVA to compare means between groups while adjusting for covariates.
-
-    Example:
-    --------
-    # Compare test scores between two schools adjusting for hours of study
-    data = pd.DataFrame({
-        'score': [85, 90, 88, 92, 78, 80, 82, 75],
-        'school': ['A', 'A', 'A', 'A', 'B', 'B', 'B', 'B'],
-        'hours_study': [5, 6, 5, 7, 4, 5, 4, 3]
-    })
-    ancova_result = ancova_test(data, dv='score', factor='school', covariates=['hours_study'])
-
-    Parameters:
-    -----------
-    df : pd.DataFrame
-        Dataset containing dependent variable, factor, and covariates.
-    dv : str
-        Dependent variable (numeric).
-    factor : str
-        Categorical independent variable (factor).
-    covariates : list of str
-        List of numeric covariate column names.
-
-    Returns:
-    --------
-    anova_table : pandas.DataFrame
-        ANCOVA summary table with F-statistics and p-values.
     """
+
     #Check dependent variable
     if not pd.api.types.is_numeric_dtype(df[dv]):
         raise ValueError(f"Dependent variable {dv} must be numeric.")
@@ -57,37 +32,18 @@ def ancova_test(df, dv, factor, covariates):
     #Fit model
     model = ols(formula, data=df).fit()
     anova_table = sm.stats.anova_lm(model, typ=2)
-    
+
+    if return_model:
+        return anova_table, model
+
     return anova_table
 
 #---Function: anova_test---
-def anova_test(df, column, group):
+def anova_test(df, column, group, return_model=False):
     """
     Perform a one-way ANOVA to compare the means of three or more groups.
-
-    Example:
-    --------
-    # Compare students' test scores across three classes
-    data = pd.DataFrame({
-        'score': [85, 90, 88, 92, 78, 80, 82, 75, 70],
-        'class': ['A', 'A', 'A', 'B', 'B', 'B', 'C', 'C', 'C']
-    })
-    anova_result = anova_test(data, column='score', group='class')
-
-    Parameters:
-    -----------
-    df : pd.DataFrame
-        Dataset containing the numeric column and grouping variable.
-    column : str
-        Name of the numeric column to test.
-    group : str
-        Name of the categorical grouping column.
-
-    Returns:
-    --------
-    anova_table : pandas.DataFrame
-        ANOVA summary table containing F-statistic and p-value.
     """
+
     #Check column is numeric
     if not pd.api.types.is_numeric_dtype(df[column]):
         raise ValueError(f"Column {column} must be numeric.")
@@ -98,6 +54,9 @@ def anova_test(df, column, group):
     #Build and fit model
     model = ols(f'{column} ~ C({group})', data=df).fit()
     anova_table = sm.stats.anova_lm(model, typ=2)
+
+    if return_model:
+        return anova_table, model
      
     return anova_table
 
@@ -163,37 +122,11 @@ def f_test_variance(df, column, group, group1, group2):
     return f_stat, p_value
 
 #---Function: mancova_test---
-def mancova_test(df, dependent_vars, factor, covariates):
+def mancova_test(df, dependent_vars, factor, covariates, return_model=True):
     """
     Perform a MANCOVA to compare multiple dependent variables across groups while adjusting for covariates.
-
-    Example:
-    --------
-    # Compare math and science scores across schools adjusting for hours of study
-    data = pd.DataFrame({
-        'math': [85, 90, 88, 92, 78, 80, 82, 75],
-        'science': [80, 85, 87, 90, 70, 75, 78, 72],
-        'school': ['A', 'A', 'A', 'A', 'B', 'B', 'B', 'B'],
-        'hours_study': [5, 6, 5, 7, 4, 5, 4, 3]
-    })
-    result = mancova_test(data, dependent_vars=['math', 'science'], factor='school', covariates=['hours_study'])
-
-    Parameters:
-    -----------
-    df : pd.DataFrame
-        Dataset containing dependent variables, factor, and covariates.
-    dependent_vars : list of str
-        List of numeric dependent variable column names.
-    factor : str
-        Categorical independent variable (factor).
-    covariates : list of str
-        List of numeric covariate column names.
-
-    Returns:
-    --------
-    mancova_result : MANOVA
-        Fitted MANCOVA object with summary results.
     """
+
     #Check dependent variables and covariates are numeric
     for col in dependent_vars + covariates:
         if not pd.api.types.is_numeric_dtype(df[col]):
@@ -210,43 +143,23 @@ def mancova_test(df, dependent_vars, factor, covariates):
         formula += " + " + cov_formula
     
     #Fit MANCOVA
-    mancova_result = MANOVA.from_formula(formula, data=df)
-    
+    model = MANOVA.from_formula(formula, data=df)
+
     #Print summary
     print(f"MANCOVA for {', '.join(dependent_vars)} by {factor} adjusting for {', '.join(covariates)}")
-    print(mancova_result.mv_test())
-    
-    return mancova_result
+    print(model.mv_test())
+
+    if return_model:
+        return model
+
+    return model.mv_test()
 
 #---Function: manova_test---
-def manova_test(df, dependent_vars, factors):
+def manova_test(df, dependent_vars, factors, return_model=True):
     """
     Perform a MANOVA to compare multiple dependent variables across one or more categorical factors.
-
-    Example:
-    --------
-    # Compare BasePay across JobTitle and Gender
-    data = pd.DataFrame({
-        'BasePay': [85000, 90000, 88000, 92000, 78000, 80000, 82000, 75000],
-        'JobTitle': ['A', 'A', 'B', 'B', 'C', 'C', 'A', 'B'],
-        'Gender': ['M', 'F', 'M', 'F', 'M', 'F', 'F', 'M']
-    })
-    manova_result = manova_test(data, dependent_vars=['BasePay'], factors=['JobTitle', 'Gender'])
-
-    Parameters:
-    -----------
-    df : pd.DataFrame
-        Dataset containing dependent variables and categorical factors.
-    dependent_vars : list of str
-        List of numeric dependent variable column names.
-    factors : list of str
-        List of categorical independent variables (factors).
-
-    Returns:
-    --------
-    manova_result : MANOVA
-        Fitted MANOVA object with summary results.
     """
+
     #Check dependent variables are numeric
     for dv in dependent_vars:
         if not pd.api.types.is_numeric_dtype(df[dv]):
@@ -262,43 +175,23 @@ def manova_test(df, dependent_vars, factors):
     formula = f"{dv_formula} ~ {factor_formula}"
     
     #Fit MANOVA
-    manova_result = MANOVA.from_formula(formula, data=df)
+    model = MANOVA.from_formula(formula, data=df)
     
     #Print summary
     print(f"MANOVA for {', '.join(dependent_vars)} by {', '.join(factors)}")
-    print(manova_result.mv_test())
-    
-    return manova_result
+    print(model.mv_test())
+
+    if return_model:
+        return model
+
+    return model.mv_test()
 
 #---Function: multi_factor_anova---
-def multi_factor_anova(df, dv, factors):
+def multi_factor_anova(df, dv, factors, return_model=False):
     """
     Perform a multi-factor ANOVA to compare means across multiple categorical factors.
-
-    Example:
-    --------
-    #Compare BasePay across JobTitle and Gender
-    data = pd.DataFrame({
-        'BasePay': [85000, 90000, 88000, 92000, 78000, 80000, 82000, 75000],
-        'JobTitle': ['A', 'A', 'B', 'B', 'C', 'C', 'A', 'B'],
-        'Gender': ['M', 'F', 'M', 'F', 'M', 'F', 'F', 'M']
-    })
-    multi_factor_anova(data, dv='BasePay', factors=['JobTitle', 'Gender'])
-
-    Parameters:
-    -----------
-    df : pd.DataFrame
-        Dataset containing the dependent variable and categorical factors.
-    dv : str
-        Name of the numeric dependent variable.
-    factors : list of str
-        List of categorical factor column names.
-
-    Returns:
-    --------
-    anova_table : pandas.DataFrame
-        ANOVA summary table containing F-statistics and p-values.
     """
+
     #Ensure DV is numeric
     if not pd.api.types.is_numeric_dtype(df[dv]):
         raise ValueError(f"Dependent variable {dv} must be numeric.")
@@ -314,6 +207,9 @@ def multi_factor_anova(df, dv, factors):
     #Fit model
     model = ols(formula, data=df).fit()
     anova_table = sm.stats.anova_lm(model, typ=2)
+
+    if return_model:
+        return anova_table, model
     
     return anova_table
 
@@ -411,36 +307,11 @@ def paired_ttest(df, column_before, column_after):
     return t_stat, p_value
 
 #---Function: repeated_anova---
-def repeated_anova(df, subject, within, dv):
+def repeated_anova(df, subject, within, dv, return_model=False):
     """
     Perform a repeated measures ANOVA on a dataset with repeated measurements.
-
-    Example:
-    --------
-    # Compare stress levels of participants at three times: morning, afternoon, evening
-    data = pd.DataFrame({
-        'participant': [1, 1, 1, 2, 2, 2, 3, 3, 3],
-        'time': ['morning', 'afternoon', 'evening'] * 3,
-        'stress': [5, 6, 4, 7, 6, 5, 6, 5, 5]
-    })
-    anova_table = repeated_anova(data, subject='participant', within='time', dv='stress')
-
-    Parameters:
-    -----------
-    df : pd.DataFrame
-        Dataset containing the repeated measures data.
-    subject : str
-        Column name identifying the subjects.
-    within : str
-        Column name for the within-subject factor (repeated measure).
-    dv : str
-        Column name for the dependent variable (numeric).
-
-    Returns:
-    --------
-    anova_table : pandas.DataFrame
-        Repeated measures ANOVA summary table.
     """
+
     #Check DV is numeric
     if not pd.api.types.is_numeric_dtype(df[dv]):
         raise ValueError(f"Dependent variable {dv} must be numeric.")
@@ -451,13 +322,16 @@ def repeated_anova(df, subject, within, dv):
     
     #Fit repeated measures ANOVA
     aovrm = AnovaRM(df, depvar=dv, subject=subject, within=[within])
-    anova_table = aovrm.fit()
+    result = aovrm.fit()
     
     #Print results
     print(f"Repeated measures ANOVA for {dv} by {within} within subjects {subject}")
-    print(anova_table)
-    
-    return anova_table
+    print(result)
+
+    if return_model:
+        return result, aovrm
+
+    return result
 
 #---Function: tukey_posthoc---
 def tukey_posthoc(df, column, group, alpha=0.05):
@@ -557,34 +431,12 @@ def two_sample_ttest(df, column, group, group1, group2):
     return t_stat, p_value
 
 #---Function: welch_anova_test---
-def welch_anova_test(df, column, group):
+def welch_anova_test(df, column, group, return_model=False):
     """
     Perform a one-way Welch ANOVA to compare the means of three or more groups,
     robust to unequal variances.
-
-    Example:
-    --------
-    # Compare students' test scores across three classes
-    data = pd.DataFrame({
-        'score': [85, 90, 88, 92, 78, 80, 82, 75, 70],
-        'class': ['A', 'A', 'A', 'B', 'B', 'B', 'C', 'C', 'C']
-    })
-    welch_result = welch_anova_test(data, column='score', group='class')
-
-    Parameters:
-    -----------
-    df : pd.DataFrame
-        Dataset containing the numeric column and grouping variable.
-    column : str
-        Name of the numeric column to test.
-    group : str
-        Name of the categorical grouping column.
-
-    Returns:
-    --------
-    welch_table : pandas.DataFrame
-        Welch ANOVA summary table.
     """
+
     #Check column is numeric
     if not pd.api.types.is_numeric_dtype(df[column]):
         raise ValueError(f"Column {column} must be numeric.")
@@ -597,7 +449,11 @@ def welch_anova_test(df, column, group):
     
     #Perform Welch ANOVA using HC3 robust covariance
     welch_table = sm.stats.anova_lm(model, typ=2, robust='hc3')
-    
+
+    if return_model:
+        return welch_table, None
+
     return welch_table
+
 
 
