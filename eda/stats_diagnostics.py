@@ -6,6 +6,7 @@ from scipy.stats import shapiro, normaltest, anderson, kstest, levene, bartlett,
 def stats_diagnostics(df, numeric_cols=None, group_col=None, model=None, predictors=None):
     """
     Diagnostics: QQ plot | Residuals vs Fitted côte à côte, normality and homogeneity tables.
+    Returns only DataFrames for normality and homogeneity.
     """
     if numeric_cols is None:
         numeric_cols = df.select_dtypes(include='number').columns.tolist()
@@ -71,8 +72,6 @@ def stats_diagnostics(df, numeric_cols=None, group_col=None, model=None, predict
             "KS pass": ks_flag
         })
     results['normality'] = pd.DataFrame(normal_res)
-    print("\n=== Normality Tests ===")
-    display(results['normality'])
 
     # --- Homogeneity ---
     if group_col is not None:
@@ -92,7 +91,5 @@ def stats_diagnostics(df, numeric_cols=None, group_col=None, model=None, predict
                 "Bartlett pass": bartlett_p>0.05
             })
         results['homogeneity'] = pd.DataFrame(hom_res)
-        print("\n=== Homogeneity Tests ===")
-        display(results['homogeneity'])
 
     return results
