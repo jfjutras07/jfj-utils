@@ -204,8 +204,6 @@ def games_howell_posthoc(df, column, group):
     print(f"Games-Howell post-hoc test for {column} by {group}")
     print(gh_result)
     
-    return gh_result
-
 #--- Function: kruskal_wallis_test ---
 def kruskal_wallis_test(df, column, group):
     """
