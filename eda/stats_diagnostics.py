@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from scipy import stats
+import seaborn as sns
 
 def stats_diagnostics(df, numeric_cols=None, group_col=None, model=None, predictors=None):
     if numeric_cols is None:
@@ -12,15 +13,26 @@ def stats_diagnostics(df, numeric_cols=None, group_col=None, model=None, predict
         resid = model.resid
         fitted = model.fittedvalues
         fig, axes = plt.subplots(1, 2, figsize=(12,5))
+        
+        # Couleur bleu uniforme
+        point_color = 'steelblue'
+        
+        # Q-Q plot
         stats.probplot(resid, dist="norm", plot=axes[0])
+        for line in axes[0].get_lines():
+            line.set_color(point_color)
         axes[0].set_title('Q-Q Plot of Residuals')
-        axes[1].scatter(fitted, resid, alpha=0.7)
+        
+        # Residuals vs Fitted
+        axes[1].scatter(fitted, resid, alpha=0.7, color=point_color)
         axes[1].axhline(0, color='red', linestyle='--')
         axes[1].set_xlabel('Fitted values')
         axes[1].set_ylabel('Residuals')
         axes[1].set_title('Residuals vs Fitted')
+        
         plt.tight_layout()
         plt.show()
+        
         numeric_cols_to_test = ['Residuals']
         df_test = pd.DataFrame({'Residuals': resid})
     else:
@@ -62,10 +74,11 @@ def stats_diagnostics(df, numeric_cols=None, group_col=None, model=None, predict
             })
         hom_df = pd.DataFrame(hom_res)
 
-    # --- Display clean tables only ---
+    # --- Display styled tables ---
     print("=== Normality Tests ===")
-    print(normal_df.to_string(index=False))
-
+    display(normal_df.style.background_gradient(cmap='Blues', subset=normal_df.columns[1:]))
+    
     if not hom_df.empty:
         print("\n=== Homogeneity Tests ===")
-        print(hom_df.to_string(index=False))
+        display(hom_df.style.background_gradient(cmap='Blues', subset=hom_df.columns[1:]))
+
