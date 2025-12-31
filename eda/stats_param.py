@@ -38,7 +38,15 @@ def ancova_test(df, dv, factor, covariates, return_model=False):
         if not pd.api.types.is_numeric_dtype(df[cov]):
             raise ValueError(f"Covariate {cov} must be numeric.")
     
-    formula = f"{dv} ~ C({factor})" + (" + " + " + ".join(covariates) if covariates else "")
+    # Build formula with main effects and factor x covariate interactions
+    main_effects = f"C({factor})"
+    covariate_terms = " + ".join(covariates)
+    interaction_terms = " + ".join([f"C({factor}):{cov}" for cov in covariates])
+
+    formula = f"{dv} ~ {main_effects}"
+    if covariates:
+        formula += " + " + covariate_terms + " + " + interaction_terms
+
     model = ols(formula, data=df).fit()
     anova_table = sm.stats.anova_lm(model, typ=2)
     
@@ -150,18 +158,27 @@ def mancova_test(df, dependent_vars, factor, covariates, return_model=True):
         if not pd.api.types.is_numeric_dtype(df[col]):
             raise ValueError(f"{col} must be numeric.")
     df[factor] = df[factor].astype('category')
+
     dv_formula = ' + '.join(dependent_vars)
     cov_formula = ' + '.join(covariates)
-    formula = f"{dv_formula} ~ C({factor})" + (" + " + cov_formula if covariates else "")
+
+    # Build formula with main effects and factor x covariate interactions
+    interaction_terms = ' + '.join([f'C({factor}):{cov}' for cov in covariates])
+
+    formula = f"{dv_formula} ~ C({factor})"
+    if covariates:
+        formula += " + " + cov_formula + " + " + interaction_terms
+
     model = MANOVA.from_formula(formula, data=df)
     print(f"MANCOVA for {', '.join(dependent_vars)} by {factor} adjusting for {', '.join(covariates)}")
     print(model.mv_test())
+
     return model
 
 #---Function: manova_test---
 def manova_test(df, dependent_vars, factors, return_model=True):
     """
-    Perform a MANOVA to compare multiple dependent variables across one or more categorical factors.
+    Perform a MANOVA to compare multiple dependent variables across categorical factors.
 
     Parameters:
     -----------
@@ -179,17 +196,23 @@ def manova_test(df, dependent_vars, factors, return_model=True):
     model : MANOVA
         Fitted MANOVA model.
     """
-    for dv in dependent_vars:
-        if not pd.api.types.is_numeric_dtype(df[dv]):
-            raise ValueError(f"Dependent variable {dv} must be numeric.")
+    for col in dependent_vars:
+        if not pd.api.types.is_numeric_dtype(df[col]):
+            raise ValueError(f"{col} must be numeric.")
     for f in factors:
         df[f] = df[f].astype('category')
+
     dv_formula = ' + '.join(dependent_vars)
-    factor_formula = ' + '.join([f'C({f})' for f in factors])
+
+    # Build formula with main effects and interactions between factors
+    factor_formula = ' * '.join([f'C({f})' for f in factors])
+
     formula = f"{dv_formula} ~ {factor_formula}"
+
     model = MANOVA.from_formula(formula, data=df)
     print(f"MANOVA for {', '.join(dependent_vars)} by {', '.join(factors)}")
     print(model.mv_test())
+
     return model
 
 #---Function: multi_factor_anova---
@@ -217,9 +240,13 @@ def multi_factor_anova(df, dv, factors, return_model=False):
     """
     for f in factors:
         df[f] = df[f].astype('category')
-    formula = f'{dv} ~ ' + ' + '.join([f'C({f})' for f in factors])
+
+    # Build formula with main effects and interactions between factors
+    formula = f'{dv} ~ ' + ' * '.join([f'C({f})' for f in factors])
+
     model = ols(formula, data=df).fit()
     anova_table = sm.stats.anova_lm(model, typ=2)
+
     return anova_table, model
 
 #---Function: one_sample_ttest---
@@ -307,6 +334,7 @@ def repeated_anova(df, subject, within, dv, return_model=False):
     return result, aovrm
 
 #---Function: robust_anova---
+#---Function: robust_anova---
 def robust_anova(df, dv, factors, return_model=False):
     """
     Perform a robust ANOVA (Welch-like) for one or multiple categorical factors.
@@ -338,13 +366,13 @@ def robust_anova(df, dv, factors, return_model=False):
     for f in factors:
         df[f] = df[f].astype('category')
 
-    # Build formula
-    formula = dv + ' ~ ' + ' + '.join([f'C({f})' for f in factors])
+    # Build formula with main effects and interactions
+    formula = dv + ' ~ ' + ' * '.join([f'C({f})' for f in factors])
 
     # Fit model
     model = ols(formula, data=df).fit()
 
-    # Robust ANOVA table
+    # Robust ANOVA table (HC3)
     anova_table = sm.stats.anova_lm(model, typ=2, robust='hc3')
 
     if return_model:
