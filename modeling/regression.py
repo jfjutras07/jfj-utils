@@ -80,6 +80,53 @@ def gamma_regression(df, outcome, predictors, link='log'):
     print(model.summary())
     return model
 
+# --- Function: linear_mixed_model ---
+def linear_mixed_model(df, outcome, fixed_effects, random_effect, include_interactions=False):
+    """
+    Perform a Linear Mixed Model regression.
+
+    When to use:
+    - Outcome is continuous.
+    - Data has a hierarchical or grouped structure (e.g., employees within job titles).
+    - Accounts for unequal representation across groups.
+    - Can include interactions among fixed effects.
+
+    Parameters:
+    -----------
+    df : pd.DataFrame
+        Dataset containing outcome, predictors, and grouping variable.
+    outcome : str
+        Dependent variable (continuous).
+    fixed_effects : list of str
+        List of fixed effect predictors (numeric or categorical).
+    random_effect : str
+        Grouping variable for random intercepts.
+    include_interactions : bool, default False
+        If True, include all pairwise interactions among fixed effects.
+
+    Returns:
+    --------
+    model : statsmodels MixedLMResults
+        Fitted Linear Mixed Model.
+    """
+    if not fixed_effects:
+        raise ValueError("At least one fixed effect must be provided.")
+
+    #Build formula
+    if include_interactions:
+        formula = f"{outcome} ~ " + " * ".join(fixed_effects)
+    else:
+        formula = f"{outcome} ~ " + " + ".join(fixed_effects)
+
+    #Fit mixed model with random intercept for the grouping variable
+    model = smf.mixedlm(formula, data=df, groups=df[random_effect]).fit(reml=True)
+    
+    #Print summary
+    print(f"Linear Mixed Model for {outcome} with random effect: {random_effect}")
+    print(model.summary())
+    
+    return model
+
 #---Function: linear_regression---
 def linear_regression(df, outcome, predictors):
     """
