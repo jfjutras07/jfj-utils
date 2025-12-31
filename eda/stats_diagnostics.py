@@ -74,7 +74,6 @@ def stats_diagnostics(df, numeric_cols=None, group_col=None, model=None, predict
     display(normal_df.style.background_gradient(cmap='Blues', subset=normal_df.columns[1:]))
 
     # --- Homogeneity / Heteroscedasticity tests ---
-    hom_df = pd.DataFrame()
     if group_col is not None:
         hom_res = []
         df[group_col] = df[group_col].astype('category')
@@ -88,17 +87,18 @@ def stats_diagnostics(df, numeric_cols=None, group_col=None, model=None, predict
                 'Bartlett': round(bartlett_p,4)
             })
         hom_df = pd.DataFrame(hom_res)
-        print("\n=== Homogeneity Tests (Levene & Bartlett) ===")
+        print("\n=== Homogeneity Tests ===")
         display(hom_df.style.background_gradient(cmap='Blues', subset=hom_df.columns[1:]))
-
     elif model is not None:
         exog = model.model.exog
         bp_test = het_breuschpagan(model.resid, exog)
         white_test = het_white(model.resid, exog)
-        tests = pd.DataFrame({
-            'Test': ['Breusch-Pagan LM', 'Breusch-Pagan p-value', 
-                     'White LM', 'White p-value'],
-            'Value': [bp_test[0], bp_test[1], white_test[0], white_test[1]]
-        })
-        print("\n=== Heteroscedasticity Tests (Breusch-Pagan & White) ===")
-        display(tests.style.background_gradient(cmap='Oranges', subset=['Value']))
+        hetero_df = pd.DataFrame([{
+            'Test': 'Breusch-Pagan LM',
+            'p-value': round(bp_test[1],4)
+        },{
+            'Test': 'White LM',
+            'p-value': round(white_test[1],4)
+        }])
+        print("\n=== Heteroscedasticity Tests ===")
+        display(hetero_df.style.background_gradient(cmap='Blues', subset=['p-value']))
