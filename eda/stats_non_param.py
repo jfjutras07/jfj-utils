@@ -176,14 +176,6 @@ def games_howell_posthoc(df, column, group):
     Perform Games-Howell post-hoc test for pairwise comparisons after a one-way ANOVA
     when the assumption of homogeneity of variances is violated.
 
-    Example:
-    --------
-    data = pd.DataFrame({
-        'score': [85, 90, 88, 92, 78, 80, 82, 75, 70],
-        'class': ['A', 'A', 'A', 'B', 'B', 'B', 'C', 'C', 'C']
-    })
-    gh_result = games_howell_posthoc(data, column='score', group='class')
-
     Parameters:
     -----------
     df : pd.DataFrame
@@ -198,11 +190,6 @@ def games_howell_posthoc(df, column, group):
     gh_result : pandas.DataFrame
         Pairwise comparisons including mean differences, t-statistics, degrees of freedom, and p-values.
     """
-    
-    # --- Install required packages ---
-    import sys
-    !{sys.executable} -m pip install -q pingouin scikit-posthocs scikit-bio
-
     #Ensure column is numeric
     if not pd.api.types.is_numeric_dtype(df[column]):
         raise ValueError(f"Column {column} must be numeric.")
@@ -218,7 +205,6 @@ def games_howell_posthoc(df, column, group):
     print(gh_result)
     
     return gh_result
-
 
 #--- Function: kruskal_wallis_test ---
 def kruskal_wallis_test(df, column, group):
