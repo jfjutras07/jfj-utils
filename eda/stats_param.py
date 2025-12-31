@@ -379,6 +379,47 @@ def robust_anova(df, dv, factors, return_model=False):
         return anova_table, model
     return anova_table
 
+#---Function: tukey_posthoc---
+def tukey_posthoc(df, column, group, alpha=0.05):
+    """
+    Perform Tukey's HSD post-hoc test for pairwise comparisons after ANOVA.
+
+    Parameters:
+    -----------
+    df : pd.DataFrame
+        Dataset containing the numeric column and grouping variable.
+    column : str
+        Name of the numeric column to test.
+    group : str
+        Name of the categorical grouping column.
+    alpha : float, optional
+        Significance level (default 0.05).
+
+    Returns:
+    --------
+    tukey_result : TukeyHSDResults
+        Object containing pairwise comparisons with mean differences, p-values, and confidence intervals.
+    """
+
+    # Ensure numeric column
+    if not pd.api.types.is_numeric_dtype(df[column]):
+        raise ValueError(f"Column {column} must be numeric.")
+
+    # Ensure group is categorical
+    df[group] = df[group].astype('category')
+
+    # Extract Series to ensure 1D arrays
+    endog = df[column].values
+    groups = df[group].values
+
+    # Run Tukey HSD
+    from statsmodels.stats.multicomp import pairwise_tukeyhsd
+    tukey_result = pairwise_tukeyhsd(endog=endog, groups=groups, alpha=alpha)
+
+    print(f"Tukey HSD post-hoc test for {column} by {group}")
+    print(tukey_result.summary())
+    return tukey_result
+
 #---Function: two_sample_ttest---
 def two_sample_ttest(df, column, group, group1, group2):
     """
@@ -410,33 +451,6 @@ def two_sample_ttest(df, column, group, group1, group2):
     print(f"Two-sample t-test for {column} between '{group1}' and '{group2}'")
     print(f"t-statistic = {t_stat:.4f}, p-value = {p_value:.4f}")
     return t_stat, p_value
-
-#---Function: tukey_posthoc---
-def tukey_posthoc(df, column, group, alpha=0.05):
-    """
-    Perform Tukey's HSD post-hoc test for pairwise comparisons after ANOVA.
-
-    Parameters:
-    -----------
-    df : pd.DataFrame
-        Dataset containing the numeric column and grouping variable.
-    column : str
-        Name of the numeric column to test.
-    group : str
-        Name of the categorical grouping column.
-    alpha : float, optional
-        Significance level (default 0.05).
-
-    Returns:
-    --------
-    tukey_result : TukeyHSDResults
-        Object containing pairwise comparisons with mean differences, p-values, and confidence intervals.
-    """
-    df[group] = df[group].astype('category')
-    tukey_result = pairwise_tukeyhsd(endog=df[column], groups=df[group], alpha=alpha)
-    print(f"Tukey HSD post-hoc test for {column} by {group}")
-    print(tukey_result.summary())
-    return tukey_result
 
 #---Function: welch_anova_test---
 def welch_anova_test(df, column, group, return_model=False):
