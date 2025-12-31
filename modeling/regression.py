@@ -125,9 +125,9 @@ def linear_mixed_model(df, fixed_effects, outcome, random_effect, include_intera
     return model_fit
 
 #---Function: linear_regression---
-def linear_regression(df, outcome, predictors):
+def linear_regression(df, outcome, predictors, include_interactions=False):
     """
-    Perform a multiple linear regression.
+    Perform a multiple linear regression with optional interactions.
 
     Parameters:
     -----------
@@ -136,7 +136,9 @@ def linear_regression(df, outcome, predictors):
     outcome : str
         Dependent variable.
     predictors : list of str
-        List of independent numeric variables.
+        List of independent variables (numeric or categorical).
+    include_interactions : bool, default False
+        Whether to include all pairwise interactions between predictors.
 
     Returns:
     --------
@@ -145,9 +147,17 @@ def linear_regression(df, outcome, predictors):
     """
     if not predictors:
         raise ValueError("At least one predictor must be provided.")
-    
-    formula = f"{outcome} ~ " + " * ".join(predictors)
+
+    #Build formula
+    if include_interactions:
+        formula = f"{outcome} ~ " + " * ".join(predictors)  # main effects + interactions
+    else:
+        formula = f"{outcome} ~ " + " + ".join(predictors)  # main effects only
+
+    #Fit model
     model = smf.ols(formula, data=df).fit()
+
+    #Print summary
     print(model.summary())
     return model
 
