@@ -104,6 +104,7 @@ Active development — modules will be progressively added and refined.
 - `one_sample_ttest`
 - `paired_ttest`
 - `repeated_anova`
+- `robust_anova`
 - `tukey_posthoc`
 - `two_sample_ttest`
 - `welch_anova_test`
