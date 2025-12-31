@@ -10,69 +10,76 @@ from statsmodels.stats.multicomp import pairwise_tukeyhsd
 def ancova_test(df, dv, factor, covariates, return_model=False):
     """
     Perform an ANCOVA to compare means between groups while adjusting for covariates.
-    """
 
-    #Check dependent variable
+    Parameters:
+    -----------
+    df : pd.DataFrame
+        Dataset containing the variables.
+    dv : str
+        Name of the dependent variable (numeric).
+    factor : str
+        Name of the categorical factor.
+    covariates : list of str
+        Names of numeric covariates.
+    return_model : bool, optional
+        If True, return the fitted model along with ANOVA table.
+
+    Returns:
+    --------
+    anova_table : pd.DataFrame
+        ANOVA table.
+    model : statsmodels.regression.linear_model.RegressionResultsWrapper
+        Fitted OLS model.
+    """
     if not pd.api.types.is_numeric_dtype(df[dv]):
         raise ValueError(f"Dependent variable {dv} must be numeric.")
-    
-    #Ensure factor is categorical
     df[factor] = df[factor].astype('category')
-    
-    #Ensure covariates are numeric
     for cov in covariates:
         if not pd.api.types.is_numeric_dtype(df[cov]):
             raise ValueError(f"Covariate {cov} must be numeric.")
     
-    #Build formula
-    formula = f"{dv} ~ C({factor})"
-    if covariates:
-        formula += " + " + " + ".join(covariates)
-    
-    #Fit model
+    formula = f"{dv} ~ C({factor})" + (" + " + " + ".join(covariates) if covariates else "")
     model = ols(formula, data=df).fit()
     anova_table = sm.stats.anova_lm(model, typ=2)
-
+    
     if return_model:
         return anova_table, model
-
-    return anova_table
+    return anova_table, model
 
 #---Function: anova_test---
 def anova_test(df, column, group, return_model=False):
     """
     Perform a one-way ANOVA to compare the means of three or more groups.
-    """
 
-    #Check column is numeric
+    Parameters:
+    -----------
+    df : pd.DataFrame
+        Dataset containing the numeric column and grouping variable.
+    column : str
+        Name of the numeric column.
+    group : str
+        Name of the categorical grouping variable.
+    return_model : bool, optional
+        If True, return the fitted model along with ANOVA table.
+
+    Returns:
+    --------
+    anova_table : pd.DataFrame
+        ANOVA table.
+    model : statsmodels.regression.linear_model.RegressionResultsWrapper
+        Fitted OLS model.
+    """
     if not pd.api.types.is_numeric_dtype(df[column]):
         raise ValueError(f"Column {column} must be numeric.")
-    
-    #Ensure group is categorical
     df[group] = df[group].astype('category')
-    
-    #Build and fit model
     model = ols(f'{column} ~ C({group})', data=df).fit()
     anova_table = sm.stats.anova_lm(model, typ=2)
-
-    if return_model:
-        return anova_table, model
-     
-    return anova_table
+    return anova_table, model
 
 #---Function: f_test_variance---
 def f_test_variance(df, column, group, group1, group2):
     """
     Perform an F-test to compare the variances of two groups.
-
-    Example:
-    --------
-    # Compare variance of blood pressure between two treatment groups
-    data = pd.DataFrame({
-        'bp': [120, 125, 130, 115, 128, 132, 118, 122],
-        'treatment': ['A', 'A', 'A', 'A', 'B', 'B', 'B', 'B']
-    })
-    f_stat, p_value = f_test_variance(data, column='bp', group='treatment', group1='A', group2='B')
 
     Parameters:
     -----------
@@ -94,20 +101,16 @@ def f_test_variance(df, column, group, group1, group2):
     p_value : float
         Two-tailed p-value for the F-test.
     """
-    #Check column is numeric
     if not pd.api.types.is_numeric_dtype(df[column]):
         raise ValueError(f"Column {column} must be numeric.")
     
-    #Extract groups and drop NaN
     data1 = df[df[group] == group1][column].dropna()
     data2 = df[df[group] == group2][column].dropna()
     
-    #Compute variances
     var1 = data1.var(ddof=1)
     var2 = data2.var(ddof=1)
     f_stat = var1 / var2
     
-    #Compute two-tailed p-value
     dfn = len(data1) - 1
     dfd = len(data2) - 1
     if f_stat > 1:
@@ -115,7 +118,6 @@ def f_test_variance(df, column, group, group1, group2):
     else:
         p_value = 2 * stats.f.cdf(f_stat, dfn, dfd)
     
-    #Print results
     print(f"F-test for variances of {column} between groups '{group1}' and '{group2}'")
     print(f"F-statistic = {f_stat:.4f}, p-value = {p_value:.4f}")
     
@@ -125,104 +127,105 @@ def f_test_variance(df, column, group, group1, group2):
 def mancova_test(df, dependent_vars, factor, covariates, return_model=True):
     """
     Perform a MANCOVA to compare multiple dependent variables across groups while adjusting for covariates.
-    """
 
-    #Check dependent variables and covariates are numeric
+    Parameters:
+    -----------
+    df : pd.DataFrame
+        Dataset containing the dependent variables, factor, and covariates.
+    dependent_vars : list of str
+        Names of numeric dependent variables.
+    factor : str
+        Name of the categorical factor.
+    covariates : list of str
+        Names of numeric covariates.
+    return_model : bool, optional
+        If True, return the MANCOVA model.
+
+    Returns:
+    --------
+    model : MANOVA
+        Fitted MANCOVA model.
+    """
     for col in dependent_vars + covariates:
         if not pd.api.types.is_numeric_dtype(df[col]):
             raise ValueError(f"{col} must be numeric.")
-    
-    #Ensure factor is categorical
     df[factor] = df[factor].astype('category')
-    
-    #Build formula
     dv_formula = ' + '.join(dependent_vars)
     cov_formula = ' + '.join(covariates)
-    formula = f"{dv_formula} ~ C({factor})"
-    if covariates:
-        formula += " + " + cov_formula
-    
-    #Fit MANCOVA
+    formula = f"{dv_formula} ~ C({factor})" + (" + " + cov_formula if covariates else "")
     model = MANOVA.from_formula(formula, data=df)
-
-    #Print summary
     print(f"MANCOVA for {', '.join(dependent_vars)} by {factor} adjusting for {', '.join(covariates)}")
     print(model.mv_test())
-
-    if return_model:
-        return model
-
-    return model.mv_test()
+    return model
 
 #---Function: manova_test---
 def manova_test(df, dependent_vars, factors, return_model=True):
     """
     Perform a MANOVA to compare multiple dependent variables across one or more categorical factors.
-    """
 
-    #Check dependent variables are numeric
+    Parameters:
+    -----------
+    df : pd.DataFrame
+        Dataset containing the dependent variables and factors.
+    dependent_vars : list of str
+        Names of numeric dependent variables.
+    factors : list of str
+        Names of categorical factors.
+    return_model : bool, optional
+        If True, return the MANOVA model.
+
+    Returns:
+    --------
+    model : MANOVA
+        Fitted MANOVA model.
+    """
     for dv in dependent_vars:
         if not pd.api.types.is_numeric_dtype(df[dv]):
             raise ValueError(f"Dependent variable {dv} must be numeric.")
-    
-    #Ensure factors are categorical
     for f in factors:
         df[f] = df[f].astype('category')
-    
-    #Build formula
     dv_formula = ' + '.join(dependent_vars)
     factor_formula = ' + '.join([f'C({f})' for f in factors])
     formula = f"{dv_formula} ~ {factor_formula}"
-    
-    #Fit MANOVA
     model = MANOVA.from_formula(formula, data=df)
-    
-    #Print summary
     print(f"MANOVA for {', '.join(dependent_vars)} by {', '.join(factors)}")
     print(model.mv_test())
-
-    if return_model:
-        return model
-
-    return model.mv_test()
+    return model
 
 #---Function: multi_factor_anova---
 def multi_factor_anova(df, dv, factors, return_model=False):
     """
     Perform a multi-factor ANOVA to compare means across multiple categorical factors.
-    """
 
-    #Ensure DV is numeric
-    if not pd.api.types.is_numeric_dtype(df[dv]):
-        raise ValueError(f"Dependent variable {dv} must be numeric.")
-    
-    #Ensure factors are categorical
+    Parameters:
+    -----------
+    df : pd.DataFrame
+        Dataset containing the dependent variable and factors.
+    dv : str
+        Name of the numeric dependent variable.
+    factors : list of str
+        Names of categorical factors.
+    return_model : bool, optional
+        If True, return the fitted model along with ANOVA table.
+
+    Returns:
+    --------
+    anova_table : pd.DataFrame
+        ANOVA table.
+    model : statsmodels.regression.linear_model.RegressionResultsWrapper
+        Fitted OLS model.
+    """
     for f in factors:
         df[f] = df[f].astype('category')
-    
-    #Build formula
-    factor_formula = ' + '.join([f'C({f})' for f in factors])
-    formula = f'{dv} ~ {factor_formula}'
-    
-    #Fit model
+    formula = f'{dv} ~ ' + ' + '.join([f'C({f})' for f in factors])
     model = ols(formula, data=df).fit()
     anova_table = sm.stats.anova_lm(model, typ=2)
-
-    if return_model:
-        return anova_table, model
-    
-    return anova_table
+    return anova_table, model
 
 #---Function: one_sample_ttest---
 def one_sample_ttest(df, column, popmean):
     """
     Perform a one-sample t-test.
-
-    Example:
-    --------
-    # Compare the average height of plants to the expected mean of 50 cm
-    data = pd.DataFrame({'height': [48, 52, 50, 49, 51]})
-    t_stat, p_value = one_sample_ttest(data, column='height', popmean=50)
 
     Parameters:
     -----------
@@ -240,32 +243,15 @@ def one_sample_ttest(df, column, popmean):
     p_value : float
         Two-tailed p-value for the test.
     """
-    #Check column is numeric
-    if not pd.api.types.is_numeric_dtype(df[column]):
-        raise ValueError(f"Column {column} must be numeric.")
-    
-    #Perform one-sample t-test
     t_stat, p_value = stats.ttest_1samp(df[column].dropna(), popmean)
-    
-    #Print results
     print(f"One-sample t-test for {column} against mean={popmean}")
     print(f"t-statistic = {t_stat:.4f}, p-value = {p_value:.4f}")
-    
     return t_stat, p_value
 
 #---Function: paired_ttest---
 def paired_ttest(df, column_before, column_after):
     """
     Perform a paired (dependent) t-test between two related measurements.
-
-    Example:
-    --------
-    # Compare patients' weight before and after a diet
-    data = pd.DataFrame({
-        'weight_before': [80, 75, 90, 85, 78],
-        'weight_after': [78, 74, 88, 83, 77]
-    })
-    t_stat, p_value = paired_ttest(data, column_before='weight_before', column_after='weight_after')
 
     Parameters:
     -----------
@@ -283,115 +269,47 @@ def paired_ttest(df, column_before, column_after):
     p_value : float
         Two-tailed p-value for the test.
     """
-    #Check columns are numeric
-    if not pd.api.types.is_numeric_dtype(df[column_before]):
-        raise ValueError(f"Column {column_before} must be numeric.")
-    if not pd.api.types.is_numeric_dtype(df[column_after]):
-        raise ValueError(f"Column {column_after} must be numeric.")
-    
-    #Drop NaNs
-    data_before = df[column_before].dropna()
-    data_after = df[column_after].dropna()
-    
-    #Check same length
-    if len(data_before) != len(data_after):
-        raise ValueError("Columns must have the same number of observations after dropping NaNs.")
-    
-    #Perform paired t-test
-    t_stat, p_value = stats.ttest_rel(data_before, data_after)
-    
-    #Print results
+    df_pair = df[[column_before, column_after]].dropna()
+    t_stat, p_value = stats.ttest_rel(df_pair[column_before], df_pair[column_after])
     print(f"Paired t-test between '{column_before}' and '{column_after}'")
     print(f"t-statistic = {t_stat:.4f}, p-value = {p_value:.4f}")
-    
     return t_stat, p_value
 
 #---Function: repeated_anova---
 def repeated_anova(df, subject, within, dv, return_model=False):
     """
     Perform a repeated measures ANOVA on a dataset with repeated measurements.
-    """
-
-    #Check DV is numeric
-    if not pd.api.types.is_numeric_dtype(df[dv]):
-        raise ValueError(f"Dependent variable {dv} must be numeric.")
-    
-    #Ensure subject and within factors are categorical
-    df[subject] = df[subject].astype('category')
-    df[within] = df[within].astype('category')
-    
-    #Fit repeated measures ANOVA
-    aovrm = AnovaRM(df, depvar=dv, subject=subject, within=[within])
-    result = aovrm.fit()
-    
-    #Print results
-    print(f"Repeated measures ANOVA for {dv} by {within} within subjects {subject}")
-    print(result)
-
-    if return_model:
-        return result, aovrm
-
-    return result
-
-#---Function: tukey_posthoc---
-def tukey_posthoc(df, column, group, alpha=0.05):
-    """
-    Perform Tukey's HSD post-hoc test for pairwise comparisons after ANOVA.
-
-    Example:
-    --------
-    # Compare students' test scores across three classes
-    data = pd.DataFrame({
-        'score': [85, 90, 88, 92, 78, 80, 82, 75, 70],
-        'class': ['A', 'A', 'A', 'B', 'B', 'B', 'C', 'C', 'C']
-    })
-    tukey_result = tukey_posthoc(data, column='score', group='class')
 
     Parameters:
     -----------
     df : pd.DataFrame
-        Dataset containing the numeric column and grouping variable.
-    column : str
-        Name of the numeric column to test.
-    group : str
-        Name of the categorical grouping column.
-    alpha : float, optional
-        Significance level (default 0.05).
+        Dataset containing the dependent variable and within-subject factor.
+    subject : str
+        Column representing subject IDs.
+    within : str
+        Column representing the within-subject factor.
+    dv : str
+        Name of the numeric dependent variable.
+    return_model : bool, optional
+        If True, return the fitted model along with ANOVA result.
 
     Returns:
     --------
-    tukey_result : TukeyHSDResults
-        Object containing pairwise comparisons with mean differences, p-values, and confidence intervals.
+    result : AnovaRMResults
+        Fitted repeated measures ANOVA result.
+    aovrm : AnovaRM
+        Original AnovaRM model.
     """
-    #Check column is numeric
-    if not pd.api.types.is_numeric_dtype(df[column]):
-        raise ValueError(f"Column {column} must be numeric.")
-    
-    #Ensure group is categorical
-    df[group] = df[group].astype('category')
-    
-    #Perform Tukey HSD
-    tukey_result = pairwise_tukeyhsd(endog=df[column], groups=df[group], alpha=alpha)
-    
-    #Print summary
-    print(f"Tukey HSD post-hoc test for {column} by {group}")
-    print(tukey_result.summary())
-    
-    return tukey_result
+    df[subject] = df[subject].astype('category')
+    df[within] = df[within].astype('category')
+    aovrm = AnovaRM(df, depvar=dv, subject=subject, within=[within])
+    result = aovrm.fit()
+    return result, aovrm
 
 #---Function: two_sample_ttest---
 def two_sample_ttest(df, column, group, group1, group2):
     """
     Perform an independent two-sample t-test between two groups.
-
-    Example:
-    --------
-    # Compare the average blood pressure between two treatment groups
-    data = pd.DataFrame({
-        'bp': [120, 125, 130, 115, 128, 132, 118, 122],
-        'treatment': ['A', 'A', 'A', 'A', 'B', 'B', 'B', 'B']
-    })
-    t_stat, p_value = two_sample_ttest(data, column='bp', group='treatment', group1='A', group2='B')
 
     Parameters:
     -----------
@@ -413,47 +331,65 @@ def two_sample_ttest(df, column, group, group1, group2):
     p_value : float
         Two-tailed p-value for the test.
     """
-    #Check column is numeric
-    if not pd.api.types.is_numeric_dtype(df[column]):
-        raise ValueError(f"Column {column} must be numeric.")
-    
-    #Extract the two groups and drop NaNs
-    data1 = df[df[group] == group1][column].dropna()
-    data2 = df[df[group] == group2][column].dropna()
-    
-    #Perform independent two-sample t-test
+    data1 = df[df[group]==group1][column].dropna()
+    data2 = df[df[group]==group2][column].dropna()
     t_stat, p_value = stats.ttest_ind(data1, data2, equal_var=True)
-    
-    #Print results
-    print(f"Two-sample t-test for {column} between groups '{group1}' and '{group2}'")
+    print(f"Two-sample t-test for {column} between '{group1}' and '{group2}'")
     print(f"t-statistic = {t_stat:.4f}, p-value = {p_value:.4f}")
-    
     return t_stat, p_value
+
+#---Function: tukey_posthoc---
+def tukey_posthoc(df, column, group, alpha=0.05):
+    """
+    Perform Tukey's HSD post-hoc test for pairwise comparisons after ANOVA.
+
+    Parameters:
+    -----------
+    df : pd.DataFrame
+        Dataset containing the numeric column and grouping variable.
+    column : str
+        Name of the numeric column to test.
+    group : str
+        Name of the categorical grouping column.
+    alpha : float, optional
+        Significance level (default 0.05).
+
+    Returns:
+    --------
+    tukey_result : TukeyHSDResults
+        Object containing pairwise comparisons with mean differences, p-values, and confidence intervals.
+    """
+    df[group] = df[group].astype('category')
+    tukey_result = pairwise_tukeyhsd(endog=df[column], groups=df[group], alpha=alpha)
+    print(f"Tukey HSD post-hoc test for {column} by {group}")
+    print(tukey_result.summary())
+    return tukey_result
 
 #---Function: welch_anova_test---
 def welch_anova_test(df, column, group, return_model=False):
     """
     Perform a one-way Welch ANOVA to compare the means of three or more groups,
     robust to unequal variances.
+
+    Parameters:
+    -----------
+    df : pd.DataFrame
+        Dataset containing the numeric column and grouping variable.
+    column : str
+        Name of the numeric column.
+    group : str
+        Name of the categorical grouping variable.
+    return_model : bool, optional
+        If True, return the fitted model along with Welch ANOVA table.
+
+    Returns:
+    --------
+    welch_table : pd.DataFrame
+        Welch ANOVA table.
+    model : statsmodels.regression.linear_model.RegressionResultsWrapper
+        Fitted OLS model.
     """
-
-    #Check column is numeric
-    if not pd.api.types.is_numeric_dtype(df[column]):
-        raise ValueError(f"Column {column} must be numeric.")
-    
-    #Ensure group is categorical
     df[group] = df[group].astype('category')
-    
-    #Build OLS model
     model = ols(f'{column} ~ C({group})', data=df).fit()
-    
-    #Perform Welch ANOVA using HC3 robust covariance
     welch_table = sm.stats.anova_lm(model, typ=2, robust='hc3')
-
-    if return_model:
-        return welch_table, None
-
-    return welch_table
-
-
-
+    return welch_table, model
