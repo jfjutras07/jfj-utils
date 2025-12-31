@@ -170,7 +170,7 @@ def friedman_test(df, dv, subject, within):
     
     return stat, p_value
 
-#--- Function: games_howell_posthoc ---
+# --- Function: games_howell_posthoc ---
 def games_howell_posthoc(df, column, group):
     """
     Perform Games-Howell post-hoc test for pairwise comparisons after a one-way ANOVA
@@ -178,7 +178,6 @@ def games_howell_posthoc(df, column, group):
 
     Example:
     --------
-    # Compare students' test scores across three classes
     data = pd.DataFrame({
         'score': [85, 90, 88, 92, 78, 80, 82, 75, 70],
         'class': ['A', 'A', 'A', 'B', 'B', 'B', 'C', 'C', 'C']
@@ -197,9 +196,13 @@ def games_howell_posthoc(df, column, group):
     Returns:
     --------
     gh_result : pandas.DataFrame
-        Pairwise comparisons table including mean differences, t-statistics, degrees of freedom, and p-values.
+        Pairwise comparisons including mean differences, t-statistics, degrees of freedom, and p-values.
     """
-    i
+    
+    # --- Install required packages ---
+    import sys
+    !{sys.executable} -m pip install -q pingouin scikit-posthocs scikit-bio
+
     #Ensure column is numeric
     if not pd.api.types.is_numeric_dtype(df[column]):
         raise ValueError(f"Column {column} must be numeric.")
@@ -215,6 +218,7 @@ def games_howell_posthoc(df, column, group):
     print(gh_result)
     
     return gh_result
+
 
 #--- Function: kruskal_wallis_test ---
 def kruskal_wallis_test(df, column, group):
