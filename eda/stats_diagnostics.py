@@ -1,8 +1,8 @@
-    import numpy as np
-    import pandas as pd
-    import matplotlib.pyplot as plt
-    import math
-    from scipy.stats import shapiro, normaltest, anderson, kstest, levene, bartlett, stats
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import math
+from scipy.stats import shapiro, normaltest, anderson, kstest, levene, bartlett, stats
 
 #--- Function: stats_diagnostics ---
 def stats_diagnostics(df, numeric_cols=None, group_col=None, model=None, predictors=None):
