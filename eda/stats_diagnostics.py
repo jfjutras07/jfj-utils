@@ -2,53 +2,39 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from scipy.stats import shapiro, normaltest, anderson, kstest, levene, bartlett, probplot
-import math
 
 def stats_diagnostics(df, numeric_cols=None, group_col=None, model=None, predictors=None):
     """
-    Full diagnostics: Q-Q plots, residuals vs fitted (2x2 grid), normality and homogeneity tests.
+    Diagnostics: QQ plot | Residuals vs Fitted côte à côte, normality and homogeneity tables.
     """
     if numeric_cols is None:
         numeric_cols = df.select_dtypes(include='number').columns.tolist()
 
     results = {}
 
-    # --- 1. Q-Q plots ---
-    n_cols = 2
-    n_rows = int(np.ceil(len(numeric_cols)/2))
-    fig, axes = plt.subplots(n_rows, n_cols, figsize=(12, 5*n_rows))
-    axes = axes.flatten()
-    for i, col in enumerate(numeric_cols):
-        col_data = df[col].dropna()
-        probplot(col_data, dist="norm", plot=axes[i])
-        axes[i].set_title(f"Q-Q Plot of {col}")
-    for j in range(i+1, len(axes)):
-        fig.delaxes(axes[j])
-    plt.tight_layout()
-    plt.show()
-
-    # --- 2. Residuals vs fitted plots (2x2 grid) ---
-    if model is not None and predictors is not None and len(predictors) >= 1:
+    # --- QQ plot et Residuals vs Fitted côte à côte ---
+    if model is not None:
         resid = getattr(model, 'resid')
         fitted = getattr(model, 'fittedvalues')
-
-        n_plots = len(predictors)
-        n_cols = 2
-        n_rows = math.ceil(n_plots / n_cols)
-        fig, axes = plt.subplots(n_rows, n_cols, figsize=(6*n_cols, 5*n_rows))
-        axes = axes.flatten()
-        for i, var in enumerate(predictors):
-            axes[i].scatter(df[var], resid, alpha=0.7)
-            axes[i].axhline(0, color='red', linestyle='--')
-            axes[i].set_xlabel(var)
-            axes[i].set_ylabel('Residuals')
-            axes[i].set_title(f'Residuals vs {var}')
-        for j in range(i+1, len(axes)):
-            axes[j].set_visible(False)  # case vide à droite si impair
+    for col in numeric_cols:
+        col_data = df[col].dropna()
+        fig, axes = plt.subplots(1, 2, figsize=(10,5))  # 1 ligne, 2 colonnes
+        # QQ plot
+        probplot(col_data, dist="norm", plot=axes[0])
+        axes[0].set_title(f"Q-Q Plot of {col}")
+        axes[0].set_xlabel("Theoretical Quantiles")
+        axes[0].set_ylabel("Sample Quantiles")
+        # Residuals vs fitted
+        if model is not None:
+            axes[1].scatter(fitted, resid, alpha=0.7)
+            axes[1].axhline(0, color='red', linestyle='--')
+            axes[1].set_xlabel('Fitted values')
+            axes[1].set_ylabel('Residuals')
+            axes[1].set_title(f'Residuals vs Fitted')
         plt.tight_layout()
         plt.show()
 
-    # --- 3. Normality tests ---
+    # --- Normality tests ---
     normal_res = []
     for col in numeric_cols:
         s = df[col].dropna()
@@ -56,19 +42,18 @@ def stats_diagnostics(df, numeric_cols=None, group_col=None, model=None, predict
         mean = s.mean()
         std = s.std()
         shapiro_flag = dagostino_flag = anderson_flag = ks_flag = np.nan
-        shapiro_p = dagostino_p = ad_stat = ks_p = np.nan
+        shapiro_p = dagostino_p = ks_p = np.nan
 
         if n <= 5000:
-            stat, shapiro_p = shapiro(s)
+            _, shapiro_p = shapiro(s)
             shapiro_flag = shapiro_p > 0.05
         if n > 20:
-            stat, dagostino_p = normaltest(s)
+            _, dagostino_p = normaltest(s)
             dagostino_flag = dagostino_p > 0.05
         ad_result = anderson(s)
         crit_val_5 = ad_result.critical_values[2]
-        ad_stat = ad_result.statistic
-        anderson_flag = ad_stat < crit_val_5
-        _, ks_p = kstest(s, 'norm', args=(mean, std))
+        anderson_flag = ad_result.statistic < crit_val_5
+        _, ks_p = kstest(s, 'norm', args=(mean,std))
         ks_flag = ks_p > 0.05
 
         normal_res.append({
@@ -76,22 +61,20 @@ def stats_diagnostics(df, numeric_cols=None, group_col=None, model=None, predict
             "N": n,
             "Mean": round(mean,2),
             "Std": round(std,2),
-            "Shapiro p": round(shapiro_p,4) if not np.isnan(shapiro_p) else np.nan,
-            "Shapiro pass": "✔" if shapiro_flag else "✖",
-            "D’Agostino p": round(dagostino_p,4) if not np.isnan(dagostino_p) else np.nan,
-            "D’Agostino pass": "✔" if dagostino_flag else "✖",
-            "Anderson stat": round(ad_stat,4),
-            "Anderson pass": "✔" if anderson_flag else "✖",
+            "Shapiro p": round(shapiro_p,4) if shapiro_p is not None else np.nan,
+            "Shapiro pass": shapiro_flag,
+            "D’Agostino p": round(dagostino_p,4) if dagostino_p is not None else np.nan,
+            "D’Agostino pass": dagostino_flag,
+            "Anderson stat": round(ad_result.statistic,4),
+            "Anderson pass": anderson_flag,
             "KS p": round(ks_p,4),
-            "KS pass": "✔" if ks_flag else "✖"
+            "KS pass": ks_flag
         })
-
-    normality_df = pd.DataFrame(normal_res)
-    results['normality'] = normality_df
+    results['normality'] = pd.DataFrame(normal_res)
     print("\n=== Normality Tests ===")
-    display(normality_df)
+    display(results['normality'])
 
-    # --- 4. Homogeneity of variance ---
+    # --- Homogeneity ---
     if group_col is not None:
         hom_res = []
         df[group_col] = df[group_col].astype('category')
@@ -103,14 +86,13 @@ def stats_diagnostics(df, numeric_cols=None, group_col=None, model=None, predict
                 "Column": col,
                 "Levene stat": round(levene_stat,4),
                 "Levene p": round(levene_p,4),
-                "Levene pass": "✔" if levene_p>0.05 else "✖",
+                "Levene pass": levene_p>0.05,
                 "Bartlett stat": round(bartlett_stat,4),
                 "Bartlett p": round(bartlett_p,4),
-                "Bartlett pass": "✔" if bartlett_p>0.05 else "✖"
+                "Bartlett pass": bartlett_p>0.05
             })
-        homogeneity_df = pd.DataFrame(hom_res)
-        results['homogeneity'] = homogeneity_df
+        results['homogeneity'] = pd.DataFrame(hom_res)
         print("\n=== Homogeneity Tests ===")
-        display(homogeneity_df)
+        display(results['homogeneity'])
 
     return results
