@@ -81,55 +81,48 @@ def gamma_regression(df, outcome, predictors, link='log'):
     return model
 
 # --- Function: linear_mixed_model ---
-def linear_mixed_model(df, predictors, outcome, random_effect, include_interactions=False, return_interactions=False):
+def linear_mixed_model(df, fixed_effects, outcome, random_effect, include_interactions=False):
     """
-    Fit a Linear Mixed Model (LMM) with optional interaction terms.
+    Perform a Linear Mixed Model (LMM) regression.
 
     Parameters:
     -----------
     df : pd.DataFrame
-        Dataset containing predictors, outcome, and random effect.
-    predictors : list of str
-        List of fixed-effect predictor columns.
+        Dataset containing outcome, fixed effects, and grouping variable for random effect.
+    fixed_effects : list of str
+        List of fixed-effect predictor variables.
     outcome : str
-        Dependent variable column.
+        Dependent variable.
     random_effect : str
-        Column to be used as random effect (e.g., grouping variable).
+        Column name for random effect (grouping variable).
     include_interactions : bool, default False
-        If True, include all pairwise interactions among predictors.
-    return_interactions : bool, default False
-        If True, return the names of interactions fitted in the model.
+        Whether to include all pairwise interactions between fixed effects.
 
     Returns:
     --------
-    model : statsmodels MixedLMResults
+    model_fit : MixedLMResults
         Fitted LMM.
-    interactions : list of str (optional)
-        Names of interaction terms, if return_interactions=True.
     """
 
-    if not predictors:
-        raise ValueError("At least one predictor must be provided.")
+    if not fixed_effects:
+        raise ValueError("At least one fixed effect must be provided.")
 
     #Build formula
     if include_interactions:
-        formula = f"{outcome} ~ " + " * ".join(predictors)
+        fixed_formula = " * ".join(fixed_effects)  # includes main effects + all pairwise interactions
     else:
-        formula = f"{outcome} ~ " + " + ".join(predictors)
+        fixed_formula = " + ".join(fixed_effects)  # only main effects
 
-    #Fit mixed model
-    model = smf.mixedlm(formula, df, groups=df[random_effect]).fit()
-    print(model.summary())
-
-    #Optional: return interaction names
-    interactions = None
-    if return_interactions and include_interactions:
-        interactions = [term for term in model.fe_params.index if ":" in term]
-
-    if return_interactions:
-        return model, interactions
-    else:
-        return model
+    formula = f"{outcome} ~ {fixed_formula}"
+    
+    #Fit the model
+    model = smf.mixedlm(formula=formula, data=df, groups=df[random_effect])
+    model_fit = model.fit(reml=True)
+    
+    #Print summary
+    print(model_fit.summary())
+    
+    return model_fit
 
 #---Function: linear_regression---
 def linear_regression(df, outcome, predictors):
