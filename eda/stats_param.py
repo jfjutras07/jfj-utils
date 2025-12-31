@@ -131,49 +131,57 @@ def f_test_variance(df, column, group, group1, group2):
     
     return f_stat, p_value
 
-#---Function: mancova_test---
+#---Function: mancova_test ---
 def mancova_test(df, dependent_vars, factor, covariates, return_model=True):
     """
-    Perform a MANCOVA to compare multiple dependent variables across groups while adjusting for covariates.
+    Perform MANCOVA (Multivariate Analysis of Covariance) on a dataframe.
+
+    This function automatically handles categorical covariates by wrapping them in C().
 
     Parameters:
     -----------
     df : pd.DataFrame
-        Dataset containing the dependent variables, factor, and covariates.
+        Input dataset.
     dependent_vars : list of str
-        Names of numeric dependent variables.
+        List of dependent variable names (e.g., ['BasePay']).
     factor : str
-        Name of the categorical factor.
+        Categorical independent variable (e.g., 'Gender').
     covariates : list of str
-        Names of numeric covariates.
-    return_model : bool, optional
-        If True, return the MANCOVA model.
+        Covariates to adjust for (numeric or categorical).
+    return_model : bool
+        Whether to return the fitted MANOVA object.
 
     Returns:
     --------
-    model : MANOVA
-        Fitted MANCOVA model.
+    results : summary table of MANCOVA test
+    model : statsmodels MANOVA object (if return_model=True)
     """
-    for col in dependent_vars + covariates:
-        if not pd.api.types.is_numeric_dtype(df[col]):
-            raise ValueError(f"{col} must be numeric.")
-    df[factor] = df[factor].astype('category')
+    #Automatically wrap categorical variables with C()
+    cov_formula = []
+    for col in covariates:
+        if pd.api.types.is_numeric_dtype(df[col]):
+            cov_formula.append(col)
+        else:
+            cov_formula.append(f"C({col})")
+    
+    #Factor (independent variable) always treated as categorical
+    factor_formula = f"C({factor})"
+    
+    #Combine dependent and independent/covariates into formula
+    dep_formula = " + ".join(dependent_vars)
+    cov_formula_str = " + ".join(cov_formula)
+    formula = f"{dep_formula} ~ {factor_formula}"
+    if cov_formula_str:
+        formula += " + " + cov_formula_str
 
-    dv_formula = ' + '.join(dependent_vars)
-    cov_formula = ' + '.join(covariates)
-
-    # Build formula with main effects and factor x covariate interactions
-    interaction_terms = ' + '.join([f'C({factor}):{cov}' for cov in covariates])
-
-    formula = f"{dv_formula} ~ C({factor})"
-    if covariates:
-        formula += " + " + cov_formula + " + " + interaction_terms
-
+    #Fit MANOVA
     model = MANOVA.from_formula(formula, data=df)
-    print(f"MANCOVA for {', '.join(dependent_vars)} by {factor} adjusting for {', '.join(covariates)}")
-    print(model.mv_test())
+    results = model.mv_test()
 
-    return model
+    if return_model:
+        return results, model
+    else:
+        return results
 
 #---Function: manova_test---
 def manova_test(df, dependent_vars, factors, return_model=True):
