@@ -62,11 +62,10 @@ def stats_diagnostics(df, numeric_cols=None, group_col=None, model=None, predict
             })
         hom_df = pd.DataFrame(hom_res)
 
-    # --- Display clean tables without dict representation ---
+    # --- Display clean tables only ---
     print("=== Normality Tests ===")
     print(normal_df.to_string(index=False))
+
     if not hom_df.empty:
         print("\n=== Homogeneity Tests ===")
         print(hom_df.to_string(index=False))
-
-    return normal_df, hom_df
