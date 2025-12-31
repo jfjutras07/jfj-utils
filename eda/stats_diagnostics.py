@@ -11,32 +11,45 @@ def stats_diagnostics(df, numeric_cols=None, group_col=None, model=None, predict
     if numeric_cols is None:
         numeric_cols = df.select_dtypes(include='number').columns.tolist()
 
-    # --- Plots ---
     point_color = 'steelblue'
     
-    # QQ-plots pour toutes les colonnes numériques ou résidus
+    # --- Prepare columns for plotting ---
     cols_to_plot = numeric_cols.copy()
     if model is not None:
         resid = model.resid
         fitted = model.fittedvalues
         df_resid = pd.DataFrame({'Residuals': resid})
         cols_to_plot = ['Residuals']
+
+    # --- Plots: QQ plots and Residuals vs Fitted ---
+    n_plots = len(cols_to_plot) + (1 if model is not None else 0)  # extra plot for Residuals vs Fitted
+    n_cols = 2
+    n_rows = int(np.ceil(n_plots / n_cols))
+    fig, axes = plt.subplots(n_rows, n_cols, figsize=(12, 5*n_rows))
+    axes = axes.flatten()
     
-    for col in cols_to_plot:
-        plt.figure(figsize=(6,4))
-        stats.probplot(df_resid[col] if model else df[col], dist="norm", plot=plt)
-        plt.title(f"Q-Q Plot: {col}")
-        plt.show()
+    # QQ-plots
+    for i, col in enumerate(cols_to_plot):
+        stats.probplot(df_resid[col] if model else df[col], dist="norm", plot=axes[i])
+        for line in axes[i].get_lines():
+            line.set_color(point_color)
+        axes[i].set_title(f"Q-Q Plot: {col}")
     
-    # Residuals vs Fitted uniquement si modèle fourni
+    # Residuals vs Fitted
     if model is not None:
-        plt.figure(figsize=(6,4))
-        plt.scatter(fitted, resid, alpha=0.7, color=point_color)
-        plt.axhline(0, color='red', linestyle='--')
-        plt.xlabel('Fitted values')
-        plt.ylabel('Residuals')
-        plt.title('Residuals vs Fitted')
-        plt.show()
+        j = len(cols_to_plot)
+        axes[j].scatter(fitted, resid, alpha=0.7, color=point_color)
+        axes[j].axhline(0, color='red', linestyle='--')
+        axes[j].set_xlabel('Fitted values')
+        axes[j].set_ylabel('Residuals')
+        axes[j].set_title('Residuals vs Fitted')
+    
+    # Hide unused subplots
+    for k in range(n_plots, len(axes)):
+        axes[k].axis('off')
+    
+    plt.tight_layout()
+    plt.show()
     
     # --- Normality tests ---
     normal_res = []
@@ -63,7 +76,6 @@ def stats_diagnostics(df, numeric_cols=None, group_col=None, model=None, predict
     # --- Homogeneity / Heteroscedasticity tests ---
     hom_df = pd.DataFrame()
     if group_col is not None:
-        # Levene & Bartlett
         hom_res = []
         df[group_col] = df[group_col].astype('category')
         for col in numeric_cols:
@@ -80,7 +92,6 @@ def stats_diagnostics(df, numeric_cols=None, group_col=None, model=None, predict
         display(hom_df.style.background_gradient(cmap='Blues', subset=hom_df.columns[1:]))
 
     elif model is not None:
-        # Breusch-Pagan et White pour OLS
         exog = model.model.exog
         bp_test = het_breuschpagan(model.resid, exog)
         white_test = het_white(model.resid, exog)
