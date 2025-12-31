@@ -4,6 +4,7 @@ from scipy import stats
 from scipy.stats import mannwhitneyu
 import statsmodels.api as sm
 import statsmodels.formula.api as smf
+import statsmodels.stats.multitest as smm
 import scikit_posthocs as sp
 import numpy as np
 from skbio.stats.distance import DistanceMatrix
@@ -171,10 +172,11 @@ def friedman_test(df, dv, subject, within):
     return stat, p_value
 
 # --- Function: games_howell_posthoc ---
-def games_howell_posthoc(df, column, group):
+def games_howell_posthoc(df, column, group, p_adjust_method=None):
     """
     Perform Games-Howell post-hoc test for pairwise comparisons after a one-way ANOVA
     when the assumption of homogeneity of variances is violated.
+    Optionally apply a multiple testing correction on p-values.
 
     Parameters:
     -----------
@@ -184,6 +186,8 @@ def games_howell_posthoc(df, column, group):
         Name of the numeric column to test.
     group : str
         Name of the categorical grouping column.
+    p_adjust_method : str or None, optional
+        Method for p-value adjustment. Examples: 'bonferroni', 'holm', 'fdr_bh'. Default is None.
 
     Returns:
     --------
@@ -199,7 +203,11 @@ def games_howell_posthoc(df, column, group):
     
     #Perform Games-Howell post-hoc test
     gh_result = pg.pairwise_gameshowell(dv=column, between=group, data=df)
-    
+
+    #Optional p-value adjustment
+    if p_adjust_method is not None:
+        gh_result['pval'] = smm.multipletests(gh_result['pval'], method=p_adjust_method)[1]
+
     #Print results
     print(f"Games-Howell post-hoc test for {column} by {group}")
     print(gh_result)
