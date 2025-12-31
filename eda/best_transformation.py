@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 from scipy.stats import skew, boxcox, yeojohnson
 
-#--- Function : best_transformation ---
+# --- Function : best_transformation ---
 def best_transformation(series):
     """
     Determine the best transformation to reduce skewness of a numeric series.
@@ -47,7 +47,7 @@ def best_transformation(series):
 
     return best_method, original_skew, transformed_skew
 
-#--- Function : best_transformation_for_df ---
+# --- Function : best_transformation_for_df ---
 def best_transformation_for_df(df, numeric_cols):
     """
     Apply best_transformation to multiple numeric columns in a DataFrame.
@@ -61,12 +61,13 @@ def best_transformation_for_df(df, numeric_cols):
     """
     results = []
     for col in numeric_cols:
-        method, orig_skew, trans_skew = best_transformation(df[col])
+        best_method, orig_skew, trans_skew = best_transformation(df[col])
         results.append({
             "Column": col,
-            "Best Method": method,
+            "Best Method": best_method,
             "Original Skew": orig_skew,
             "Transformed Skew": trans_skew
         })
 
-    return pd.DataFrame(results)
+    results_df = pd.DataFrame(results)
+    return results_df
