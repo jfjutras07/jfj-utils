@@ -7,17 +7,10 @@ def stats_diagnostics(df, numeric_cols=None, group_col=None, model=None, predict
     if numeric_cols is None:
         numeric_cols = df.select_dtypes(include='number').columns.tolist()
 
-    results = {}
-
-    # --- QQ plots and residuals vs fitted ---
+    # --- Plots ---
     if model is not None:
-        if hasattr(model, 'resid') and hasattr(model, 'fittedvalues'):
-            resid = model.resid
-            fitted = model.fittedvalues
-        else:
-            raise ValueError("Model type not recognized. Must have 'resid' and 'fittedvalues'.")
-
-        # Plot
+        resid = model.resid
+        fitted = model.fittedvalues
         fig, axes = plt.subplots(1, 2, figsize=(12,5))
         stats.probplot(resid, dist="norm", plot=axes[0])
         axes[0].set_title('Q-Q Plot of Residuals')
@@ -28,7 +21,6 @@ def stats_diagnostics(df, numeric_cols=None, group_col=None, model=None, predict
         axes[1].set_title('Residuals vs Fitted')
         plt.tight_layout()
         plt.show()
-
         numeric_cols_to_test = ['Residuals']
         df_test = pd.DataFrame({'Residuals': resid})
     else:
@@ -70,14 +62,11 @@ def stats_diagnostics(df, numeric_cols=None, group_col=None, model=None, predict
             })
         hom_df = pd.DataFrame(hom_res)
 
-    # --- Display clean tables ---
+    # --- Display clean tables without dict representation ---
     print("=== Normality Tests ===")
     print(normal_df.to_string(index=False))
     if not hom_df.empty:
         print("\n=== Homogeneity Tests ===")
         print(hom_df.to_string(index=False))
 
-    results['normality'] = normal_df
-    results['homogeneity'] = hom_df
-
-    return results
+    return normal_df, hom_df
