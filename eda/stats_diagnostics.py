@@ -2,7 +2,6 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from scipy import stats
-from tabulate import tabulate
 
 def stats_diagnostics(df, numeric_cols=None, group_col=None, model=None, predictors=None):
     if numeric_cols is None:
@@ -78,13 +77,15 @@ def stats_diagnostics(df, numeric_cols=None, group_col=None, model=None, predict
                 'Bartlett pass': 'Yes' if bartlett_p>0.05 else 'No'
             })
 
-    # --- Combine all results in a single table ---
+    # --- Combine all results in a single DataFrame ---
     final_table = pd.DataFrame(normal_res)
     if hom_res:
         hom_df = pd.DataFrame(hom_res)
         final_table = final_table.merge(hom_df, on='Column', how='left')
 
     results['final_table'] = final_table
-    print(tabulate(final_table, headers='keys', tablefmt='grid', showindex=False))
+
+    # --- Simple print like a standard DataFrame ---
+    print(final_table)
 
     return results
