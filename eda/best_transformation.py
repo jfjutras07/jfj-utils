@@ -2,9 +2,11 @@ import pandas as pd
 import numpy as np
 from scipy.stats import skew, boxcox, yeojohnson
 
-def best_transformation(series, col_name):
+#---Function : best_transformation---
+def best_transformation(series):
     """
-    Return a DataFrame with best transformation info for a single series.
+    Determine the best transformation to reduce skewness of a numeric series.
+    Returns a one-row DataFrame with Column, Best Method, Original Skew, Transformed Skew.
     """
     s = series.dropna()
     transformations = {}
@@ -13,22 +15,22 @@ def best_transformation(series, col_name):
     original_skew = skew(s)
     transformations["original"] = (abs(original_skew), s)
 
-    #Log transformation
+    #Log transformation (only for non-negative values)
     if (s >= 0).all():
         log_t = np.log1p(s)
         transformations["log"] = (abs(skew(log_t)), log_t)
 
-    #Square root
+    #Square root (only for non-negative values)
     if (s >= 0).all():
         sqrt_t = np.sqrt(s)
         transformations["sqrt"] = (abs(skew(sqrt_t)), sqrt_t)
 
-    #Box-Cox
+    #Box-Cox (only for strictly positive values)
     if (s > 0).all():
         bc_t, _ = boxcox(s)
         transformations["boxcox"] = (abs(skew(bc_t)), bc_t)
 
-    #Yeo-Johnson
+    #Yeo-Johnson (works for all real values)
     yj_t, _ = yeojohnson(s)
     transformations["yeojohnson"] = (abs(skew(yj_t)), yj_t)
 
@@ -38,35 +40,10 @@ def best_transformation(series, col_name):
 
     #Build DataFrame
     df_res = pd.DataFrame({
-        "Column": [col_name],
+        "Column": [series.name if series.name is not None else "Variable"],
         "Best Method": [best_method],
         "Original Skew": [original_skew],
         "Transformed Skew": [transformed_skew]
     })
 
     return df_res
-
-# --- Function : best_transformation_for_df ---
-def best_transformation_for_df(df, numeric_cols):
-    """
-    Apply best_transformation to multiple numeric columns in a DataFrame.
-
-    Parameters:
-    - df: pandas DataFrame
-    - numeric_cols: list of numeric column names to analyze
-
-    Returns:
-    - results_df: DataFrame with columns: Column, Best Method, Original Skew, Transformed Skew
-    """
-    results = []
-    for col in numeric_cols:
-        best_method, orig_skew, trans_skew = best_transformation(df[col])
-        results.append({
-            "Column": col,
-            "Best Method": best_method,
-            "Original Skew": orig_skew,
-            "Transformed Skew": trans_skew
-        })
-
-    results_df = pd.DataFrame(results)
-    return results_df
