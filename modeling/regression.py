@@ -81,51 +81,55 @@ def gamma_regression(df, outcome, predictors, link='log'):
     return model
 
 # --- Function: linear_mixed_model ---
-def linear_mixed_model(df, outcome, fixed_effects, random_effect, include_interactions=False):
+def linear_mixed_model(df, predictors, outcome, random_effect, include_interactions=False, return_interactions=False):
     """
-    Perform a Linear Mixed Model regression.
-
-    When to use:
-    - Outcome is continuous.
-    - Data has a hierarchical or grouped structure (e.g., employees within job titles).
-    - Accounts for unequal representation across groups.
-    - Can include interactions among fixed effects.
+    Fit a Linear Mixed Model (LMM) with optional interaction terms.
 
     Parameters:
     -----------
     df : pd.DataFrame
-        Dataset containing outcome, predictors, and grouping variable.
+        Dataset containing predictors, outcome, and random effect.
+    predictors : list of str
+        List of fixed-effect predictor columns.
     outcome : str
-        Dependent variable (continuous).
-    fixed_effects : list of str
-        List of fixed effect predictors (numeric or categorical).
+        Dependent variable column.
     random_effect : str
-        Grouping variable for random intercepts.
+        Column to be used as random effect (e.g., grouping variable).
     include_interactions : bool, default False
-        If True, include all pairwise interactions among fixed effects.
+        If True, include all pairwise interactions among predictors.
+    return_interactions : bool, default False
+        If True, return the names of interactions fitted in the model.
 
     Returns:
     --------
     model : statsmodels MixedLMResults
-        Fitted Linear Mixed Model.
+        Fitted LMM.
+    interactions : list of str (optional)
+        Names of interaction terms, if return_interactions=True.
     """
-    if not fixed_effects:
-        raise ValueError("At least one fixed effect must be provided.")
+
+    if not predictors:
+        raise ValueError("At least one predictor must be provided.")
 
     #Build formula
     if include_interactions:
-        formula = f"{outcome} ~ " + " * ".join(fixed_effects)
+        formula = f"{outcome} ~ " + " * ".join(predictors)
     else:
-        formula = f"{outcome} ~ " + " + ".join(fixed_effects)
+        formula = f"{outcome} ~ " + " + ".join(predictors)
 
-    #Fit mixed model with random intercept for the grouping variable
-    model = smf.mixedlm(formula, data=df, groups=df[random_effect]).fit(reml=True)
-    
-    #Print summary
-    print(f"Linear Mixed Model for {outcome} with random effect: {random_effect}")
+    #Fit mixed model
+    model = smf.mixedlm(formula, df, groups=df[random_effect]).fit()
     print(model.summary())
-    
-    return model
+
+    #Optional: return interaction names
+    interactions = None
+    if return_interactions and include_interactions:
+        interactions = [term for term in model.fe_params.index if ":" in term]
+
+    if return_interactions:
+        return model, interactions
+    else:
+        return model
 
 #---Function: linear_regression---
 def linear_regression(df, outcome, predictors):
