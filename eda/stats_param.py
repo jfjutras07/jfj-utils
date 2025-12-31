@@ -6,10 +6,11 @@ from statsmodels.multivariate.manova import MANOVA
 from statsmodels.stats.anova import AnovaRM
 from statsmodels.stats.multicomp import pairwise_tukeyhsd
 
-#---Function: ancova_test---
+#---Function: ancova_test ---
 def ancova_test(df, dv, factor, covariates, return_model=False):
     """
     Perform an ANCOVA to compare means between groups while adjusting for covariates.
+    Supports both numeric and categorical covariates.
 
     Parameters:
     -----------
@@ -18,9 +19,9 @@ def ancova_test(df, dv, factor, covariates, return_model=False):
     dv : str
         Name of the dependent variable (numeric).
     factor : str
-        Name of the categorical factor.
+        Name of the categorical factor (e.g., Gender).
     covariates : list of str
-        Names of numeric covariates.
+        Names of covariates (numeric or categorical).
     return_model : bool, optional
         If True, return the fitted model along with ANOVA table.
 
@@ -28,31 +29,41 @@ def ancova_test(df, dv, factor, covariates, return_model=False):
     --------
     anova_table : pd.DataFrame
         ANOVA table.
-    model : statsmodels.regression.linear_model.RegressionResultsWrapper
-        Fitted OLS model.
+    model : statsmodels regression model (optional)
     """
+    # Check dependent variable
     if not pd.api.types.is_numeric_dtype(df[dv]):
         raise ValueError(f"Dependent variable {dv} must be numeric.")
+
+    # Ensure factor is categorical
     df[factor] = df[factor].astype('category')
-    for cov in covariates:
-        if not pd.api.types.is_numeric_dtype(df[cov]):
-            raise ValueError(f"Covariate {cov} must be numeric.")
-    
-    # Build formula with main effects and factor x covariate interactions
+
+    # Build formula
     main_effects = f"C({factor})"
-    covariate_terms = " + ".join(covariates)
-    interaction_terms = " + ".join([f"C({factor}):{cov}" for cov in covariates])
+    covariate_terms = []
+    interaction_terms = []
+
+    for cov in covariates:
+        if pd.api.types.is_numeric_dtype(df[cov]):
+            covariate_terms.append(f"{cov}")
+            interaction_terms.append(f"C({factor}):{cov}")
+        else:
+            df[cov] = df[cov].astype('category')
+            covariate_terms.append(f"C({cov})")
+            interaction_terms.append(f"C({factor}):C({cov})")
 
     formula = f"{dv} ~ {main_effects}"
-    if covariates:
-        formula += " + " + covariate_terms + " + " + interaction_terms
+    if covariate_terms:
+        formula += " + " + " + ".join(covariate_terms)
+        formula += " + " + " + ".join(interaction_terms)
 
+    # Fit model and get ANOVA table
     model = ols(formula, data=df).fit()
     anova_table = sm.stats.anova_lm(model, typ=2)
-    
+
     if return_model:
         return anova_table, model
-    return anova_table, model
+    return anova_table
 
 #---Function: anova_test---
 def anova_test(df, column, group, return_model=False):
