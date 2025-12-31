@@ -6,7 +6,7 @@ from scipy.stats import shapiro, normaltest, anderson, kstest, levene, bartlett,
 def stats_diagnostics(df, numeric_cols=None, group_col=None, model=None, predictors=None):
     """
     Diagnostics: QQ plot | Residuals vs Fitted côte à côte, normality and homogeneity tables.
-    Returns only DataFrames for normality and homogeneity.
+    Returns only clean, readable DataFrames for normality and homogeneity.
     """
     if numeric_cols is None:
         numeric_cols = df.select_dtypes(include='number').columns.tolist()
@@ -19,10 +19,10 @@ def stats_diagnostics(df, numeric_cols=None, group_col=None, model=None, predict
         fitted = getattr(model, 'fittedvalues')
     for col in numeric_cols:
         col_data = df[col].dropna()
-        fig, axes = plt.subplots(1, 2, figsize=(10,5))  # 1 ligne, 2 colonnes
+        fig, axes = plt.subplots(1, 2, figsize=(10,5))
         # QQ plot
         probplot(col_data, dist="norm", plot=axes[0])
-        axes[0].set_title(f"Q-Q Plot of {col}")
+        axes[0].set_title(f"Q-Q Plot: {col}")
         axes[0].set_xlabel("Theoretical Quantiles")
         axes[0].set_ylabel("Sample Quantiles")
         # Residuals vs fitted
@@ -31,7 +31,7 @@ def stats_diagnostics(df, numeric_cols=None, group_col=None, model=None, predict
             axes[1].axhline(0, color='red', linestyle='--')
             axes[1].set_xlabel('Fitted values')
             axes[1].set_ylabel('Residuals')
-            axes[1].set_title(f'Residuals vs Fitted')
+            axes[1].set_title('Residuals vs Fitted')
         plt.tight_layout()
         plt.show()
 
@@ -42,20 +42,19 @@ def stats_diagnostics(df, numeric_cols=None, group_col=None, model=None, predict
         n = len(s)
         mean = s.mean()
         std = s.std()
-        shapiro_flag = dagostino_flag = anderson_flag = ks_flag = np.nan
+        # Shapiro
+        shapiro_pass = dagostino_pass = anderson_pass = ks_pass = np.nan
         shapiro_p = dagostino_p = ks_p = np.nan
-
         if n <= 5000:
             _, shapiro_p = shapiro(s)
-            shapiro_flag = shapiro_p > 0.05
+            shapiro_pass = shapiro_p > 0.05
         if n > 20:
             _, dagostino_p = normaltest(s)
-            dagostino_flag = dagostino_p > 0.05
+            dagostino_pass = dagostino_p > 0.05
         ad_result = anderson(s)
-        crit_val_5 = ad_result.critical_values[2]
-        anderson_flag = ad_result.statistic < crit_val_5
+        anderson_pass = ad_result.statistic < ad_result.critical_values[2]
         _, ks_p = kstest(s, 'norm', args=(mean,std))
-        ks_flag = ks_p > 0.05
+        ks_pass = ks_p > 0.05
 
         normal_res.append({
             "Column": col,
@@ -63,13 +62,13 @@ def stats_diagnostics(df, numeric_cols=None, group_col=None, model=None, predict
             "Mean": round(mean,2),
             "Std": round(std,2),
             "Shapiro p": round(shapiro_p,4) if shapiro_p is not None else np.nan,
-            "Shapiro pass": shapiro_flag,
+            "Shapiro pass": shapiro_pass,
             "D’Agostino p": round(dagostino_p,4) if dagostino_p is not None else np.nan,
-            "D’Agostino pass": dagostino_flag,
+            "D’Agostino pass": dagostino_pass,
             "Anderson stat": round(ad_result.statistic,4),
-            "Anderson pass": anderson_flag,
+            "Anderson pass": anderson_pass,
             "KS p": round(ks_p,4),
-            "KS pass": ks_flag
+            "KS pass": ks_pass
         })
     results['normality'] = pd.DataFrame(normal_res)
 
