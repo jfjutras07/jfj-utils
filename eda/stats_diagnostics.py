@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from scipy import stats
 from tabulate import tabulate
 
+#--- Function : stats_diagnostics ---
 def stats_diagnostics(df, numeric_cols=None, group_col=None, model=None, predictors=None):
     if numeric_cols is None:
         numeric_cols = df.select_dtypes(include='number').columns.tolist()
