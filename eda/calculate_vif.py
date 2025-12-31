@@ -19,10 +19,10 @@ def calculate_vif(df, features):
     """
     X = df[features].copy()
     
-    # Encode categorical variables as dummies
+    #Encode categorical variables as dummies
     X = pd.get_dummies(X, drop_first=True)
     
-    # Ensure all data is numeric (float)
+    #Ensure all data is numeric (float)
     X = X.astype(float)
     
     vif_data = []
@@ -32,4 +32,3 @@ def calculate_vif(df, features):
     
     vif_df = pd.DataFrame(vif_data).sort_values(by='VIF', ascending=False).reset_index(drop=True)
     print(vif_df)
-    return vif_df
