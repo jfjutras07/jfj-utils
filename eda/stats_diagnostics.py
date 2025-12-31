@@ -22,7 +22,7 @@ def stats_diagnostics(df, numeric_cols=None, group_col=None, model=None, predict
         cols_to_plot = ['Residuals']
 
     # --- Plots: QQ plots and Residuals vs Fitted ---
-    n_plots = len(cols_to_plot) + (1 if model is not None else 0)  # extra plot for Residuals vs Fitted
+    n_plots = len(cols_to_plot) + (1 if model is not None else 0)
     n_cols = 2
     n_rows = int(np.ceil(n_plots / n_cols))
     fig, axes = plt.subplots(n_rows, n_cols, figsize=(12, 5*n_rows))
@@ -44,7 +44,6 @@ def stats_diagnostics(df, numeric_cols=None, group_col=None, model=None, predict
         axes[j].set_ylabel('Residuals')
         axes[j].set_title('Residuals vs Fitted')
     
-    # Hide unused subplots
     for k in range(n_plots, len(axes)):
         axes[k].axis('off')
     
@@ -84,27 +83,25 @@ def stats_diagnostics(df, numeric_cols=None, group_col=None, model=None, predict
             groups = [df[df[group_col]==lvl][col].dropna() for lvl in df[group_col].cat.categories]
             levene_p = stats.levene(*groups, center='median')[1]
             bartlett_p = stats.bartlett(*groups)[1]
-            hom_res.append({
-                'Column': col,
-                'Levene': round(levene_p,4),
-                'Bartlett': round(bartlett_p,4)
-            })
-        hom_df = pd.DataFrame(hom_res)
-        print("\n=== Homogeneity Tests ===")
-        display(hom_df.style.set_table_styles(
-            [{'selector':'th','props':[('text-align','left')]},
-             {'selector':'td','props':[('text-align','left')]}]
-        ).background_gradient(cmap='Blues', subset=hom_df.columns[1:]))
-    elif model is not None:
-        exog = model.model.exog
-        bp_test = het_breuschpagan(model.resid, exog)
-        white_test = het_white(model.resid, exog)
-        hetero_df = pd.DataFrame([
-            {'Test': 'Breusch-Pagan LM', 'p-value': round(bp_test[1],4)},
-            {'Test': 'White LM', 'p-value': round(white_test[1],4)}
-        ])
+            hom_res.append({'Levene': levene_p, 'Bartlett': bartlett_p})
+        # Pivot to horizontal
+        hetero_df = pd.DataFrame(hom_res).T
+        hetero_df.columns = ['p-value']
         print("\n=== Heteroscedasticity Tests ===")
         display(hetero_df.style.set_table_styles(
             [{'selector':'th','props':[('text-align','left')]},
              {'selector':'td','props':[('text-align','left')]}]
-        ).background_gradient(cmap='Blues', subset=['p-value']))
+        ).background_gradient(cmap='Blues'))
+    elif model is not None:
+        exog = model.model.exog
+        bp_test = het_breuschpagan(model.resid, exog)
+        white_test = het_white(model.resid, exog)
+        hetero_df = pd.DataFrame({
+            'Test': ['Breusch-Pagan LM', 'White LM'],
+            'p-value': [round(bp_test[1],4), round(white_test[1],4)]
+        }).set_index('Test').T
+        print("\n=== Heteroscedasticity Tests ===")
+        display(hetero_df.style.set_table_styles(
+            [{'selector':'th','props':[('text-align','left')]},
+             {'selector':'td','props':[('text-align','left')]}]
+        ).background_gradient(cmap='Blues'))
