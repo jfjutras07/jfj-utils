@@ -71,9 +71,12 @@ def stats_diagnostics(df, numeric_cols=None, group_col=None, model=None, predict
         })
     normal_df = pd.DataFrame(normal_res)
     print("=== Normality Tests ===")
-    display(normal_df.style.background_gradient(cmap='Blues', subset=normal_df.columns[1:]))
+    display(normal_df.style.set_table_styles(
+        [{'selector':'th','props':[('text-align','left')]},
+         {'selector':'td','props':[('text-align','left')]}]
+    ).background_gradient(cmap='Blues', subset=normal_df.columns[1:]))
 
-    # --- Homogeneity / Heteroscedasticity tests ---
+    # --- Heteroscedasticity tests ---
     if group_col is not None:
         hom_res = []
         df[group_col] = df[group_col].astype('category')
@@ -88,17 +91,20 @@ def stats_diagnostics(df, numeric_cols=None, group_col=None, model=None, predict
             })
         hom_df = pd.DataFrame(hom_res)
         print("\n=== Homogeneity Tests ===")
-        display(hom_df.style.background_gradient(cmap='Blues', subset=hom_df.columns[1:]))
+        display(hom_df.style.set_table_styles(
+            [{'selector':'th','props':[('text-align','left')]},
+             {'selector':'td','props':[('text-align','left')]}]
+        ).background_gradient(cmap='Blues', subset=hom_df.columns[1:]))
     elif model is not None:
         exog = model.model.exog
         bp_test = het_breuschpagan(model.resid, exog)
         white_test = het_white(model.resid, exog)
-        hetero_df = pd.DataFrame([{
-            'Test': 'Breusch-Pagan LM',
-            'p-value': round(bp_test[1],4)
-        },{
-            'Test': 'White LM',
-            'p-value': round(white_test[1],4)
-        }])
+        hetero_df = pd.DataFrame([
+            {'Test': 'Breusch-Pagan LM', 'p-value': round(bp_test[1],4)},
+            {'Test': 'White LM', 'p-value': round(white_test[1],4)}
+        ])
         print("\n=== Heteroscedasticity Tests ===")
-        display(hetero_df.style.background_gradient(cmap='Blues', subset=['p-value']))
+        display(hetero_df.style.set_table_styles(
+            [{'selector':'th','props':[('text-align','left')]},
+             {'selector':'td','props':[('text-align','left')]}]
+        ).background_gradient(cmap='Blues', subset=['p-value']))
