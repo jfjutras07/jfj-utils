@@ -306,6 +306,51 @@ def repeated_anova(df, subject, within, dv, return_model=False):
     result = aovrm.fit()
     return result, aovrm
 
+#---Function: robust_anova---
+def robust_anova(df, dv, factors, return_model=False):
+    """
+    Perform a robust ANOVA (Welch-like) for one or multiple categorical factors.
+    Uses OLS with heteroscedasticity-robust errors (HC3).
+    
+    Parameters:
+    -----------
+    df : pd.DataFrame
+        Dataset containing the dependent variable and factors.
+    dv : str
+        Name of the numeric dependent variable.
+    factors : list of str
+        One or more categorical factors.
+    return_model : bool, optional
+        If True, return the fitted model along with ANOVA table.
+
+    Returns:
+    --------
+    anova_table : pd.DataFrame
+        Robust ANOVA table.
+    model : statsmodels.regression.linear_model.RegressionResultsWrapper
+        Fitted OLS model (if return_model=True).
+    """
+    # Check dependent variable
+    if not pd.api.types.is_numeric_dtype(df[dv]):
+        raise ValueError(f"Dependent variable {dv} must be numeric.")
+
+    # Ensure all factors are categorical
+    for f in factors:
+        df[f] = df[f].astype('category')
+
+    # Build formula
+    formula = dv + ' ~ ' + ' + '.join([f'C({f})' for f in factors])
+
+    # Fit model
+    model = ols(formula, data=df).fit()
+
+    # Robust ANOVA table
+    anova_table = sm.stats.anova_lm(model, typ=2, robust='hc3')
+
+    if return_model:
+        return anova_table, model
+    return anova_table
+
 #---Function: two_sample_ttest---
 def two_sample_ttest(df, column, group, group1, group2):
     """
