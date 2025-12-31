@@ -61,9 +61,12 @@ def stats_diagnostics(df, numeric_cols=None, group_col=None, model=None, predict
             'KS pass': 'Yes' if ks_p>0.05 else 'No'
         })
 
+    normal_df = pd.DataFrame(normal_res)
+
     # --- Homogeneity ---
-    hom_res = []
+    hom_df = pd.DataFrame()
     if group_col is not None:
+        hom_res = []
         df[group_col] = df[group_col].astype('category')
         for col in numeric_cols:
             groups_data = [df[df[group_col]==lvl][col].dropna() for lvl in df[group_col].cat.categories]
@@ -76,16 +79,18 @@ def stats_diagnostics(df, numeric_cols=None, group_col=None, model=None, predict
                 'Bartlett': round(bartlett_p,4),
                 'Bartlett pass': 'Yes' if bartlett_p>0.05 else 'No'
             })
-
-    # --- Combine all results in a single DataFrame ---
-    final_table = pd.DataFrame(normal_res)
-    if hom_res:
         hom_df = pd.DataFrame(hom_res)
-        final_table = final_table.merge(hom_df, on='Column', how='left')
 
-    results['final_table'] = final_table
+    # --- Print tables separately with titles ---
+    print("=== Normality Tests ===")
+    print(normal_df.to_string(index=False))
 
-    # --- Simple print like a standard DataFrame ---
-    print(final_table)
+    if not hom_df.empty:
+        print("\n=== Homogeneity Tests ===")
+        print(hom_df.to_string(index=False))
+
+    # --- Store in results dict ---
+    results['normality'] = normal_df
+    results['homogeneity'] = hom_df
 
     return results
