@@ -57,56 +57,35 @@ def gamma_regression(df, outcome, predictors, link='log'):
     """
     Perform Gamma regression for positive continuous skewed data.
 
-    When to use:
-    - Dependent variable is positive and continuous.
-    - Data are right-skewed.
-    - Common in time, cost, concentrations.
-
-    Example:
-    --------
-    data = pd.DataFrame({'x':[1,2,3,4,5],
-                         'y':[2.1,3.5,6.0,10.2,15.1]})
-    model = gamma_regression(data, outcome='y', predictors=['x'])
-
     Parameters:
     -----------
     df : pd.DataFrame
+        Dataset containing outcome and predictors.
     outcome : str
+        Dependent variable.
     predictors : list of str
+        List of predictor variables.
     link : str, default 'log'
+        Link function ('log' or 'identity').
 
     Returns:
     --------
     model : statsmodels GLMResults
+        Fitted Gamma regression model.
     """
+    if not predictors:
+        raise ValueError("At least one predictor must be provided.")
+    
     formula = f"{outcome} ~ " + " + ".join(predictors)
-    
     link_func = sm.families.links.log() if link=='log' else sm.families.links.identity()
-    
     model = smf.glm(formula=formula, data=df, family=sm.families.Gamma(link=link_func)).fit()
-    
     print(model.summary())
-    
-    return model
+    return model 
 
 # --- Function : linear_regression ---
 def linear_regression(df, outcome, predictors):
     """
     Perform a multiple linear regression.
-
-    When to use:
-    - Dependent variable is continuous and approximately normal.
-    - Predictor can be continuous or categorical.
-
-    Example:
-    --------
-    #Fit a regression of y on x1 and x2
-    data = pd.DataFrame({
-        'x1': [1, 2, 3, 4, 5],
-        'x2': [2, 3, 2, 5, 4],
-        'y': [2.1, 4.5, 5.9, 8.2, 10.1]
-    })
-    model = linear_regression(data, outcome='y', predictors=['x1', 'x2'])
 
     Parameters:
     -----------
@@ -125,14 +104,10 @@ def linear_regression(df, outcome, predictors):
     if not predictors:
         raise ValueError("At least one predictor must be provided.")
     
-    #Build formula string
     formula = f"{outcome} ~ " + " + ".join(predictors)
-    
-    #Fit linear model
     model = smf.ols(formula, data=df).fit()
     print(model.summary())
-    
-    return model
+    return model 
 
 # --- Function : poisson_regression ---
 def poisson_regression(df, outcome, predictors):
@@ -184,19 +159,6 @@ def polynomial_regression(df, outcome, predictor, max_degree=2):
     """
     Perform polynomial regression up to a specified degree.
 
-    When to use:
-    - Dependent variable is continuous.
-    - Relationship with predictor is non-linear but can be approximated by polynomials.
-    
-    Example:
-    --------
-    #Fit a cubic regression of y on x
-    data = pd.DataFrame({
-        'x': [1, 2, 3, 4, 5],
-        'y': [2.1, 4.5, 9.0, 16.2, 25.1]
-    })
-    model = polynomial_regression(data, outcome='y', predictor='x', max_degree=3)
-
     Parameters:
     -----------
     df : pd.DataFrame
@@ -217,24 +179,19 @@ def polynomial_regression(df, outcome, predictor, max_degree=2):
         raise ValueError("max_degree must be at least 1.")
     
     df_poly = df.copy()
-    
-    #Create polynomial terms for degrees 2..max_degree
     poly_terms = []
     for d in range(2, max_degree + 1):
         col_name = f"{predictor}^{d}"
         df_poly[col_name] = df_poly[predictor]**d
         poly_terms.append(col_name)
     
-    #Build formula string
     formula = f"{outcome} ~ {predictor}"
     if poly_terms:
         formula += " + " + " + ".join(poly_terms)
     
-    #Fit linear model
     model = smf.ols(formula, data=df_poly).fit()
     print(model.summary())
-    
-    return model
+    return model 
 
 # --- Function : quantile_regression ---
 def quantile_regression(df, outcome, predictor, quantile=0.5):
@@ -268,46 +225,35 @@ def quantile_regression(df, outcome, predictor, quantile=0.5):
     print(model.summary())
     return model
 
-#--- Function : robust_regression ---
+# --- Function : robust_regression ---
 def robust_regression(df, outcome, factor, covariates, estimator=sm.robust.norms.HuberT):
     """
     Perform a robust ANCOVA-like regression using RLM (Robust Linear Model).
 
-    When to use:
-    - Dependent variable is continuous.
-    - Outliers may distort standard OLS estimates.
-    - Similar to ANCOVA when factor is categorical and covariates numeric.
-    
     Parameters:
     -----------
     df : pd.DataFrame
         Dataset containing outcome, factor, and covariates.
     outcome : str
-        Name of the dependent variable (numeric).
+        Dependent variable (numeric).
     factor : str
-        Name of the categorical independent variable (factor).
+        Categorical independent variable.
     covariates : list of str
-        List of covariate column names (numeric).
+        List of numeric covariates.
     estimator : function, optional
-        Robust estimator function from statsmodels (default: HuberT).
-    
+        Robust estimator from statsmodels (default: HuberT).
+
     Returns:
     --------
-    fitted_model : RLMResults
-        Fitted robust linear model object from statsmodels.
+    model : RLMResults
+        Fitted robust linear model.
     """
-    #Ensure factor is categorical
     df[factor] = df[factor].astype('category')
-    
-    #Build formula string
     formula = f"{outcome} ~ {factor}"
     if covariates:
         formula += " + " + " + ".join(covariates)
     
-    #Fit robust linear model
     model = smf.rlm(formula=formula, data=df, M=estimator()).fit()
-    
-    #Print summary
     print(model.summary())
-    
-    return model
+    return model  
+
