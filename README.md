@@ -79,6 +79,8 @@ Active development — modules will be progressively added and refined.
 *multicollinearity.py*
 - `check_multicollinearity`
 
+*stats_diagnostics.py*
+
 *stats_non_param.py*
 - `dunn_friedman_posthoc`
 - `dunn_posthoc`
@@ -161,8 +163,6 @@ Active development — modules will be progressively added and refined.
 - `plot_scatter_grid`
 - `plot_swarm_grid`
 - `plot_violin_grid`
-- `qq_plot_numeric`
-- `residuals_fitted`
 - `scatter_numeric`
 
 *explore_discrete.py*
