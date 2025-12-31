@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 from scipy import stats
 from tabulate import tabulate
 
-#--- Function : stats_diagnostics ---
 def stats_diagnostics(df, numeric_cols=None, group_col=None, model=None, predictors=None):
     if numeric_cols is None:
         numeric_cols = df.select_dtypes(include='number').columns.tolist()
@@ -53,13 +52,13 @@ def stats_diagnostics(df, numeric_cols=None, group_col=None, model=None, predict
 
         normal_res.append({
             'Column': col,
-            'Shapiro p': round(shapiro_p,4) if not np.isnan(shapiro_p) else '-',
+            'Shapiro': round(shapiro_p,4) if not np.isnan(shapiro_p) else '-',
             'Shapiro pass': 'Yes' if shapiro_p>0.05 else ('No' if not np.isnan(shapiro_p) else '-'),
-            'D’Agostino p': round(dagostino_p,4) if not np.isnan(dagostino_p) else '-',
-            'D’Agostino pass': 'Yes' if dagostino_p>0.05 else ('No' if not np.isnan(dagostino_p) else '-'),
-            'Anderson stat': round(ad_stat,4),
+            'Dagostino': round(dagostino_p,4) if not np.isnan(dagostino_p) else '-',
+            'Dagostino pass': 'Yes' if dagostino_p>0.05 else ('No' if not np.isnan(dagostino_p) else '-'),
+            'Anderson': round(ad_stat,4),
             'Anderson pass': 'Yes' if ad_pass else 'No',
-            'KS p': round(ks_p,4),
+            'KS': round(ks_p,4),
             'KS pass': 'Yes' if ks_p>0.05 else 'No'
         })
 
@@ -73,9 +72,9 @@ def stats_diagnostics(df, numeric_cols=None, group_col=None, model=None, predict
             bartlett_stat, bartlett_p = stats.bartlett(*groups_data)
             hom_res.append({
                 'Column': col,
-                'Levene p': round(levene_p,4),
+                'Levene': round(levene_p,4),
                 'Levene pass': 'Yes' if levene_p>0.05 else 'No',
-                'Bartlett p': round(bartlett_p,4),
+                'Bartlett': round(bartlett_p,4),
                 'Bartlett pass': 'Yes' if bartlett_p>0.05 else 'No'
             })
 
