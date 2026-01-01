@@ -26,31 +26,35 @@ def correlation_check(df: pd.DataFrame, columns: list | None = None, method: str
 def VIF_check(df: pd.DataFrame, columns: list | None = None) -> pd.DataFrame:
     """
     Calculate the Variance Inflation Factor (VIF) for selected columns.
-    Automatically encodes categorical variables and handles constants.
+    Automatically encodes categorical variables and handles constants and non-numeric columns.
     """
     if columns is not None:
-        df = df[columns]
-
+        df = df[columns].copy()
+    else:
+        df = df.copy()
+    
     #Encode categorical variables automatically
     df_encoded = pd.get_dummies(df, drop_first=False)
-
-    #Force all columns to numeric
-    df_encoded = df_encoded.apply(pd.to_numeric)
+    
+    #Force all columns to numeric and replace non-finite values
+    df_encoded = df_encoded.apply(pd.to_numeric, errors='coerce').replace([np.inf, -np.inf], np.nan)
+    
+    #Drop rows or columns with non-finite values
+    df_encoded = df_encoded.dropna(axis=1, how='any')  # remove constant/non-numeric columns
 
     #Remove constant columns
     df_encoded = df_encoded.loc[:, df_encoded.var() != 0]
 
     if df_encoded.shape[1] == 0:
         raise ValueError("No valid columns left for VIF calculation.")
-
+    
     #Calculate VIF
     vif_data = pd.DataFrame({
         'Feature': df_encoded.columns,
         'VIF': [variance_inflation_factor(df_encoded.values, i) for i in range(df_encoded.shape[1])]
     }).sort_values('VIF', ascending=False).reset_index(drop=True)
-
+    
     #Round for readability
     vif_data['VIF'] = vif_data['VIF'].round(3)
-
+    
     return vif_data
-
