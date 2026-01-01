@@ -45,13 +45,15 @@ def plot_discrete_bivariate(df, col, hue_col, figsize=(8,4), colors=None):
     plt.show()
     plt.close()
 
-# --- Function: plot_discrete_bivariate_grid ---
+#--- Function: plot_discrete_bivariate_grid ---
 def plot_discrete_bivariate_grid(df, discrete_cols, hue_col, n_cols=2, figsize=(12,8), colors=None, show_proportion=True):
     """Grid of bivariate bar plots for multiple discrete variables.
     If show_proportion=True, bars show proportions instead of counts.
+    By default, colors are light blue and light pink.
     """
+    #default colors: light blue and light pink
     if colors is None:
-        colors = ["#ADD8E6", "#90EE90"]
+        colors = ["#1f77b4","#ffc0cb"]
 
     cols = [c for c in discrete_cols if c in df.columns]
     if not cols:
@@ -63,21 +65,23 @@ def plot_discrete_bivariate_grid(df, discrete_cols, hue_col, n_cols=2, figsize=(
     axes = axes.flatten() if len(cols) > 1 else [axes]
 
     for ax, col in zip(axes, cols):
-        categories = sorted(df[col].dropna().unique())
-        hue_values = sorted(df[hue_col].dropna().unique())
+        #create crosstab: categories x hue
+        ct = pd.crosstab(df[col], df[hue_col])
+        if show_proportion:
+            #calculate proportion per category
+            ct = ct.div(ct.sum(axis=1), axis=0)
+
+        categories = ct.index.tolist()
+        hue_values = ct.columns.tolist()
         x = np.arange(len(categories))
         width = 0.8 / len(hue_values)
 
         for i, val in enumerate(hue_values):
-            counts = df[df[hue_col]==val][col].value_counts().reindex(categories, fill_value=0)
-            if show_proportion:
-                total = counts.sum()
-                heights = counts.values / total
-            else:
-                heights = counts.values
+            heights = ct[val].values
+            color = colors[i % len(colors)]
+            ax.bar(x + i*width, heights, width=width, label=str(val), color=color, edgecolor="black")
 
-            ax.bar(x + i*width, heights, width=width, label=str(val), color=colors[i % len(colors)], edgecolor="black")
-
+            #add text labels inside bars
             for xi, h in zip(x + i*width, heights):
                 text_val = f"{h:.2f}" if show_proportion else str(int(h))
                 ax.text(xi, h/2, text_val, ha="center", va="center", fontsize=9, color="black")
@@ -86,8 +90,9 @@ def plot_discrete_bivariate_grid(df, discrete_cols, hue_col, n_cols=2, figsize=(
         ax.set_xticklabels(categories, rotation=45)
         ax.set_ylabel("Proportion" if show_proportion else "Count")
         ax.set_title(f"{col} by {hue_col}")
-        ax.legend(title=hue_col, bbox_to_anchor=(1.05, 1), loc='upper left')
+        ax.legend(title=hue_col, bbox_to_anchor=(1.05,1), loc='upper left')
 
+    #remove unused axes
     for i in range(len(cols), len(axes)):
         fig.delaxes(axes[i])
 
