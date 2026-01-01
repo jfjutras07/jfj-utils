@@ -58,7 +58,5 @@ def VIF_check(df: pd.DataFrame, columns: list | None = None):
     vif_data['VIF'] = vif_data['VIF'].round(3)
 
     #Display VIF table
-    print("\n=== VIF DES PRÉDICTEURS ===")
+    print("\n=== Variance Inflation Factors ===")
     print(vif_data.to_string(index=False))
-
-    return vif_data
