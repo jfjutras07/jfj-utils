@@ -46,10 +46,13 @@ def plot_discrete_bivariate(df, col, hue_col, figsize=(8,4), colors=None):
     plt.close()
 
 # --- Function: plot_discrete_bivariate_grid ---
-def plot_discrete_bivariate_grid(df, discrete_cols, hue_col, n_cols=2, figsize=(12,8), colors=None):
-    """Grid of bivariate bar plots for multiple discrete variables."""
+def plot_discrete_bivariate_grid(df, discrete_cols, hue_col, n_cols=2, figsize=(12,8), colors=None, show_proportion=True):
+    """Grid of bivariate bar plots for multiple discrete variables.
+    If show_proportion=True, bars show proportions instead of counts.
+    """
     if colors is None:
         colors = ["#ADD8E6", "#90EE90"]
+
     cols = [c for c in discrete_cols if c in df.columns]
     if not cols:
         print("No valid columns found.")
@@ -67,13 +70,21 @@ def plot_discrete_bivariate_grid(df, discrete_cols, hue_col, n_cols=2, figsize=(
 
         for i, val in enumerate(hue_values):
             counts = df[df[hue_col]==val][col].value_counts().reindex(categories, fill_value=0)
-            ax.bar(x + i*width, counts.values, width=width, label=str(val), color=colors[i % len(colors)], edgecolor="black")
-            for xi, c in zip(x + i*width, counts.values):
-                ax.text(xi, c/2, str(c), ha="center", va="center", fontsize=9, color="black")
+            if show_proportion:
+                total = counts.sum()
+                heights = counts.values / total
+            else:
+                heights = counts.values
+
+            ax.bar(x + i*width, heights, width=width, label=str(val), color=colors[i % len(colors)], edgecolor="black")
+
+            for xi, h in zip(x + i*width, heights):
+                text_val = f"{h:.2f}" if show_proportion else str(int(h))
+                ax.text(xi, h/2, text_val, ha="center", va="center", fontsize=9, color="black")
 
         ax.set_xticks(x + width*(len(hue_values)-1)/2)
         ax.set_xticklabels(categories, rotation=45)
-        ax.set_ylabel("Count")
+        ax.set_ylabel("Proportion" if show_proportion else "Count")
         ax.set_title(f"{col} by {hue_col}")
         ax.legend(title=hue_col, bbox_to_anchor=(1.05, 1), loc='upper left')
 
