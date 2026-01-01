@@ -2,12 +2,10 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from scipy import stats
-import seaborn as sns
 import statsmodels.api as sm
-import statsmodels.formula.api as smf
 from statsmodels.stats.diagnostic import het_breuschpagan, het_white
 
-#---Function : stats_diagnostics ---
+#--- Function : stats_diagnostics ---
 def stats_diagnostics(df, numeric_cols=None, group_col=None, model=None, predictors=None):
 
     if numeric_cols is None:
@@ -15,9 +13,7 @@ def stats_diagnostics(df, numeric_cols=None, group_col=None, model=None, predict
 
     point_color = 'steelblue'
 
-    # ======================================================
-    # Prepare columns for plotting
-    # ======================================================
+    #Prepare columns for plotting
     cols_to_plot = numeric_cols.copy()
 
     if model is not None:
@@ -26,9 +22,7 @@ def stats_diagnostics(df, numeric_cols=None, group_col=None, model=None, predict
         df_resid = pd.DataFrame({'Residuals': resid})
         cols_to_plot = ['Residuals']
 
-    # ======================================================
-    # Plots: QQ plots and Residuals vs Fitted
-    # ======================================================
+    #Plots:QQ plots and Residuals vs Fitted
     n_plots = len(cols_to_plot) + (1 if model is not None else 0)
     n_cols = 2
     n_rows = int(np.ceil(n_plots / n_cols))
@@ -42,9 +36,9 @@ def stats_diagnostics(df, numeric_cols=None, group_col=None, model=None, predict
         stats.probplot(s.dropna(), dist="norm", plot=axes[i])
         for line in axes[i].get_lines():
             line.set_color(point_color)
-        axes[i].set_title(f"Q-Q Plot: {col}")
+        axes[i].set_title(f"Q-Q Plot:{col}")
 
-    #Residuals vs Fitted (only if model)
+    #Residuals vs Fitted
     if model is not None:
         j = len(cols_to_plot)
         axes[j].scatter(fitted, resid, alpha=0.7, color=point_color)
@@ -59,9 +53,7 @@ def stats_diagnostics(df, numeric_cols=None, group_col=None, model=None, predict
     plt.tight_layout()
     plt.show()
 
-    # ======================================================
-    # Normality tests
-    # ======================================================
+    #Normality tests
     normal_res = []
 
     for col in cols_to_plot:
@@ -77,63 +69,58 @@ def stats_diagnostics(df, numeric_cols=None, group_col=None, model=None, predict
 
         normal_res.append({
             'Variable': col,
-            'Shapiro p-value': round(shapiro_p, 4) if shapiro_p != '-' else '-',
-            'D’Agostino p-value': round(dagostino_p, 4) if dagostino_p != '-' else '-',
-            'Anderson statistic': round(ad_stat, 4),
-            'KS p-value': round(ks_p, 4)
+            'Shapiro': round(shapiro_p, 4) if shapiro_p != '-' else '-',
+            'Dagostino': round(dagostino_p, 4) if dagostino_p != '-' else '-',
+            'Anderson': round(ad_stat, 4),
+            'KS': round(ks_p, 4)
         })
 
     normal_df = pd.DataFrame(normal_res)
 
-    print("=== Normality Tests ===")
+    print("===Normality Tests===")
     display(
         normal_df.style
         .background_gradient(cmap='Blues', subset=normal_df.columns[1:])
     )
 
-    # ======================================================
-    # Homogeneity / Heteroscedasticity tests
-    # (LOGIC IDENTICAL — DISPLAY HARMONIZED)
-    # ======================================================
-    hetero_rows = []
+    #Variance homogeneity / heteroscedasticity tests
+    print("\n===Variance Homogeneity / Heteroscedasticity Tests===")
 
     if group_col is not None:
         df[group_col] = df[group_col].astype('category')
+
+        levene_p = []
+        bartlett_p = []
 
         for col in numeric_cols:
             groups = [
                 df[df[group_col] == lvl][col].dropna()
                 for lvl in df[group_col].cat.categories
             ]
+            levene_p.append(stats.levene(*groups, center='median')[1])
+            bartlett_p.append(stats.bartlett(*groups)[1])
 
-            hetero_rows.append({
-                'Test': f'Levene ({col})',
-                'p-value': stats.levene(*groups, center='median')[1]
-            })
+        hetero_df = pd.DataFrame({
+            'Levene': np.round(levene_p, 4),
+            'Bartlett': np.round(bartlett_p, 4)
+        }, index=numeric_cols)
 
-            hetero_rows.append({
-                'Test': f'Bartlett ({col})',
-                'p-value': stats.bartlett(*groups)[1]
-            })
+        display(
+            hetero_df.style
+            .background_gradient(cmap='Blues')
+        )
 
     elif model is not None:
         exog = model.model.exog
         bp_test = het_breuschpagan(model.resid, exog)
         white_test = het_white(model.resid, exog)
 
-        hetero_rows.extend([
-            {'Test': 'Breusch-Pagan LM', 'p-value': bp_test[1]},
-            {'Test': 'White LM', 'p-value': white_test[1]}
-        ])
+        hetero_df = pd.DataFrame({
+            'Breusch-Pagan LM': [round(bp_test[1], 4)],
+            'White LM': [round(white_test[1], 4)]
+        }, index=['p-value'])
 
-    hetero_df = (
-        pd.DataFrame(hetero_rows)
-        .assign(**{'p-value': lambda x: x['p-value'].round(4)})
-        .set_index('Test')
-    )
-
-    print("\n=== Variance Homogeneity / Heteroscedasticity Tests ===")
-    display(
-        hetero_df.style
-        .background_gradient(cmap='Blues')
-    )
+        display(
+            hetero_df.style
+            .background_gradient(cmap='Blues')
+        )
