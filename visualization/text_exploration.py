@@ -4,8 +4,8 @@ import pandas as pd
 from wordcloud import WordCloud
 from sklearn.feature_extraction.text import CountVectorizer
 
-#--- Function : text_exploration_basic ---
-def text_exploration_basic(df, text_col='comments_clean', n_top_words=20):
+#--- Function : text_exploration ---
+def text_exploration(df, text_col='comments_clean', n_top_words=20):
     """
     Generic function for basic text exploration:
     - Word Cloud
