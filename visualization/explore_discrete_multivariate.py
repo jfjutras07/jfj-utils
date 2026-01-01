@@ -49,11 +49,11 @@ def plot_discrete_bivariate(df, col, hue_col, figsize=(8,4), colors=None):
 def plot_discrete_bivariate_grid(df, discrete_cols, hue_col, n_cols=2, figsize=(12,8), colors=None, show_proportion=True):
     """Grid of bivariate bar plots for multiple discrete variables.
     If show_proportion=True, bars show proportions instead of counts.
-    By default, colors are light blue and light pink.
+    By default, colors are light blue and light green.
     """
-    #default colors: light blue and light pink
+    #default colors: light blue and light green
     if colors is None:
-        colors = ["#1f77b4","#ffc0cb"]
+        colors = ["#ADD8E6","#90EE90"]
 
     cols = [c for c in discrete_cols if c in df.columns]
     if not cols:
