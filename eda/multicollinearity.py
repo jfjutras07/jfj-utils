@@ -27,27 +27,28 @@ def correlation_check(df: pd.DataFrame, columns: list | None = None, method: str
 def VIF_check(df: pd.DataFrame, columns: list | None = None):
     """
     Calculate and display the Variance Inflation Factor (VIF) for selected columns.
-    Automatically encodes categorical variables and handles constants and non-numeric columns.
+    Automatically encodes categorical variables, removes constant columns, and handles numeric conversion.
     """
-    #Copy only selected columns to avoid modifying original df
+
+    #Copy selected columns to avoid modifying original DataFrame
     df_copy = df[columns].copy() if columns is not None else df.copy()
     
-    #Encode categorical variables with drop_first=True to avoid singularity
+    #Drop rows with missing values
+    df_copy = df_copy.dropna()
+
+    #Encode categorical variables
     df_encoded = pd.get_dummies(df_copy, drop_first=True)
-    
-    #Force numeric and replace non-finite values
-    df_encoded = df_encoded.apply(pd.to_numeric, errors='coerce').replace([np.inf, -np.inf], np.nan)
-    
-    #Replace NaN with 0 to keep all columns
-    df_encoded = df_encoded.fillna(0)
-    
+
+    #Convert all columns to float
+    df_encoded = df_encoded.astype(float)
+
     #Remove constant columns
-    df_encoded = df_encoded.loc[:, df_encoded.var() != 0]
+    df_encoded = df_encoded.loc[:, df_encoded.var() > 0]
 
-    if df_encoded.shape[1] == 0:
-        raise ValueError("No valid columns left for VIF calculation.")
+    if df_encoded.shape[1] < 2:
+        raise ValueError("Not enough valid predictors to compute VIF.")
 
-    #Calculate VIF
+    #Compute VIF
     vif_data = pd.DataFrame({
         'Feature': df_encoded.columns,
         'VIF': [variance_inflation_factor(df_encoded.values, i) for i in range(df_encoded.shape[1])]
@@ -57,5 +58,7 @@ def VIF_check(df: pd.DataFrame, columns: list | None = None):
     vif_data['VIF'] = vif_data['VIF'].round(3)
 
     #Display VIF table
-    print("\n=== VIF Table ===")
-    print(vif_data.to_string())
+    print("\n=== VIF DES PRÉDICTEURS ===")
+    print(vif_data.to_string(index=False))
+
+    return vif_data
