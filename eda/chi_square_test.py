@@ -54,10 +54,3 @@ def chi_square_test(df, col1, col2, show_table=False):
     print(f"\nChi-square test for {col1} vs {col2}:")
     print(f"Chi2 = {chi2:.2f}, p-value = {p:.4f}, dof = {dof}")
     print(f"Cramér's V = {cramers_v:.3f}")
-    
-    return {
-        'chi2': chi2,
-        'p_value': p,
-        'dof': dof,
-        'cramers_v': cramers_v
-    }
