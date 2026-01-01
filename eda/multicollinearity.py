@@ -22,7 +22,6 @@ def correlation_check(df: pd.DataFrame, columns: list | None = None, method: str
     #Display correlation matrix
     print("\n=== Correlation Matrix ===")
     print(corr_matrix.to_string())
-    return corr_matrix
 
 #--- Function : VIF_check ---
 def VIF_check(df: pd.DataFrame, columns: list | None = None):
@@ -60,4 +59,3 @@ def VIF_check(df: pd.DataFrame, columns: list | None = None):
     #Display VIF table
     print("\n=== VIF Table ===")
     print(vif_data.to_string())
-    return vif_data
