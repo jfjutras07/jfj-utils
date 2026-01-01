@@ -39,7 +39,9 @@ Active development — modules will be progressively added and refined.
 ### Data_preprocessing: Functions for cleaning, transforming, and preparing datasets for analysis and modeling.
 
 *feature_engineering.py*
-
+- `mi_classification`
+- `mi_regression`
+  
 *missing.py*
 - `missing_stats`
 - `missing_summary`
