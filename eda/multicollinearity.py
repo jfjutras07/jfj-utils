@@ -15,8 +15,11 @@ def multicollinearity_check(df: pd.DataFrame, method: str = 'spearman', output: 
     numeric_df = df_encoded.select_dtypes(include=[np.number])
     if numeric_df.empty:
         raise ValueError("No numeric columns found after encoding.")
-    if (numeric_df.var() == 0).any():
-        raise ValueError("Some columns have zero variance, VIF cannot be computed.")
+    
+    #Drop constant columns (variance = 0)
+    numeric_df = numeric_df.loc[:, numeric_df.var() != 0]
+    if numeric_df.shape[1] == 0:
+        raise ValueError("No numeric columns left after dropping zero-variance columns.")
 
     #Correlation matrix
     method = method.lower()
