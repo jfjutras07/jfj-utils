@@ -2,8 +2,8 @@ import pandas as pd
 import numpy as np
 from statsmodels.stats.outliers_influence import variance_inflation_factor
 
-#--- Function : check_multicollinearity ---
-def check_multicollinearity(df, method='spearman'):
+#--- Function : multicollinearity_check ---
+def multicollinearity_check(df, method='spearman'):
     """
     Analyze multicollinearity in a dataset using correlation matrix and VIF.
    
