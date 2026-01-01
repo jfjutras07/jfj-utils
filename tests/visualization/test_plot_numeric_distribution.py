@@ -1,6 +1,6 @@
 import pandas as pd
 import matplotlib.pyplot as plt
-from eda.explore_continuous import plot_numeric_distribution
+from visualization.explore_continuous import plot_numeric_distribution
 
 #--- Function : test_plot_numeric_distribution_basic ---
 def test_plot_numeric_distribution_basic():
