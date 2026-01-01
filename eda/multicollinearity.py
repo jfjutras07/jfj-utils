@@ -3,28 +3,28 @@ import numpy as np
 from statsmodels.stats.outliers_influence import variance_inflation_factor
 
 # --- Function : multicollinearity_check ---
-def check_multicollinearity(df: pd.DataFrame, method: str = 'spearman', output: str = 'both') -> pd.DataFrame | dict:
+def multicollinearity_check(df: pd.DataFrame, method: str = 'spearman', output: str = 'both') -> pd.DataFrame | dict:
     """
     Analyze multicollinearity in a dataset using correlation matrix and VIF.
     Automatically encodes categorical variables for VIF calculation.
     """
-    # Encode categorical variables
+    #Encode categorical variables
     df_encoded = pd.get_dummies(df, drop_first=True)
 
-    # Keep numeric columns only
+    #Keep numeric columns only
     numeric_df = df_encoded.select_dtypes(include=[np.number])
     if numeric_df.empty:
         raise ValueError("No numeric columns found after encoding.")
     if (numeric_df.var() == 0).any():
         raise ValueError("Some columns have zero variance, VIF cannot be computed.")
 
-    # Correlation matrix
+    #Correlation matrix
     method = method.lower()
     if method not in ['spearman', 'pearson']:
         raise ValueError("Method must be 'spearman' or 'pearson'.")
     corr_matrix = numeric_df.corr(method=method).round(3)
 
-    # VIF calculation
+    #VIF calculation
     vif_data = pd.DataFrame({
         'Feature': numeric_df.columns,
         'VIF': [variance_inflation_factor(numeric_df.values, i) 
@@ -32,7 +32,7 @@ def check_multicollinearity(df: pd.DataFrame, method: str = 'spearman', output: 
     }).sort_values('VIF', ascending=False).reset_index(drop=True)
     vif_data['VIF'] = vif_data['VIF'].round(3)
 
-    # Return based on output parameter
+    #Return based on output parameter
     if output == 'correlation':
         return corr_matrix
     elif output == 'vif':
