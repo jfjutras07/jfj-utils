@@ -169,8 +169,8 @@ Active development — modules will be progressively added and refined.
 - `plot_numeric_bivariate`
 - `plot_numeric_distribution`
 - `plot_pairplot`
-- `plot_scatter`
 - `plot_scatter_grid`
+- `plot_scatter_plot`
 - `plot_swarm_grid`
 - `plot_violin_grid`
 
