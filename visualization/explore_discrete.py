@@ -41,6 +41,7 @@ def plot_discrete_distribution(df, discrete_cols, figsize=(10,4)):
             ax.text(bar.get_x()+bar.get_width()/2, bar.get_height()/2, f"{int(bar.get_height())}", ha="center", va="center", fontsize=9, color="black")
         plt.tight_layout(); plt.show(); plt.close()
 
+#--- Function : plot_discrete_distribution_grid ---
 def plot_discrete_distribution_grid(df, discrete_cols, n_cols=2, figsize=(12,8)):
     """
     Bar plots for multiple discrete variables arranged in a grid.
