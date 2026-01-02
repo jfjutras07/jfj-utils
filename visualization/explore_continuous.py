@@ -128,26 +128,65 @@ def plot_scatter_grid(df: pd.DataFrame, x_cols: list, y_cols: list, group_col: s
         for j in range(len(x_cols), len(axes)): axes[j].set_visible(False)
         plt.tight_layout(); plt.show()
 
-#---Function: plot_swarm_grid---
-def plot_swarm_grid(df, value_cols, group_col='Economic_status', hue_col=None, n_rows=2, n_cols=2, palette=UNIFORM_BLUE, dodge=True, figsize_single=(10,6), figsize_grid=(6,5)):
+def plot_swarm_grid(df, value_cols, group_col='Economic_status', hue_col=None,
+                    n_rows=2, n_cols=2, color=UNIFORM_BLUE, hue_palette=None,
+                    dodge=True, figsize_single=(10,6), figsize_grid=(6,5)):
+
     if isinstance(group_col,str): group_col=[group_col]
-    y_col=value_cols[0]; plots_per_fig=n_rows*n_cols
-    for i in range(0,len(group_col),plots_per_fig):
-        batch=group_col[i:i+plots_per_fig]
-        if len(batch)==1:
-            fig, ax=plt.subplots(figsize=figsize_single)
-            sns.swarmplot(data=df, x=batch[0], y=y_col, hue=hue_col, dodge=dodge if hue_col else False, palette={0:UNIFORM_BLUE,1:PALE_PINK} if hue_col else UNIFORM_BLUE, ax=ax)
-            ax.set_title(f'{y_col} by {batch[0]}'); ax.set_xlabel(batch[0]); ax.set_ylabel(y_col); ax.grid(axis='y',linestyle='--',alpha=0.5)
-            ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha='right'); plt.tight_layout(); plt.show()
+    y_col = value_cols[0]
+    plots_per_fig = n_rows * n_cols
+
+    for i in range(0, len(group_col), plots_per_fig):
+        batch = group_col[i:i+plots_per_fig]
+
+        if len(batch) == 1:
+            fig, ax = plt.subplots(figsize=figsize_single)
+            sns.swarmplot(
+                data=df,
+                x=batch[0],
+                y=y_col,
+                hue=hue_col,
+                dodge=dodge if hue_col else False,
+                palette=hue_palette if hue_col else None,
+                color=color if hue_col is None else None,
+                ax=ax
+            )
+            ax.set_title(f'{y_col} by {batch[0]}')
+            ax.set_xlabel(batch[0])
+            ax.set_ylabel(y_col)
+            ax.grid(axis='y', linestyle='--', alpha=0.5)
+            ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha='right')
+            plt.tight_layout()
+            plt.show()
+
         else:
-            fig, axes=plt.subplots(n_rows,n_cols,figsize=(figsize_grid[0]*n_cols,figsize_grid[1]*n_rows), sharey=True)
-            axes=axes.flatten()
-            for ax, grp in zip(axes,batch):
-                sns.swarmplot(data=df, x=grp, y=y_col, hue=hue_col, dodge=dodge if hue_col else False, palette={0:UNIFORM_BLUE,1:PALE_PINK} if hue_col else UNIFORM_BLUE, ax=ax)
-                ax.set_title(f'{y_col} by {grp}'); ax.set_xlabel(grp); ax.set_ylabel(y_col); ax.grid(axis='y',linestyle='--',alpha=0.5)
+            fig, axes = plt.subplots(n_rows, n_cols,
+                                     figsize=(figsize_grid[0]*n_cols, figsize_grid[1]*n_rows),
+                                     sharey=True)
+            axes = axes.flatten()
+            for ax, grp in zip(axes, batch):
+                sns.swarmplot(
+                    data=df,
+                    x=grp,
+                    y=y_col,
+                    hue=hue_col,
+                    dodge=dodge if hue_col else False,
+                    palette=hue_palette if hue_col else None,
+                    color=color if hue_col is None else None,
+                    ax=ax
+                )
+                ax.set_title(f'{y_col} by {grp}')
+                ax.set_xlabel(grp)
+                ax.set_ylabel(y_col)
+                ax.grid(axis='y', linestyle='--', alpha=0.5)
                 ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha='right')
-            for j in range(len(batch), len(axes)): axes[j].set_visible(False)
-            plt.tight_layout(); plt.show()
+
+            # Masquer axes vides
+            for j in range(len(batch), len(axes)):
+                axes[j].set_visible(False)
+
+            plt.tight_layout()
+            plt.show()
 
 #---Function: plot_violin_grid---
 def plot_violin_grid(df, value_cols, group_col='Economic_status', n_rows=2, n_cols=2, palette=UNIFORM_BLUE):
