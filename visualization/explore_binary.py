@@ -1,7 +1,10 @@
 import matplotlib.pyplot as plt
 import warnings
+from .style import UNIFORM_BLUE
+
 warnings.filterwarnings("ignore")
 
+#---Function: plot_binary_distribution---
 def plot_binary_distribution(df, binary_cols, figsize=(8,4)):
     """
     Plot two pie charts side by side for each binary column:
@@ -14,14 +17,13 @@ def plot_binary_distribution(df, binary_cols, figsize=(8,4)):
             continue
 
         series = df[col].dropna()
-        counts = series.value_counts().sort_index()  # Ensure 0 then 1
+        counts = series.value_counts().sort_index()
         labels = [str(i) for i in counts.index]
         sizes = counts.values
-        colors = ["#ADD8E6", "#87CEFA"]  # Pale blue and slightly darker
+        colors = [UNIFORM_BLUE, "#FFC0CB"]  # UNIFORM_BLUE and pale pink for binary
 
         fig, axes = plt.subplots(1, 2, figsize=figsize)
 
-        #Left: Proportion
         axes[0].pie(
             sizes,
             labels=labels,
@@ -33,7 +35,6 @@ def plot_binary_distribution(df, binary_cols, figsize=(8,4)):
         axes[0].set_title(f"{col} - Proportion")
         axes[0].set_aspect('equal')
 
-        #Right: Counts
         total = sizes.sum()
         axes[1].pie(
             sizes,
