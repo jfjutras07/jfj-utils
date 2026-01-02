@@ -6,7 +6,31 @@ from statsmodels.stats.outliers_influence import variance_inflation_factor
 def correlation_check(df: pd.DataFrame, columns: list | None = None, method: str = 'spearman'):
     """
     Calculate and display the correlation matrix for numeric columns only.
+
+    Parameters:
+    -----------
+    df : pd.DataFrame
+        The DataFrame containing the data.
+    columns : list, optional
+        List of columns to include in the correlation matrix. If None, all numeric columns are used.
+    method : str, optional
+        Method of correlation. Options include:
+        - 'pearson'  : standard correlation coefficient, measures linear relationship.
+        - 'spearman' : rank-based correlation, measures monotonic relationships, robust to outliers.
+        - 'kendall'  : rank correlation (tau), measures monotonic relationships, good for small datasets.
+        - 'pearsonr' : same as 'pearson', included for clarity in some cases.
+
+    Returns:
+    --------
+    corr_matrix : pd.DataFrame
+        Correlation matrix of the selected numeric columns.
+
+    Example:
+    --------
+    correlation_check(df, columns=['score', 'age', 'height'], method='spearman')
     """
+    import numpy as np
+
     #Select only columns if provided
     if columns is not None:
         df = df[columns]
