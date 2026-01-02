@@ -8,7 +8,7 @@ warnings.simplefilter(action='ignore', category=RuntimeWarning)
 from .style import UNIFORM_BLUE, PALE_PINK
 from visualization.style import SEQUENTIAL_CMAP
 
-def plot_box_grid(df, value_cols, group_col='Economic_status', n_rows=2, n_cols=2, palette="#1f77b4", hue_col=None):
+def plot_box_grid(df, value_cols, group_col='Economic_status', n_rows=2, n_cols=2, palette="BIVARIATE_PALETTE", hue_col=None):
     """
     Plot a grid of boxplots for the specified value columns against one or more group columns.
     Works whether hue is specified or not. Converts single hex palette to list if needed.
