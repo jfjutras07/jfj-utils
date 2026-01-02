@@ -59,7 +59,7 @@ def plot_box_grid(df, value_cols, group_col='Economic_status', n_rows=2, n_cols=
             plt.show()
 
 def plot_box_plot(df, value_cols, category_col, hue_col=None,
-                  palette=None, figsize=(16, 6)):
+                  palette=BIVARIATE_PALETTE, figsize=(16, 6)):
     """
     Boxplot for a single numeric column versus a categorical column, optionally split by hue.
     
