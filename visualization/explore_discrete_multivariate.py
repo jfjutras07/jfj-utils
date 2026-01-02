@@ -44,11 +44,11 @@ def plot_discrete_bivariate(df, col, hue_col, figsize=(8,4), colors=None):
     ax.legend(title=hue_col, bbox_to_anchor=(1.05, 1), loc='upper left')
     plt.tight_layout(); plt.show(); plt.close()
 
-#---Function: plot_discrete_bivariate_grid---
+#---Function: plot_discrete_bivariate_grid (with labels above bars if >8 categories)---
 def plot_discrete_bivariate_grid(df, discrete_cols, hue_col, n_cols=2, figsize=(12,8), colors=None, show_proportion=True):
     """Grid of bivariate bar plots for multiple discrete variables."""
     if colors is None:
-        colors = [UNIFORM_BLUE, PALE_PINK]  # uniform colors
+        colors = [UNIFORM_BLUE, PALE_PINK]  # default colors
 
     cols = [c for c in discrete_cols if c in df.columns]
     if not cols:
@@ -60,20 +60,28 @@ def plot_discrete_bivariate_grid(df, discrete_cols, hue_col, n_cols=2, figsize=(
 
     for ax, col in zip(axes, cols):
         ct = pd.crosstab(df[col], df[hue_col])
-        if show_proportion: ct = ct.div(ct.sum(axis=1), axis=0)
+        if show_proportion: 
+            ct = ct.div(ct.sum(axis=1), axis=0)
 
         categories = ct.index.tolist()
         hue_values = ct.columns.tolist()
         x = np.arange(len(categories))
         width = 0.8 / len(hue_values)
 
+        # Determine if labels should be above the bar
+        label_above = len(categories) > 8
+
         for i, val in enumerate(hue_values):
             heights = ct[val].values
             color = colors[i % len(colors)]
-            ax.bar(x + i*width, heights, width=width, label=str(val), color=color, edgecolor="black")
+            ax.bar(x + i*width, heights, width=width, label=str(val), edgecolor="black", color=color)
+            
             for xi, h in zip(x + i*width, heights):
                 text_val = f"{h:.2f}" if show_proportion else str(int(h))
-                ax.text(xi, h/2, text_val, ha="center", va="center", fontsize=9, color="black")
+                if label_above:
+                    ax.text(xi, h + 0.01*h, text_val, ha="center", va="bottom", fontsize=9, color="black")
+                else:
+                    ax.text(xi, h/2, text_val, ha="center", va="center", fontsize=9, color="black")
 
         ax.set_xticks(x + width*(len(hue_values)-1)/2)
         ax.set_xticklabels(categories, rotation=45)
@@ -81,7 +89,8 @@ def plot_discrete_bivariate_grid(df, discrete_cols, hue_col, n_cols=2, figsize=(
         ax.set_title(f"{col} by {hue_col}")
         ax.legend(title=hue_col, bbox_to_anchor=(1.05,1), loc='upper left')
 
-    for i in range(len(cols), len(axes)): fig.delaxes(axes[i])
+    for i in range(len(cols), len(axes)): 
+        fig.delaxes(axes[i])
     plt.tight_layout(); plt.show(); plt.close()
 
 #---Function: plot_discrete_dot_bivariate---
