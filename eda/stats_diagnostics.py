@@ -66,8 +66,12 @@ def stats_diagnostics(df, numeric_cols=None, group_col=None, model=None, predict
     for i, col in enumerate(cols_to_plot):
         s = df_resid[col] if model else df[col]
         stats.probplot(s.dropna(), dist="norm", plot=axes[i])
-        for line in axes[i].get_lines():
-            line.set_color(UNIFORM_BLUE)
+
+        lines = axes[i].get_lines()
+        if len(lines) >= 2:
+            lines[0].set_color(UNIFORM_BLUE)
+            lines[1].set_color(LINE_RED)
+
         axes[i].set_title(f"Q-Q Plot: {col}")
 
     if model is not None:
