@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 import warnings
-from .style import UNIFORM_BLUE
+from .style import UNIFORM_BLUE, PALE_PINK
 
 warnings.filterwarnings("ignore")
 
