@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import pandas as pd
+from .style import UNIFORM_BLUE, PALE_PINK
 
 #--- Function : plot_line_over_time ---
 def plot_line_over_time(
@@ -12,7 +13,8 @@ def plot_line_over_time(
     figsize=(10,6),
     xlabel=None,
     ylabel=None,
-    title=None
+    title=None,
+    colors=None
 ):
     """
     Generic line plot for a numeric value over any 'time' column.
@@ -26,11 +28,16 @@ def plot_line_over_time(
     - agg_func: aggregation function ('mean', 'median', etc.)
     - figsize: figure size
     - xlabel, ylabel, title: labels and title
+    - colors: optional list of colors for each group
     """
     
     xlabel = xlabel or time_col
     ylabel = ylabel or value_col
     title = title or f'{value_col} over {time_col}'
+    
+    # default colors: uniform blue and pale pink
+    if colors is None:
+        colors = [UNIFORM_BLUE, PALE_PINK]
     
     if group_col:
         grouped = df.groupby([time_col, group_col])[value_col].agg(agg_func).reset_index()
@@ -41,13 +48,15 @@ def plot_line_over_time(
             grouped['Group'] = grouped[group_col]
         
         plt.figure(figsize=figsize)
-        for grp in grouped['Group'].unique():
+        unique_groups = grouped['Group'].unique()
+        for i, grp in enumerate(unique_groups):
             subset = grouped[grouped['Group'] == grp]
-            plt.plot(subset[time_col], subset[value_col], marker='o', label=grp)
+            plt.plot(subset[time_col], subset[value_col], marker='o',
+                     label=grp, color=colors[i % len(colors)])
     else:
         grouped = df.groupby(time_col)[value_col].agg(agg_func).reset_index()
         plt.figure(figsize=figsize)
-        plt.plot(grouped[time_col], grouped[value_col], marker='o')
+        plt.plot(grouped[time_col], grouped[value_col], marker='o', color=UNIFORM_BLUE)
     
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
