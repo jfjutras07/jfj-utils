@@ -20,7 +20,7 @@ def plot_binary_distribution(df, binary_cols, figsize=(8,4)):
         counts = series.value_counts().sort_index()
         labels = [str(i) for i in counts.index]
         sizes = counts.values
-        colors = [UNIFORM_BLUE, "#FFC0CB"]  # UNIFORM_BLUE and pale pink for binary
+        colors = [UNIFORM_BLUE, PALE_PINK]  # UNIFORM_BLUE and pale pink for binary
 
         fig, axes = plt.subplots(1, 2, figsize=figsize)
 
