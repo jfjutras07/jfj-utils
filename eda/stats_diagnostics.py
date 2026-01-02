@@ -10,7 +10,39 @@ LINE_RED = 'red'
 
 #--- Function : stats_diagnostics ---
 def stats_diagnostics(df, numeric_cols=None, group_col=None, model=None, predictors=None):
+"""
+    Perform basic statistical diagnostics for numeric data or model residuals.
 
+    Features:
+    ---------
+    1. Q-Q plots for checking normality of each numeric variable or model residuals.
+    2. Residuals vs Fitted plot if a model is provided (check for heteroscedasticity).
+    3. Normality tests:
+       - Shapiro-Wilk (small to medium samples)
+       - D'Agostino's K^2 (medium to large samples)
+       - Anderson-Darling
+       - Kolmogorov-Smirnov
+    4. Variance homogeneity / heteroscedasticity:
+       - Levene and Bartlett tests if grouping variable is provided
+       - Breusch-Pagan and White tests if a model is provided
+
+    Parameters:
+    -----------
+    df : pd.DataFrame
+        DataFrame containing the data.
+    numeric_cols : list, optional
+        List of numeric columns to analyze. Defaults to all numeric columns.
+    group_col : str, optional
+        Categorical column for group-wise variance tests.
+    model : statsmodels regression result, optional
+        Fitted model object to analyze residuals and perform heteroscedasticity tests.
+    predictors : list, optional
+        List of predictors in the model (currently not used).
+
+    Returns:
+    --------
+    Displays plots and styled DataFrames of normality and variance tests. Does not return values.
+    """
     if numeric_cols is None:
         numeric_cols = df.select_dtypes(include='number').columns.tolist()
 
