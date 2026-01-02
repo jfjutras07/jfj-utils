@@ -5,7 +5,7 @@ import math
 import warnings
 warnings.filterwarnings("ignore")
 warnings.simplefilter(action='ignore', category=RuntimeWarning)
-from .style import UNIFORM_BLUE, PALE_PINK
+from .style import UNIFORM_BLUE, PALE_PINK, BIVARIATE_PALETTE
 from visualization.style import SEQUENTIAL_CMAP
 
 def plot_box_grid(df, value_cols, group_col='Economic_status', n_rows=2, n_cols=2, palette="BIVARIATE_PALETTE", hue_col=None):
