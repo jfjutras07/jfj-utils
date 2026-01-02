@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from .style import UNIFORM_BLUE, PALE_PINK  # your uniform colors
+from .style import UNIFORM_BLUE, PALE_PINK
 
 #--- Function : predicted_actual ---
 def predicted_actual(y_true, y_pred, feature_names=None, model_name="Model", colors=None):
