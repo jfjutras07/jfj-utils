@@ -188,26 +188,57 @@ def plot_swarm_grid(df, value_cols, group_col='Economic_status', hue_col=None,
             plt.tight_layout()
             plt.show()
 
-#---Function: plot_violin_grid---
-def plot_violin_grid(df, value_cols, group_col='Economic_status', n_rows=2, n_cols=2, palette=UNIFORM_BLUE):
-    if isinstance(group_col,str): group_col=[group_col]
-    y_col=value_cols[0]; plots_per_fig=n_rows*n_cols
-    for i in range(0,len(group_col),plots_per_fig):
-        batch=group_col[i:i+plots_per_fig]
-        if len(batch)==1:
-            fig, ax=plt.subplots(figsize=(10,6))
+#---Function: plot_violin_grid ---
+def plot_violin_grid(df, value_cols, group_col='Economic_status', n_rows=2, n_cols=2, palette="#1f77b4"):
+    """
+    Plots violin plots for one or multiple group columns.
+    Parameters:
+        df: pandas DataFrame
+        value_cols: list of columns to plot (only the first is used)
+        group_col: column or list of columns to group by
+        n_rows, n_cols: number of rows and columns per figure
+        palette: color (hex, list, or dict) to use for the violins
+    """
+    #Convert group_col to list if str
+    if isinstance(group_col, str):
+        group_col = [group_col]
+
+    #If palette is a single color hex, convert to a list for Seaborn
+    if isinstance(palette, str):
+        palette = [palette]
+
+    y_col = value_cols[0]
+    plots_per_fig = n_rows * n_cols
+
+    for i in range(0, len(group_col), plots_per_fig):
+        batch = group_col[i:i + plots_per_fig]
+
+        if len(batch) == 1:
+            fig, ax = plt.subplots(figsize=(10,6))
             sns.violinplot(data=df, x=batch[0], y=y_col, palette=palette, inner='quartile', ax=ax)
-            ax.set_title(f'{y_col} by {batch[0]}'); ax.set_xlabel(batch[0]); ax.set_ylabel(y_col)
-            ax.grid(axis='y',linestyle='--',alpha=0.5); ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha='right'); plt.tight_layout(); plt.show()
+            ax.set_title(f'{y_col} by {batch[0]}')
+            ax.set_xlabel(batch[0])
+            ax.set_ylabel(y_col)
+            ax.grid(axis='y', linestyle='--', alpha=0.5)
+            ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha='right')
+            plt.tight_layout()
+            plt.show()
         else:
-            fig, axes=plt.subplots(n_rows,n_cols,figsize=(6*n_cols,5*n_rows), sharey=True)
-            axes=axes.flatten()
-            for ax,grp in zip(axes,batch):
+            fig, axes = plt.subplots(n_rows, n_cols, figsize=(6*n_cols, 5*n_rows), sharey=True)
+            axes = axes.flatten()
+            for ax, grp in zip(axes, batch):
                 sns.violinplot(data=df, x=grp, y=y_col, palette=palette, inner='quartile', ax=ax)
-                ax.set_title(f'{y_col} by {grp}'); ax.set_xlabel(grp); ax.set_ylabel(y_col)
-                ax.grid(axis='y',linestyle='--',alpha=0.5); ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha='right')
-            for j in range(len(batch), len(axes)): axes[j].set_visible(False)
-            plt.tight_layout(); plt.show()
+                ax.set_title(f'{y_col} by {grp}')
+                ax.set_xlabel(grp)
+                ax.set_ylabel(y_col)
+                ax.grid(axis='y', linestyle='--', alpha=0.5)
+                ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha='right')
+            #Hide empty axes
+            for j in range(len(batch), len(axes)):
+                axes[j].set_visible(False)
+            plt.tight_layout()
+            plt.show()
+
 
 #---Function: scatter_numeric---
 def scatter_numeric(df, target_col, numeric_cols=None):
