@@ -58,14 +58,45 @@ def plot_box_grid(df, value_cols, group_col='Economic_status', n_rows=2, n_cols=
             plt.tight_layout()
             plt.show()
 
-#---Function: plot_box_plot---
-def plot_box_plot(df, value_cols, category_col, hue_col, palette={0:UNIFORM_BLUE,1:PALE_PINK}, figsize=(16, 6)):
-    y_col=value_cols[0]
+def plot_box_plot(df, value_cols, category_col, hue_col=None,
+                  palette=None, figsize=(16, 6)):
+    """
+    Boxplot for a single numeric column versus a categorical column, optionally split by hue.
+    
+    Parameters:
+    - df: DataFrame
+    - value_cols: list of numeric columns (only the first one is used)
+    - category_col: column for x-axis
+    - hue_col: optional hue column
+    - palette: seaborn palette name, list, or dict mapping hue values
+    - figsize: figure size tuple
+    """
+    import matplotlib.pyplot as plt
+    import seaborn as sns
+    
+    y_col = value_cols[0]
+    
+    # Default palette
+    if palette is None:
+        if hue_col:
+            # Create a simple palette for two categories
+            unique_hue = df[hue_col].unique()
+            default_colors = ["#1f77b4", "#ff69b4"]  # blue and pink
+            palette = {k: default_colors[i % len(default_colors)] for i, k in enumerate(unique_hue)}
+        else:
+            palette = "#1f77b4"  # single color
+    
     plt.figure(figsize=figsize)
     sns.boxplot(data=df, x=category_col, y=y_col, hue=hue_col, palette=palette, dodge=True)
-    plt.title(f'{y_col} by {category_col} and {hue_col}'); plt.xlabel(category_col); plt.ylabel(y_col)
+    plt.title(f'{y_col} by {category_col}' + (f' and {hue_col}' if hue_col else ''))
+    plt.xlabel(category_col)
+    plt.ylabel(y_col)
     plt.grid(axis='y', linestyle='--', alpha=0.5)
-    plt.xticks(rotation=30, ha='right'); plt.legend(title=hue_col); plt.tight_layout(); plt.show()
+    plt.xticks(rotation=30, ha='right')
+    if hue_col:
+        plt.legend(title=hue_col)
+    plt.tight_layout()
+    plt.show()
 
 #---Function: plot_correlation_heatmap---
 def plot_correlation_heatmap(df, numeric_cols=None, method='spearman', figsize=(12,8),
