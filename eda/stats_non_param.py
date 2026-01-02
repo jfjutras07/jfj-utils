@@ -268,10 +268,12 @@ def mann_whitney_cliff(
     group_col,
     group1,
     group2,
-    alternative="two-sided"
+    alternative="two-sided",
+    p_adjust=None,
+    all_pvalues=None
 ):
     """
-    Perform a Mann–Whitney U test with Cliff's Delta effect size.
+    Perform a Mann–Whitney U test with Cliff's Delta effect size and optional p-value adjustment.
 
     Parameters
     ----------
@@ -285,24 +287,37 @@ def mann_whitney_cliff(
         Values in group_col defining the two groups.
     alternative : {'two-sided', 'less', 'greater'}, default 'two-sided'
         Alternative hypothesis.
+    p_adjust : {'bonferroni', 'holm', 'fdr_bh'}, optional
+        Method to adjust p-value for multiple testing.
+    all_pvalues : list or array, optional
+        List of all raw p-values (required if p_adjust is not None).
 
     Returns
     -------
     pd.Series
-        Test statistic, p-value, Cliff's Delta, and sample sizes.
+        Test statistic, p-value (adjusted if requested), Cliff's Delta, and sample sizes.
     """
 
+    # Extract values
     x = df.loc[df[group_col] == group1, value_col].dropna()
     y = df.loc[df[group_col] == group2, value_col].dropna()
 
-    #Mann–Whitney U test
+    # Mann–Whitney U test
     u_stat, p_value = mannwhitneyu(x, y, alternative=alternative)
 
-    #Cliff's Delta
+    # Cliff's Delta
     nx, ny = len(x), len(y)
     gt = sum(xi > yi for xi in x for yi in y)
     lt = sum(xi < yi for xi in x for yi in y)
     delta = (gt - lt) / (nx * ny)
+
+    # Optional p-value adjustment
+    if p_adjust is not None and all_pvalues is not None:
+        # Adjust p-values using statsmodels
+        adjusted = multipletests(all_pvalues, method=p_adjust)[1]
+        # Find index of current p-value in all_pvalues
+        idx = all_pvalues.index(p_value)
+        p_value = adjusted[idx]
 
     results = pd.Series({
         "Group 1": group1,
