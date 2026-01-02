@@ -351,6 +351,43 @@ def plot_scatter_grid(df: pd.DataFrame, x_cols: list, y_cols: list, group_col: s
         plt.tight_layout()
         plt.show()
 
+#---Function: plot_scatter_plot---
+def plot_scatter_plot(df, target_col, numeric_cols=None):
+    """
+    Plots scatter plots of numeric columns against a target column.
+
+    Parameters:
+    -----------
+    df : pd.DataFrame
+        DataFrame containing the data.
+    target_col : str
+        Column to plot on the y-axis.
+    numeric_cols : list, optional
+        List of numeric columns to plot on the x-axis. 
+        If None, all numeric columns except target_col are used.
+    """
+    if numeric_cols is None:
+        numeric_cols = df.select_dtypes(include='number').columns.tolist()
+        numeric_cols = [c for c in numeric_cols if c != target_col]
+
+    n_cols = 2
+    n_rows = math.ceil(len(numeric_cols) / n_cols)
+    fig, axes = plt.subplots(n_rows, n_cols, figsize=(12, 5 * n_rows))
+    axes = axes.flatten()
+
+    for i, col in enumerate(numeric_cols):
+        axes[i].scatter(df[col], df[target_col], alpha=0.6, color=UNIFORM_BLUE)
+        axes[i].set_xlabel(col)
+        axes[i].set_ylabel(target_col)
+        axes[i].set_title(f"{col} vs {target_col}")
+
+    # Remove unused axes
+    for j in range(i + 1, len(axes)):
+        fig.delaxes(axes[j])
+
+    plt.tight_layout()
+    plt.show()
+
 #---Function: plot_swarm_grid---
 def plot_swarm_grid(df, value_cols, group_col='Economic_status', hue_col=None,
                     n_rows=2, n_cols=2, color=UNIFORM_BLUE, hue_palette=None,
@@ -499,40 +536,3 @@ def plot_violin_grid(df, value_cols, group_col='Economic_status', n_rows=2, n_co
                 axes[j].set_visible(False)
             plt.tight_layout()
             plt.show()
-
-#---Function: scatter_numeric---
-def scatter_numeric(df, target_col, numeric_cols=None):
-    """
-    Plots scatter plots of numeric columns against a target column.
-
-    Parameters:
-    -----------
-    df : pd.DataFrame
-        DataFrame containing the data.
-    target_col : str
-        Column to plot on the y-axis.
-    numeric_cols : list, optional
-        List of numeric columns to plot on the x-axis. 
-        If None, all numeric columns except target_col are used.
-    """
-    if numeric_cols is None:
-        numeric_cols = df.select_dtypes(include='number').columns.tolist()
-        numeric_cols = [c for c in numeric_cols if c != target_col]
-
-    n_cols = 2
-    n_rows = math.ceil(len(numeric_cols) / n_cols)
-    fig, axes = plt.subplots(n_rows, n_cols, figsize=(12, 5 * n_rows))
-    axes = axes.flatten()
-
-    for i, col in enumerate(numeric_cols):
-        axes[i].scatter(df[col], df[target_col], alpha=0.6, color=UNIFORM_BLUE)
-        axes[i].set_xlabel(col)
-        axes[i].set_ylabel(target_col)
-        axes[i].set_title(f"{col} vs {target_col}")
-
-    # Remove unused axes
-    for j in range(i + 1, len(axes)):
-        fig.delaxes(axes[j])
-
-    plt.tight_layout()
-    plt.show()
