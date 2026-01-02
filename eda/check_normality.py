@@ -10,8 +10,10 @@ def homogeneity_check(df, value_col, group_col, center='median'):
     Check for homogeneity of variances across multiple groups.
 
     This function performs:
-    1. Levene's test (robust to non-normal distributions).
-    2. Bartlett's test (powerful if data is normally distributed).
+    1. Levene's test (robust to non-normal distributions, can use mean or median).
+    2. Bartlett's test (powerful if data is normally distributed, sensitive to non-normality).
+    3. Brown-Forsythe test (variant of Levene using median, very robust to outliers).
+    4. Fligner-Killeen test (non-parametric, highly robust to non-normality and outliers).
 
     Parameters:
     -----------
@@ -22,7 +24,7 @@ def homogeneity_check(df, value_col, group_col, center='median'):
     group_col : str
         Name of the grouping/categorical column.
     center : str, optional
-        'median' or 'mean' for Levene's test. Default is 'median' (more robust).
+        'median' or 'mean' for Levene/Brown-Forsythe test. Default is 'median' (more robust).
 
     Returns:
     -------
@@ -30,11 +32,17 @@ def homogeneity_check(df, value_col, group_col, center='median'):
         Dictionary containing:
         - 'levene_stat', 'levene_p'
         - 'bartlett_stat', 'bartlett_p'
+        - 'brown_forsythe_stat', 'brown_forsythe_p'
+        - 'fligner_stat', 'fligner_p'
 
     Example:
     --------
     result = homogeneity_check(df, value_col='score', group_col='class')
     """
+    import pandas as pd
+    from scipy.stats import levene, bartlett, fligner
+    import numpy as np
+
     #Check types
     if not pd.api.types.is_numeric_dtype(df[value_col]):
         raise ValueError(f"{value_col} must be numeric.")
@@ -43,30 +51,44 @@ def homogeneity_check(df, value_col, group_col, center='median'):
     #Extract data by group
     groups_data = [df[df[group_col] == lvl][value_col].dropna() for lvl in df[group_col].cat.categories]
 
-    #Levene's test (robust to non-normality)
+    #Levene's test
     levene_stat, levene_p = levene(*groups_data, center=center)
 
-    #Bartlett's test (powerful if normality holds)
+    #Bartlett's test
     bartlett_stat, bartlett_p = bartlett(*groups_data)
 
+    #Brown-Forsythe test (Levene using median by default)
+    bf_center = 'median' if center not in ['mean', 'median'] else center
+    brown_forsythe_stat, brown_forsythe_p = levene(*groups_data, center=bf_center)
+
+    #Fligner-Killeen test
+    fligner_stat, fligner_p = fligner(*groups_data)
+
+    #Print results
     print(f"Levene's test (center={center}): stat = {levene_stat:.4f}, p = {levene_p:.4f}")
     print(f"Bartlett's test : stat = {bartlett_stat:.4f}, p = {bartlett_p:.4f}")
+    print(f"Brown-Forsythe test (center={bf_center}): stat = {brown_forsythe_stat:.4f}, p = {brown_forsythe_p:.4f}")
+    print(f"Fligner-Killeen test : stat = {fligner_stat:.4f}, p = {fligner_p:.4f}")
 
-    if levene_p < 0.05:
-        print("→ Levene: Variances are likely unequal.")
-    else:
-        print("→ Levene: Variances are homogeneous.")
-
-    if bartlett_p < 0.05:
-        print("→ Bartlett: Variances are likely unequal.")
-    else:
-        print("→ Bartlett: Variances are homogeneous.")
+    #Interpretation
+    for test_name, p in zip(
+        ['Levene', 'Bartlett', 'Brown-Forsythe', 'Fligner-Killeen'],
+        [levene_p, bartlett_p, brown_forsythe_p, fligner_p]
+    ):
+        if p < 0.05:
+            print(f"→ {test_name}: Variances are likely unequal.")
+        else:
+            print(f"→ {test_name}: Variances are homogeneous.")
 
     return {
         'levene_stat': levene_stat,
         'levene_p': levene_p,
         'bartlett_stat': bartlett_stat,
-        'bartlett_p': bartlett_p
+        'bartlett_p': bartlett_p,
+        'brown_forsythe_stat': brown_forsythe_stat,
+        'brown_forsythe_p': brown_forsythe_p,
+        'fligner_stat': fligner_stat,
+        'fligner_p': fligner_p
     }
 
 #--- normality_check ---
