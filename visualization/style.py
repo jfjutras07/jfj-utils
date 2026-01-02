@@ -7,7 +7,7 @@ Graphical roles only – no semantic assumptions.
 # Core colors (categorical plots)
 # ======================
 UNIFORM_BLUE = "#1f77b4"       # professional balanced blue
-PALE_PINK = "#f4a3c4"          # soft contrast for bivariate/categorical
+PALE_PINK = "#2E8B57"          # soft contrast for bivariate/categorical
 BLACK = "#000000"              # text/edge labels
 
 # ======================
