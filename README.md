@@ -70,9 +70,9 @@ Active development — modules will be progressively added and refined.
 *calculate_vif.py*
 
 *check_normality.py*
+- `homogeneity_check`
 - `normality_check`
-- `numeric_skew_kurt`
-- `test_homogeneity`
+- `skew_kurt_check`
 
 *chi_square_test.py*
 
@@ -83,7 +83,8 @@ Active development — modules will be progressively added and refined.
 - `describe_structure`
 
 *multicollinearity.py*
-- `check_multicollinearity`
+- `correlation_check`
+- `VIF_check`
 
 *stats_diagnostics.py*
 
@@ -150,9 +151,9 @@ Active development — modules will be progressively added and refined.
 
 ### Visualization: High-level plotting utilities for exploring data and communicating analytical results.
 
-*choropleth_map.py*
-
 *chi_square_heatmap.py*
+
+*choropleth_map.py*
 
 *confusion_matrix.py*
 - `plot_logreg_results`
@@ -168,10 +169,10 @@ Active development — modules will be progressively added and refined.
 - `plot_numeric_bivariate`
 - `plot_numeric_distribution`
 - `plot_pairplot`
+- `plot_scatter`
 - `plot_scatter_grid`
 - `plot_swarm_grid`
 - `plot_violin_grid`
-- `scatter_numeric`
 
 *explore_discrete.py*
 - `plot_discrete_distribution`
@@ -189,10 +190,10 @@ Active development — modules will be progressively added and refined.
 - `plot_line_over_time`
 
 *predicted_actual.py*
-- `predicted_actual`
+- `plot_predicted_actual`
 
 *scree_biplot.py*
-- `scree_biplot`
+- `plot_scree_biplot`
 
 *text_exploration.py*
 - `text_exploration_basic`
