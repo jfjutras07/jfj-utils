@@ -1,4 +1,3 @@
-
 # --- Function : logistic_regression ---
 def logistic_regression(df, outcome, predictors):
     """
