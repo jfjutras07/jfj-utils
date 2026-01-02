@@ -2,8 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from .style import UNIFORM_BLUE, PALE_PINK
 
-#--- Function : predicted_actual ---
-def predicted_actual(y_true, y_pred, feature_names=None, model_name="Model", colors=None):
+#--- Function : plot_predicted_actual ---
+def plot_predicted_actual(y_true, y_pred, feature_names=None, model_name="Model", colors=None):
     """
     Generic visualization for regression models comparing predicted vs actual values.
     Works for single-target and multi-target regression.
@@ -27,7 +27,6 @@ def predicted_actual(y_true, y_pred, feature_names=None, model_name="Model", col
     None
         Displays the plot.
     """
-
     #default colors: points = UNIFORM_BLUE, line = PALE_PINK
     if colors is None:
         colors = [UNIFORM_BLUE, PALE_PINK]
