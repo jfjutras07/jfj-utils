@@ -41,32 +41,81 @@ def plot_discrete_distribution(df, discrete_cols, figsize=(10,4)):
             ax.text(bar.get_x()+bar.get_width()/2, bar.get_height()/2, f"{int(bar.get_height())}", ha="center", va="center", fontsize=9, color="black")
         plt.tight_layout(); plt.show(); plt.close()
 
-#---Function : plot_discrete_distribution_grid---
 def plot_discrete_distribution_grid(df, discrete_cols, n_cols=2, figsize=(12,8)):
     """
     Bar plots for multiple discrete variables arranged in a grid.
     Displays counts inside each bar, centered (labels in black).
+    Automatically switches to horizontal bars when a variable has 8 or more categories.
     """
     cols = [col for col in discrete_cols if col in df.columns]
     if not cols: 
         print("No valid discrete columns found.")
         return
-    n_rows = math.ceil(len(cols)/n_cols)
+
+    n_rows = math.ceil(len(cols) / n_cols)
     fig, axes = plt.subplots(n_rows, n_cols, figsize=figsize)
-    axes = axes.flatten() if len(cols)>1 else [axes]
+    axes = axes.flatten() if len(cols) > 1 else [axes]
+
     for ax, col in zip(axes, cols):
         series = df[col].dropna()
         counts = get_counts(series)
-        bars = ax.bar(counts.index.astype(str), counts.values, color=UNIFORM_BLUE,
-                      edgecolor="black", linewidth=1)
+        n_cat = len(counts)
+
+        # --- Horizontal bars if 8 categories or more ---
+        if n_cat >= 8:
+            bars = ax.barh(
+                counts.index.astype(str),
+                counts.values,
+                color=UNIFORM_BLUE,
+                edgecolor="black",
+                linewidth=1
+            )
+            ax.set_xlabel("Count")
+            ax.set_ylabel(col)
+
+            for bar in bars:
+                ax.text(
+                    bar.get_width() / 2,
+                    bar.get_y() + bar.get_height() / 2,
+                    f"{int(bar.get_width())}",
+                    ha="center",
+                    va="center",
+                    fontsize=9,
+                    color="black"
+                )
+
+        # --- Vertical bars otherwise ---
+        else:
+            bars = ax.bar(
+                counts.index.astype(str),
+                counts.values,
+                color=UNIFORM_BLUE,
+                edgecolor="black",
+                linewidth=1
+            )
+            ax.set_ylabel("Count")
+            ax.set_title(col)
+            ax.tick_params(axis="x", rotation=45)
+
+            for bar in bars:
+                ax.text(
+                    bar.get_x() + bar.get_width() / 2,
+                    bar.get_height() / 2,
+                    f"{int(bar.get_height())}",
+                    ha="center",
+                    va="center",
+                    fontsize=9,
+                    color="black"
+                )
+
         ax.set_title(col)
-        ax.set_ylabel("Count")
-        ax.tick_params(axis="x", rotation=45)
-        for bar in bars:
-            ax.text(bar.get_x()+bar.get_width()/2, bar.get_height()/2, f"{int(bar.get_height())}", ha="center", va="center", fontsize=9, color="black")
+
     for i in range(len(cols), len(axes)):
         fig.delaxes(axes[i])
-    plt.tight_layout(); plt.show(); plt.close()
+
+    plt.tight_layout()
+    plt.show()
+    plt.close()
 
 #---Function : plot_discrete_dot_distribution---
 def plot_discrete_dot_distribution(df, discrete_cols, normalize=True, figsize=(10,4)):
