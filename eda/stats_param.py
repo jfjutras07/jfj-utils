@@ -31,14 +31,14 @@ def ancova_test(df, dv, factor, covariates, return_model=False):
         ANOVA table.
     model : statsmodels regression model (optional)
     """
-    # Check dependent variable
+    #Check dependent variable
     if not pd.api.types.is_numeric_dtype(df[dv]):
         raise ValueError(f"Dependent variable {dv} must be numeric.")
 
-    # Ensure factor is categorical
+    #Ensure factor is categorical
     df[factor] = df[factor].astype('category')
 
-    # Build formula
+    #Build formula
     main_effects = f"C({factor})"
     covariate_terms = []
     interaction_terms = []
@@ -57,7 +57,7 @@ def ancova_test(df, dv, factor, covariates, return_model=False):
         formula += " + " + " + ".join(covariate_terms)
         formula += " + " + " + ".join(interaction_terms)
 
-    # Fit model and get ANOVA table
+    #Fit model and get ANOVA table
     model = ols(formula, data=df).fit()
     anova_table = sm.stats.anova_lm(model, typ=2)
 
@@ -353,7 +353,6 @@ def repeated_anova(df, subject, within, dv, return_model=False):
     return result, aovrm
 
 #---Function: robust_anova---
-#---Function: robust_anova---
 def robust_anova(df, dv, factors, return_model=False):
     """
     Perform a robust ANOVA (Welch-like) for one or multiple categorical factors.
@@ -377,21 +376,21 @@ def robust_anova(df, dv, factors, return_model=False):
     model : statsmodels.regression.linear_model.RegressionResultsWrapper
         Fitted OLS model (if return_model=True).
     """
-    # Check dependent variable
+    #Check dependent variable
     if not pd.api.types.is_numeric_dtype(df[dv]):
         raise ValueError(f"Dependent variable {dv} must be numeric.")
 
-    # Ensure all factors are categorical
+    #Ensure all factors are categorical
     for f in factors:
         df[f] = df[f].astype('category')
 
-    # Build formula with main effects and interactions
+    #Build formula with main effects and interactions
     formula = dv + ' ~ ' + ' * '.join([f'C({f})' for f in factors])
 
-    # Fit model
+    #Fit model
     model = ols(formula, data=df).fit()
 
-    # Robust ANOVA table (HC3)
+    #Robust ANOVA table (HC3)
     anova_table = sm.stats.anova_lm(model, typ=2, robust='hc3')
 
     if return_model:
@@ -420,18 +419,18 @@ def tukey_posthoc(df, column, group, alpha=0.05):
         Object containing pairwise comparisons with mean differences, p-values, and confidence intervals.
     """
 
-    # Ensure numeric column
+    #Ensure numeric column
     if not pd.api.types.is_numeric_dtype(df[column]):
         raise ValueError(f"Column {column} must be numeric.")
 
-    # Ensure group is categorical
+    #Ensure group is categorical
     df[group] = df[group].astype('category')
 
-    # Extract Series to ensure 1D arrays
+    #Extract Series to ensure 1D arrays
     endog = df[column].values
     groups = df[group].values
 
-    # Run Tukey HSD
+    #Run Tukey HSD
     from statsmodels.stats.multicomp import pairwise_tukeyhsd
     tukey_result = pairwise_tukeyhsd(endog=endog, groups=groups, alpha=alpha)
 
