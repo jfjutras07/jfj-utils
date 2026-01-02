@@ -41,5 +41,3 @@ def logistic_regression(df, outcome, predictors):
     # Fit logistic regression
     model = smf.logit(formula, data=df).fit()
     print(model.summary())
-
-    return model
