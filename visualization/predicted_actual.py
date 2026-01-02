@@ -1,8 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from .style import UNIFORM_BLUE, PALE_PINK  # your uniform colors
 
 #--- Function : predicted_actual ---
-def predicted_actual(y_true, y_pred, feature_names=None, model_name="Model"):
+def predicted_actual(y_true, y_pred, feature_names=None, model_name="Model", colors=None):
     """
     Generic visualization for regression models comparing predicted vs actual values.
     Works for single-target and multi-target regression.
@@ -18,12 +19,18 @@ def predicted_actual(y_true, y_pred, feature_names=None, model_name="Model"):
         column names will be used. Otherwise generic names are assigned.
     model_name : str, optional
         Name of the model to display in plot titles.
+    colors : list, optional
+        List of two colors: [points_color, line_color]. Defaults to uniform colors.
 
     Returns
     -------
     None
         Displays the plot.
     """
+
+    #default colors: points = UNIFORM_BLUE, line = PALE_PINK
+    if colors is None:
+        colors = [UNIFORM_BLUE, PALE_PINK]
 
     #Convert to numpy
     y_true = np.array(y_true)
@@ -46,13 +53,15 @@ def predicted_actual(y_true, y_pred, feature_names=None, model_name="Model"):
     for i in range(n_targets):
         plt.subplot(1, n_targets, i + 1)
 
-        plt.scatter(y_true[:, i], y_pred[:, i], alpha=0.6)
+        # Scatter points
+        plt.scatter(y_true[:, i], y_pred[:, i], alpha=0.6, color=colors[0])
+
         min_val = min(y_true[:, i].min(), y_pred[:, i].min())
         max_val = max(y_true[:, i].max(), y_pred[:, i].max())
 
-        #Diagonal perfect prediction line
+        # Diagonal perfect prediction line
         plt.plot([min_val, max_val], [min_val, max_val],
-                 linestyle='--', linewidth=2)
+                 linestyle='--', linewidth=2, color=colors[1])
 
         plt.xlabel(f"Actual {feature_names[i]}")
         plt.ylabel(f"Predicted {feature_names[i]}")
