@@ -2,8 +2,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from .style import UNIFORM_BLUE, PALE_PINK
 
-#--- Function : scree_biplot---
-def scree_biplot(pca, df_pca, feature_names, scale=3, figsize=(16,6)):
+#--- Function : plot_scree_biplot---
+def plot_scree_biplot(pca, df_pca, feature_names, scale=3, figsize=(16,6)):
     pca_components = pca.components_
     explained_var = pca.explained_variance_ratio_
 
