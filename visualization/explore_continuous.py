@@ -6,6 +6,7 @@ import warnings
 warnings.filterwarnings("ignore")
 warnings.simplefilter(action='ignore', category=RuntimeWarning)
 from .style import UNIFORM_BLUE, PALE_PINK
+from visualization.style import SEQUENTIAL_CMAP
 
 #---Function:plot_box_grid---
 def plot_box_grid(df, value_cols, group_col='Economic_status', n_rows=2, n_cols=2, palette=UNIFORM_BLUE):
@@ -43,27 +44,33 @@ def plot_box_plot(df, value_cols, category_col, hue_col, palette={0:UNIFORM_BLUE
     plt.xticks(rotation=30, ha='right'); plt.legend(title=hue_col); plt.tight_layout(); plt.show()
 
 #---Function: plot_correlation_heatmap---
-def plot_correlation_heatmap(df, numeric_cols=None, method='spearman', figsize=(12,8), cmap=UNIFORM_BLUE, annot=True, fmt=".2f"):
+def plot_correlation_heatmap(df, numeric_cols=None, method='spearman', figsize=(12,8),
+                             cmap=SEQUENTIAL_CMAP, annot=True, fmt=".2f"):
     if numeric_cols is None:
         numeric_cols = df.select_dtypes(include='number').columns.tolist()
     corr_matrix = df[numeric_cols].corr(method=method)
     plt.figure(figsize=figsize)
     sns.heatmap(corr_matrix, annot=annot, fmt=fmt, cmap=cmap)
-    plt.title(f"{method.capitalize()} Correlation Heatmap"); plt.tight_layout(); plt.show(); plt.close()
+    plt.title(f"{method.capitalize()} Correlation Heatmap")
+    plt.tight_layout()
+    plt.show()
+    plt.close()
 
 #---Function: plot_heatmap_grid---
-def plot_heatmap_grid(df, value_col, index_col, columns_col=None, aggfunc='median', cmap=UNIFORM_BLUE, fmt=".0f", figsize=(10,6)):
+def plot_heatmap_grid(df, value_col, index_col, columns_col=None, aggfunc='median',
+                      cmap=SEQUENTIAL_CMAP, fmt=".0f", figsize=(10,6)):
     if columns_col is not None:
         pivot = df.pivot_table(index=index_col, columns=columns_col, values=value_col, aggfunc=aggfunc)
     else:
         pivot = df.groupby(index_col)[value_col].agg(aggfunc).to_frame()
+
     plt.figure(figsize=figsize)
     sns.heatmap(pivot, annot=True, fmt=fmt, cmap=cmap, linewidths=0.5)
     plt.title(f"{aggfunc.capitalize()} {value_col} by {index_col}" + (f" and {columns_col}" if columns_col else ""))
     plt.ylabel(index_col)
     plt.xlabel(columns_col if columns_col else value_col)
     plt.show()
-
+                          
 #---Function: plot_numeric_bivariate---
 def plot_numeric_bivariate(df, numeric_cols, hue='Gender', bins=40):
     groups=df[hue].unique()
