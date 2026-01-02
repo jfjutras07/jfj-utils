@@ -1,7 +1,10 @@
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
+from sklearn.metrics import confusion_matrix
+from .style import UNIFORM_BLUE
 
+#---Function: plot_logreg_results---
 def plot_logreg_results(model, X_test, y_test, feature_names=None):
     """
     Visualize a logistic regression classifier:
@@ -21,10 +24,11 @@ def plot_logreg_results(model, X_test, y_test, feature_names=None):
     #Confusion Matrix
     cm = confusion_matrix(y_test, y_pred)
     plt.figure(figsize=(6,5))
-    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', cbar=False)
+    sns.heatmap(cm, annot=True, fmt='d', cmap=UNIFORM_BLUE, cbar=False)
     plt.xlabel('Predicted')
     plt.ylabel('Actual')
     plt.title('Confusion Matrix - Logistic Regression')
+    plt.tight_layout()
     plt.show()
     
     #Coefficients
