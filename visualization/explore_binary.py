@@ -5,7 +5,7 @@ from .style import UNIFORM_BLUE, PALE_PINK
 warnings.filterwarnings("ignore")
 
 #---Function: plot_binary_distribution---
-def plot_binary_distribution(df, binary_cols, figsize=(8,4)):
+def plot_binary_distribution(df, binary_cols, figsize=(6,3)):
     """
     Plot two pie charts side by side for each binary column:
     - Left: Proportion
