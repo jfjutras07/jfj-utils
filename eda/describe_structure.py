@@ -17,9 +17,9 @@ def describe_structure(df, id_cols=None, date_cols=None, cat_threshold=20, max_u
     bool_cols = df.select_dtypes(include=["bool"]).columns
     bool_summary = pd.DataFrame()
     for col in bool_cols:
-        bool_summary.loc[col, "True_count"] = df[col].sum()
-        bool_summary.loc[col, "False_count"] = (~df[col]).sum()
-        bool_summary.loc[col, "Percent_true"] = df[col].mean() * 100
+        bool_summary.loc[col,"True_count"] = df[col].sum()
+        bool_summary.loc[col,"False_count"] = (~df[col]).sum()
+        bool_summary.loc[col,"Percent_true"] = df[col].mean() * 100
     print(bool_summary)
 
     #--- Categorical columns ---
@@ -74,6 +74,6 @@ def describe_structure(df, id_cols=None, date_cols=None, cat_threshold=20, max_u
             date_summary.loc[col,"example_values"] = ", ".join(series.dropna().unique()[:5])
             date_summary.loc[col,"dash_count"] = series.str.count("-").sum()
             date_summary.loc[col,"slash_count"] = series.str.count("/").sum()
-            date_summary.loc[col,"dot_count"] = series.str.count("\.").sum()
+            date_summary.loc[col,"dot_count"] = series.str.count(r"\.").sum()
             date_summary.loc[col,"avg_length"] = series.str.len().mean()
     print(date_summary)
