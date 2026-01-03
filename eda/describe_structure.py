@@ -2,17 +2,9 @@ import pandas as pd
 import numpy as np
 
 #--- Function : describe_structure ---
-def describe_structure(df, id_cols=None, date_cols=None, cat_threshold=20, max_unique_display=10):
+def describe_structure(df, id_cols=None, date_cols=None, cat_threshold=20, max_unique_display=50):
     """
     Display a clear EDA summary for a pandas DataFrame.
-    Prints each section with spacing between them.
-    
-    Parameters:
-    - df : DataFrame
-    - id_cols : list of columns to treat as ID
-    - date_cols : list of columns to treat as dates
-    - cat_threshold : max unique values to consider as categorical
-    - max_unique_display : max number of unique values to display per categorical column
     """
 
     #--- Numeric columns ---
@@ -39,12 +31,12 @@ def describe_structure(df, id_cols=None, date_cols=None, cat_threshold=20, max_u
         cat_summary.loc[col,"unique_values"] = df[col].nunique()
         cat_summary.loc[col,"most_frequent"] = df[col].mode()[0] if not df[col].mode().empty else None
         
-        # List all unique values (or truncate if too many)
+        # All unique values (truncate if too many)
         unique_vals = df[col].dropna().unique()
         if len(unique_vals) > max_unique_display:
             unique_vals = list(unique_vals[:max_unique_display]) + ["..."]
-        cat_summary.loc[col,"all_unique_values"] = unique_vals
-        
+        cat_summary.loc[col,"all_unique_values"] = ", ".join(map(str, unique_vals))
+
         cat_summary.loc[col,"missing_count"] = df[col].isna().sum()
     print(cat_summary)
 
