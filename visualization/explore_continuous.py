@@ -384,7 +384,7 @@ def plot_scatter_plot(df, target_col, numeric_cols=None):
         axes[i].set_ylabel(target_col)
         axes[i].set_title(f"{col} vs {target_col}")
 
-    # Remove unused axes
+    #Remove unused axes
     for j in range(i + 1, len(axes)):
         fig.delaxes(axes[j])
 
@@ -393,35 +393,10 @@ def plot_scatter_plot(df, target_col, numeric_cols=None):
 
 #---Function: plot_swarm_grid---
 def plot_swarm_grid(df, value_cols, group_col='Economic_status', hue_col=None,
-                    n_rows=2, n_cols=2, color=UNIFORM_BLUE, hue_palette=None,
+                    n_rows=2, n_cols=2, color=UNIFORM_BLUE, hue_palette=BIVARIATE_PALETTE,
                     dodge=True, figsize_single=(10,6), figsize_grid=(6,5)):
     """
     Plots swarm plots for one or multiple grouping variables, optionally with hue.
-
-    Parameters:
-    -----------
-    df : pd.DataFrame
-        DataFrame containing the data.
-    value_cols : list
-        List of numeric columns to plot (only the first is used for y-axis).
-    group_col : str or list
-        Column(s) to group by on the x-axis. Default is 'Economic_status'.
-    hue_col : str, optional
-        Column for color grouping. Default is None.
-    n_rows : int, optional
-        Number of rows per figure grid. Default is 2.
-    n_cols : int, optional
-        Number of columns per figure grid. Default is 2.
-    color : str, optional
-        Color for points if no hue. Default is UNIFORM_BLUE.
-    hue_palette : dict or list, optional
-        Palette for hue groups. Default is None.
-    dodge : bool, optional
-        Whether to separate points by hue. Default is True.
-    figsize_single : tuple, optional
-        Figure size for a single plot. Default is (10,6).
-    figsize_grid : tuple, optional
-        Base figure size for multiple plots. Default is (6,5).
     """
     if isinstance(group_col, str):
         group_cols = [group_col]
@@ -433,8 +408,6 @@ def plot_swarm_grid(df, value_cols, group_col='Economic_status', hue_col=None,
 
     for i in range(0, len(group_cols), plots_per_fig):
         batch = group_cols[i:i + plots_per_fig]
-
-        #Figure size
         fig_size = figsize_single if len(batch) == 1 else (figsize_grid[0]*n_cols, figsize_grid[1]*n_rows)
         fig, axes = plt.subplots(
             nrows=1 if len(batch) == 1 else n_rows,
@@ -443,7 +416,6 @@ def plot_swarm_grid(df, value_cols, group_col='Economic_status', hue_col=None,
             sharey=True
         )
 
-        #Ensure axes iterable
         if not isinstance(axes, (list, np.ndarray)):
             axes = [axes]
         else:
@@ -466,42 +438,19 @@ def plot_swarm_grid(df, value_cols, group_col='Economic_status', hue_col=None,
             ax.grid(axis='y', linestyle='--', alpha=0.5)
             ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha='right')
 
-        #Hide unused axes
         for j in range(len(batch), len(axes)):
             axes[j].set_visible(False)
 
         plt.tight_layout()
         plt.show()
 
+
 #---Function: plot_violin_grid---
 def plot_violin_grid(df, value_cols, group_col='Economic_status', hue_col=None,
-                     n_rows=2, n_cols=2, palette="#1f77b4", dodge=True,
+                     n_rows=2, n_cols=2, palette=BIVARIATE_PALETTE, dodge=True,
                      figsize_single=(10,6), figsize_grid=(6,5)):
     """
     Plots violin plots for one or multiple grouping variables, optionally with hue.
-
-    Parameters:
-    -----------
-    df : pd.DataFrame
-        DataFrame containing the data.
-    value_cols : list
-        List of numeric columns to plot (only the first is used for y-axis).
-    group_col : str or list
-        Categorical column(s) used for grouping on the x-axis.
-    hue_col : str, optional
-        Column for color grouping. Default is None.
-    n_rows : int
-        Number of rows per figure grid.
-    n_cols : int
-        Number of columns per figure grid.
-    palette : str, list, or dict
-        Color or palette for violins.
-    dodge : bool, optional
-        Whether to separate violins by hue. Default is True.
-    figsize_single : tuple, optional
-        Figure size for a single plot. Default is (10,6).
-    figsize_grid : tuple, optional
-        Base figure size for multiple plots. Default is (6,5).
     """
     y_col = value_cols[0]
 
@@ -509,9 +458,6 @@ def plot_violin_grid(df, value_cols, group_col='Economic_status', hue_col=None,
         group_cols = [group_col]
     else:
         group_cols = group_col
-
-    if isinstance(palette, str):
-        palette = [palette]
 
     plots_per_fig = n_rows * n_cols
 
@@ -526,7 +472,6 @@ def plot_violin_grid(df, value_cols, group_col='Economic_status', hue_col=None,
             sharey=True
         )
 
-        #Ensure axes iterable
         if not isinstance(axes, (list, np.ndarray)):
             axes = [axes]
         else:
@@ -549,9 +494,9 @@ def plot_violin_grid(df, value_cols, group_col='Economic_status', hue_col=None,
             ax.grid(axis='y', linestyle='--', alpha=0.5)
             ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha='right')
 
-        #Hide unused axes
         for j in range(len(batch), len(axes)):
             axes[j].set_visible(False)
 
         plt.tight_layout()
         plt.show()
+
