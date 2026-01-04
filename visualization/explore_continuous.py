@@ -474,16 +474,11 @@ def plot_swarm_grid(df, value_cols, group_col='Economic_status', hue_col=None,
         plt.show()
 
 #---Function: plot_violin_grid---
-def plot_violin_grid(
-    df,
-    value_cols,
-    group_col='Economic_status',
-    n_rows=2,
-    n_cols=2,
-    palette="#1f77b4"
-):
+def plot_violin_grid(df, value_cols, group_col='Economic_status', hue_col=None,
+                     n_rows=2, n_cols=2, palette="#1f77b4", dodge=True,
+                     figsize_single=(10,6), figsize_grid=(6,5)):
     """
-    Plots violin plots for one or multiple grouping variables.
+    Plots violin plots for one or multiple grouping variables, optionally with hue.
 
     Parameters:
     -----------
@@ -493,15 +488,21 @@ def plot_violin_grid(
         List of numeric columns to plot (only the first is used for y-axis).
     group_col : str or list
         Categorical column(s) used for grouping on the x-axis.
+    hue_col : str, optional
+        Column for color grouping. Default is None.
     n_rows : int
         Number of rows per figure grid.
     n_cols : int
         Number of columns per figure grid.
     palette : str, list, or dict
         Color or palette for violins.
+    dodge : bool, optional
+        Whether to separate violins by hue. Default is True.
+    figsize_single : tuple, optional
+        Figure size for a single plot. Default is (10,6).
+    figsize_grid : tuple, optional
+        Base figure size for multiple plots. Default is (6,5).
     """
-
-    # --- Input normalization ---
     y_col = value_cols[0]
 
     if isinstance(group_col, str):
@@ -509,17 +510,15 @@ def plot_violin_grid(
     else:
         group_cols = group_col
 
-    #Normalize palette
     if isinstance(palette, str):
         palette = [palette]
 
     plots_per_fig = n_rows * n_cols
 
-    # --- Plotting ---
     for i in range(0, len(group_cols), plots_per_fig):
         batch = group_cols[i:i + plots_per_fig]
 
-        fig_size = (10, 6) if len(batch) == 1 else (6 * n_cols, 5 * n_rows)
+        fig_size = figsize_single if len(batch) == 1 else (figsize_grid[0]*n_cols, figsize_grid[1]*n_rows)
         fig, axes = plt.subplots(
             nrows=1 if len(batch) == 1 else n_rows,
             ncols=1 if len(batch) == 1 else n_cols,
@@ -527,7 +526,7 @@ def plot_violin_grid(
             sharey=True
         )
 
-        #Ensure axes is iterable
+        #Ensure axes iterable
         if not isinstance(axes, (list, np.ndarray)):
             axes = [axes]
         else:
@@ -538,7 +537,9 @@ def plot_violin_grid(
                 data=df,
                 x=grp,
                 y=y_col,
-                palette=palette,
+                hue=hue_col,
+                dodge=dodge if hue_col else False,
+                palette=palette if hue_col else None,
                 inner='quartile',
                 ax=ax
             )
