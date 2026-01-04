@@ -480,9 +480,16 @@ def plot_swarm_grid(df, value_cols, group_col='Economic_status', hue_col=None,
             plt.show()
 
 #---Function: plot_violin_grid---
-def plot_violin_grid(df, value_cols, group_col='Economic_status', n_rows=2, n_cols=2, palette="#1f77b4"):
+def plot_violin_grid(
+    df,
+    value_cols,
+    group_col='Economic_status',
+    n_rows=2,
+    n_cols=2,
+    palette="#1f77b4"
+):
     """
-    Plots violin plots for one or multiple group columns.
+    Plots violin plots for one or multiple grouping variables.
 
     Parameters:
     -----------
@@ -490,51 +497,66 @@ def plot_violin_grid(df, value_cols, group_col='Economic_status', n_rows=2, n_co
         DataFrame containing the data.
     value_cols : list
         List of numeric columns to plot (only the first is used for y-axis).
-    group_col : str or list, optional
-        Column(s) to group by. Default is 'Economic_status'.
-    n_rows : int, optional
-        Number of rows per figure grid. Default is 2.
-    n_cols : int, optional
-        Number of columns per figure grid. Default is 2.
-    palette : str, list, or dict, optional
-        Color or palette for violins. Default is "#1f77b4".
+    group_col : str or list
+        Categorical column(s) used for grouping on the x-axis.
+    n_rows : int
+        Number of rows per figure grid.
+    n_cols : int
+        Number of columns per figure grid.
+    palette : str, list, or dict
+        Color or palette for violins.
     """
-    # Convert group_col to list if str
-    if isinstance(group_col, str):
-        group_col = [group_col]
 
-    # If palette is a single color, convert to list
+    # --- Input normalization ---
+    y_col = value_cols[0]
+
+    if isinstance(group_col, str):
+        group_cols = [group_col]
+    else:
+        group_cols = group_col
+
+    #Normalize palette
     if isinstance(palette, str):
         palette = [palette]
 
-    y_col = value_cols[0]
     plots_per_fig = n_rows * n_cols
 
-    for i in range(0, len(group_col), plots_per_fig):
-        batch = group_col[i:i + plots_per_fig]
+    # --- Plotting ---
+    for i in range(0, len(group_cols), plots_per_fig):
+        batch = group_cols[i:i + plots_per_fig]
 
-        if len(batch) == 1:
-            fig, ax = plt.subplots(figsize=(10,6))
-            sns.violinplot(data=df, x=batch[0], y=y_col, palette=palette, inner='quartile', ax=ax)
-            ax.set_title(f'{y_col} by {batch[0]}')
-            ax.set_xlabel(batch[0])
+        fig_size = (10, 6) if len(batch) == 1 else (6 * n_cols, 5 * n_rows)
+        fig, axes = plt.subplots(
+            nrows=1 if len(batch) == 1 else n_rows,
+            ncols=1 if len(batch) == 1 else n_cols,
+            figsize=fig_size,
+            sharey=True
+        )
+
+        #Ensure axes is iterable
+        if not isinstance(axes, (list, np.ndarray)):
+            axes = [axes]
+        else:
+            axes = axes.flatten()
+
+        for ax, grp in zip(axes, batch):
+            sns.violinplot(
+                data=df,
+                x=grp,
+                y=y_col,
+                palette=palette,
+                inner='quartile',
+                ax=ax
+            )
+            ax.set_title(f'{y_col} by {grp}')
+            ax.set_xlabel(grp)
             ax.set_ylabel(y_col)
             ax.grid(axis='y', linestyle='--', alpha=0.5)
             ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha='right')
-            plt.tight_layout()
-            plt.show()
-        else:
-            fig, axes = plt.subplots(n_rows, n_cols, figsize=(6*n_cols, 5*n_rows), sharey=True)
-            axes = axes.flatten()
-            for ax, grp in zip(axes, batch):
-                sns.violinplot(data=df, x=grp, y=y_col, palette=palette, inner='quartile', ax=ax)
-                ax.set_title(f'{y_col} by {grp}')
-                ax.set_xlabel(grp)
-                ax.set_ylabel(y_col)
-                ax.grid(axis='y', linestyle='--', alpha=0.5)
-                ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha='right')
-            # Hide empty axes
-            for j in range(len(batch), len(axes)):
-                axes[j].set_visible(False)
-            plt.tight_layout()
-            plt.show()
+
+        #Hide unused axes
+        for j in range(len(batch), len(axes)):
+            axes[j].set_visible(False)
+
+        plt.tight_layout()
+        plt.show()
