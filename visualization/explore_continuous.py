@@ -281,7 +281,11 @@ def plot_pairplot(df, features, hue=None, diag_kind='kde', corner=True, alpha=0.
         Figure size. Default is (10,10).
     """
     sns.set(style="ticks")
-    pairplot = sns.pairplot(df[features], hue=hue, diag_kind=diag_kind, corner=corner, plot_kws={'alpha': alpha})
+    
+    #If hue is defined, add it to features to avoid KeyError
+    plot_cols = features + [hue] if hue is not None and hue not in features else features
+
+    pairplot = sns.pairplot(df[plot_cols], hue=hue, diag_kind=diag_kind, corner=corner, plot_kws={'alpha': alpha})
     pairplot.fig.set_size_inches(figsize)
     pairplot.fig.suptitle("Pairplot of Selected Features", y=1.02)
     plt.show()
