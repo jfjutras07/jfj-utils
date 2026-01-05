@@ -264,20 +264,26 @@ def quantile_regression(df, outcome, predictor, quantile=0.5):
     return model
 
 #---Function: robust_regression---
-def robust_regression(df, outcome, factor, covariates, estimator=sm.robust.norms.HuberT):
+def robust_regression(df, outcome, factor=None, covariates=None, predictors=None, estimator=sm.robust.norms.HuberT):
     """
-    Perform a robust ANCOVA-like regression using RLM (Robust Linear Model).
+    Perform a robust linear regression using RLM (Robust Linear Model).
+
+    Flexible usage:
+    1. ANCOVA-style: specify 'factor' and 'covariates'
+    2. Simple regression: specify 'predictors' only
 
     Parameters:
     -----------
     df : pd.DataFrame
-        Dataset containing outcome, factor, and covariates.
+        Dataset containing outcome and predictors.
     outcome : str
         Dependent variable (numeric).
-    factor : str
-        Categorical independent variable.
-    covariates : list of str
-        List of numeric covariates.
+    factor : str, optional
+        Categorical independent variable for ANCOVA-style regression.
+    covariates : list of str, optional
+        List of numeric covariates for ANCOVA-style regression.
+    predictors : list of str, optional
+        List of independent variables (numeric or categorical) for simple regression.
     estimator : function, optional
         Robust estimator from statsmodels (default: HuberT).
 
@@ -286,13 +292,25 @@ def robust_regression(df, outcome, factor, covariates, estimator=sm.robust.norms
     model : RLMResults
         Fitted robust linear model.
     """
-    df[factor] = df[factor].astype('category')
-
-    if covariates:
-        formula = f"{outcome} ~ C({factor}) * (" + " + ".join(covariates) + ")"
+    # Build formula
+    if factor is not None:
+        df[factor] = df[factor].astype('category')
+        if covariates:
+            formula = f"{outcome} ~ C({factor}) * (" + " + ".join(covariates) + ")"
+        else:
+            formula = f"{outcome} ~ C({factor})"
+    elif predictors is not None:
+        formula_terms = []
+        for var in predictors:
+            if df[var].dtype.name == 'category' or df[var].dtype == object:
+                formula_terms.append(f"C({var})")
+            else:
+                formula_terms.append(var)
+        formula = f"{outcome} ~ " + " + ".join(formula_terms)
     else:
-        formula = f"{outcome} ~ C({factor})"
+        raise ValueError("You must provide either 'factor' or 'predictors'.")
 
+    # Fit robust linear model
     model = smf.rlm(formula=formula, data=df, M=estimator()).fit()
     print(model.summary())
     return model
