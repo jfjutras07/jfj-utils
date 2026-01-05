@@ -302,8 +302,9 @@ def robust_regression(df, outcome, factor=None, covariates=None, predictors=None
     elif predictors is not None:
         formula_terms = []
         for var in predictors:
+            # Convert to category if object or category dtype
             if df[var].dtype.name == 'category' or df[var].dtype == object:
-                df[var] = df[var].astype('category')  # s'assurer que c'est une catégorie
+                df[var] = df[var].astype('category')
                 formula_terms.append(f"C({var})")
             else:
                 formula_terms.append(var)
