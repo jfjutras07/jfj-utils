@@ -25,6 +25,7 @@ def stats_diagnostics(df, numeric_cols=None, group_col=None, model=None, predict
     4. Variance homogeneity / heteroscedasticity:
        - Levene and Bartlett tests if grouping variable is provided
        - Breusch-Pagan and White tests if a model is provided
+    5. Influence diagnostics (Cook's distance) if a model is provided.
 
     Parameters:
     -----------
@@ -81,6 +82,17 @@ def stats_diagnostics(df, numeric_cols=None, group_col=None, model=None, predict
         axes[j].set_xlabel('Fitted values')
         axes[j].set_ylabel('Residuals')
         axes[j].set_title('Residuals vs Fitted')
+
+        # --- Cook's distance ---
+        influence = model.get_influence()
+        cooks_d = influence.cooks_distance[0]
+        plt.figure(figsize=(10,5))
+        plt.stem(cooks_d, linefmt='grey', markerfmt='D', basefmt=' ')
+        plt.axhline(4/len(cooks_d), color=LINE_RED, linestyle='--')
+        plt.xlabel('Observation index')
+        plt.ylabel("Cook's distance")
+        plt.title("Influential Observations (Cook's distance)")
+        plt.show()
 
     for k in range(n_plots, len(axes)):
         axes[k].axis('off')
