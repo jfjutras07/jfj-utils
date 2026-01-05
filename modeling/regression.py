@@ -292,7 +292,7 @@ def robust_regression(df, outcome, factor=None, covariates=None, predictors=None
     model : RLMResults
         Fitted robust linear model.
     """
-    # Build formula
+    #Build formula
     if factor is not None:
         df[factor] = df[factor].astype('category')
         if covariates:
@@ -302,7 +302,9 @@ def robust_regression(df, outcome, factor=None, covariates=None, predictors=None
     elif predictors is not None:
         formula_terms = []
         for var in predictors:
+            # Convert to category if needed
             if df[var].dtype.name == 'category' or df[var].dtype == object:
+                df[var] = df[var].astype('category')
                 formula_terms.append(f"C({var})")
             else:
                 formula_terms.append(var)
@@ -310,7 +312,8 @@ def robust_regression(df, outcome, factor=None, covariates=None, predictors=None
     else:
         raise ValueError("You must provide either 'factor' or 'predictors'.")
 
-    # Fit robust linear model
+    #Fit robust linear model
     model = smf.rlm(formula=formula, data=df, M=estimator()).fit()
     print(model.summary())
     return model
+
