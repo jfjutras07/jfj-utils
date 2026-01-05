@@ -24,8 +24,8 @@ def stats_diagnostics(df, numeric_cols=None, group_col=None, model=None, predict
        - Kolmogorov-Smirnov
     4. Variance homogeneity / heteroscedasticity:
        - Levene and Bartlett tests if grouping variable is provided
-       - Breusch-Pagan and White tests if a model is provided
-    5. Influence diagnostics (Cook's distance) if a model is provided.
+       - Breusch-Pagan and White tests if a model is provided and supported
+    5. Influence diagnostics (Cook's distance) if model supports it (OLS only).
 
     Parameters:
     -----------
@@ -45,20 +45,22 @@ def stats_diagnostics(df, numeric_cols=None, group_col=None, model=None, predict
     Displays plots and styled DataFrames of normality and variance tests.
     Does not return values.
     """
-
     if numeric_cols is None:
         numeric_cols = df.select_dtypes(include='number').columns.tolist()
 
-    #Prepare columns for plotting
+    # Prepare columns for plotting
+    cols_to_plot = numeric_cols.copy()
     if model is not None:
-        resid = model.resid
-        fitted = model.fittedvalues
-        df_resid = pd.DataFrame({'Residuals': resid})
-        cols_to_plot = ['Residuals']
-    else:
-        cols_to_plot = numeric_cols.copy()
+        try:
+            resid = model.resid
+            fitted = model.fittedvalues
+            df_resid = pd.DataFrame({'Residuals': resid})
+            cols_to_plot = ['Residuals']
+        except AttributeError:
+            print("Warning: Model has no residuals/fittedvalues. Only numeric columns will be plotted.")
+            model = None
 
-    #QQ plots and Residuals vs Fitted
+    # QQ plots and Residuals vs Fitted
     n_plots = len(cols_to_plot) + (1 if model is not None else 0)
     n_cols = 2
     n_rows = int(np.ceil(n_plots / n_cols))
@@ -66,17 +68,12 @@ def stats_diagnostics(df, numeric_cols=None, group_col=None, model=None, predict
     axes = axes.flatten()
 
     for i, col in enumerate(cols_to_plot):
-        if model is not None:
-            s = df_resid['Residuals']
-        else:
-            s = df[col]
+        s = df_resid[col] if model else df[col]
         stats.probplot(s.dropna(), dist="norm", plot=axes[i])
-
         lines = axes[i].get_lines()
         if len(lines) >= 2:
             lines[0].set_color(UNIFORM_BLUE)
             lines[1].set_color(LINE_RED)
-
         axes[i].set_title(f"Q-Q Plot: {col}")
 
     if model is not None:
@@ -87,16 +84,19 @@ def stats_diagnostics(df, numeric_cols=None, group_col=None, model=None, predict
         axes[j].set_ylabel('Residuals')
         axes[j].set_title('Residuals vs Fitted')
 
-        # --- Cook's distance ---
-        influence = model.get_influence()
-        cooks_d = influence.cooks_distance[0]
-        plt.figure(figsize=(10,5))
-        plt.stem(cooks_d, linefmt='grey', markerfmt='D', basefmt=' ')
-        plt.axhline(4/len(cooks_d), color=LINE_RED, linestyle='--')
-        plt.xlabel('Observation index')
-        plt.ylabel("Cook's distance")
-        plt.title("Influential Observations (Cook's distance)")
-        plt.show()
+        # Cook's distance only if available
+        if hasattr(model, "get_influence"):
+            influence = model.get_influence()
+            cooks_d = influence.cooks_distance[0]
+            plt.figure(figsize=(10,5))
+            plt.stem(cooks_d, linefmt='grey', markerfmt='D', basefmt=' ')
+            plt.axhline(4/len(cooks_d), color=LINE_RED, linestyle='--')
+            plt.xlabel('Observation index')
+            plt.ylabel("Cook's distance")
+            plt.title("Influential Observations (Cook's distance)")
+            plt.show()
+        else:
+            print("Cook's distance not available for this model type. Skipping.")
 
     for k in range(n_plots, len(axes)):
         axes[k].axis('off')
@@ -104,22 +104,17 @@ def stats_diagnostics(df, numeric_cols=None, group_col=None, model=None, predict
     plt.tight_layout()
     plt.show()
 
-    #Normality tests
+    # Normality tests
     normal_res = []
     for col in cols_to_plot:
-        if model is not None:
-            s = df_resid['Residuals']
-        else:
-            s = df[col]
+        s = df_resid[col] if model else df[col]
         s = s.dropna()
         n = len(s)
         mean, std = s.mean(), s.std()
-
         shapiro_p = stats.shapiro(s)[1] if n <= 5000 else '-'
         dagostino_p = stats.normaltest(s)[1] if n > 20 else '-'
         ad_stat = stats.anderson(s).statistic
         ks_p = stats.kstest(s, 'norm', args=(mean, std))[1]
-
         normal_res.append({
             'Variable': col,
             'Shapiro': round(shapiro_p, 4) if shapiro_p != '-' else '-',
@@ -127,7 +122,6 @@ def stats_diagnostics(df, numeric_cols=None, group_col=None, model=None, predict
             'Anderson': round(ad_stat, 4),
             'KS': round(ks_p, 4)
         })
-
     normal_df = pd.DataFrame(normal_res)
     print("=== Normality Tests ===")
     display(
@@ -137,14 +131,12 @@ def stats_diagnostics(df, numeric_cols=None, group_col=None, model=None, predict
         )
     )
 
-    #Variance homogeneity / heteroscedasticity tests
+    # Variance homogeneity / heteroscedasticity tests
     print("\n=== Variance Homogeneity / Heteroscedasticity Tests ===")
-
     if group_col is not None:
         df[group_col] = df[group_col].astype('category')
         levene_p = []
         bartlett_p = []
-
         for col in numeric_cols:
             groups = [
                 df[df[group_col] == lvl][col].dropna()
@@ -152,28 +144,23 @@ def stats_diagnostics(df, numeric_cols=None, group_col=None, model=None, predict
             ]
             levene_p.append(stats.levene(*groups, center='median')[1])
             bartlett_p.append(stats.bartlett(*groups)[1])
-
         hetero_df = pd.DataFrame(
-            {
-                'Levene': np.round(levene_p, 4),
-                'Bartlett': np.round(bartlett_p, 4)
-            },
+            {'Levene': np.round(levene_p, 4),
+             'Bartlett': np.round(bartlett_p, 4)},
             index=numeric_cols
         )
-
         display(hetero_df.style.background_gradient(cmap='Blues'))
-
     elif model is not None:
-        exog = model.model.exog
-        bp_test = het_breuschpagan(model.resid, exog)
-        white_test = het_white(model.resid, exog)
-
-        hetero_df = pd.DataFrame(
-            {
-                'Breusch-Pagan LM': [round(bp_test[1], 4)],
-                'White LM': [round(white_test[1], 4)]
-            },
-            index=['p-value']
-        )
-
-        display(hetero_df.style.background_gradient(cmap='Blues'))
+        # Only perform BP and White if model has exog
+        if hasattr(model.model, "exog"):
+            exog = model.model.exog
+            bp_test = het_breuschpagan(model.resid, exog)
+            white_test = het_white(model.resid, exog)
+            hetero_df = pd.DataFrame(
+                {'Breusch-Pagan LM':[round(bp_test[1],4)],
+                 'White LM':[round(white_test[1],4)]},
+                index=['p-value']
+            )
+            display(hetero_df.style.background_gradient(cmap='Blues'))
+        else:
+            print("Breusch-Pagan / White tests not available for this model type.")
