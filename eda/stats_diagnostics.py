@@ -26,6 +26,7 @@ def stats_diagnostics(df, numeric_cols=None, group_col=None, model=None, predict
        - Levene and Bartlett tests if grouping variable is provided
        - Breusch-Pagan and White tests if a model is provided and supported
     5. Influence diagnostics (Cook's distance) if model supports it (OLS only).
+    6. Robust model weights if model is RLM (Robust Linear Model).
 
     Parameters:
     -----------
@@ -50,10 +51,17 @@ def stats_diagnostics(df, numeric_cols=None, group_col=None, model=None, predict
 
     # Prepare columns for plotting
     cols_to_plot = numeric_cols.copy()
+    resid = None
+    fitted = None
+    weights = None
+
     if model is not None:
         try:
             resid = model.resid
             fitted = model.fittedvalues
+            # For RLM, get robustness weights
+            if hasattr(model, "weights"):
+                weights = model.weights
             df_resid = pd.DataFrame({'Residuals': resid})
             cols_to_plot = ['Residuals']
         except AttributeError:
@@ -84,7 +92,7 @@ def stats_diagnostics(df, numeric_cols=None, group_col=None, model=None, predict
         axes[j].set_ylabel('Residuals')
         axes[j].set_title('Residuals vs Fitted')
 
-        # Cook's distance only if available
+        # Cook's distance only if available (OLS)
         if hasattr(model, "get_influence"):
             influence = model.get_influence()
             cooks_d = influence.cooks_distance[0]
@@ -95,8 +103,18 @@ def stats_diagnostics(df, numeric_cols=None, group_col=None, model=None, predict
             plt.ylabel("Cook's distance")
             plt.title("Influential Observations (Cook's distance)")
             plt.show()
+        elif weights is not None:
+            # For RLM: show robustness weights
+            plt.figure(figsize=(10,5))
+            plt.stem(weights, linefmt='grey', markerfmt='D', basefmt=' ')
+            plt.axhline(np.median(weights), color=LINE_RED, linestyle='--', label='Median weight')
+            plt.xlabel('Observation index')
+            plt.ylabel("Robustness weight")
+            plt.title("Robust Model Weights (RLM)")
+            plt.legend()
+            plt.show()
         else:
-            print("Cook's distance not available for this model type. Skipping.")
+            print("Cook's distance or RLM weights not available for this model type. Skipping.")
 
     for k in range(n_plots, len(axes)):
         axes[k].axis('off')
@@ -154,8 +172,8 @@ def stats_diagnostics(df, numeric_cols=None, group_col=None, model=None, predict
         # Only perform BP and White if model has exog
         if hasattr(model.model, "exog"):
             exog = model.model.exog
-            bp_test = het_breuschpagan(model.resid, exog)
-            white_test = het_white(model.resid, exog)
+            bp_test = het_breuschpagan(resid, exog)
+            white_test = het_white(resid, exog)
             hetero_df = pd.DataFrame(
                 {'Breusch-Pagan LM':[round(bp_test[1],4)],
                  'White LM':[round(white_test[1],4)]},
