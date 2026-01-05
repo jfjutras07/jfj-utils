@@ -3,39 +3,34 @@ import pandas as pd
 from .style import UNIFORM_BLUE, PALE_PINK
 
 #--- Function : plot_line_grid_over_time ---
-def plot_line_grid_over_time(
-    df: pd.DataFrame,
-    value_cols: list,
-    group_col: str = None,
-    facet_col: str = None,
-    time_col: str = 'Time',
-    value_col_name: str = 'MeanValue',
-    agg_func='mean',
-    figsize=(13, 4),
-    xlabel=None,
-    ylabel=None,
-    title=None,
-    colors=None
-):
+def plot_line_grid_over_time(df, value_cols, group_cols=None, facet_col=None,
+                             time_col='Time', value_col_name='MeanValue',
+                             agg_func='mean', figsize=(13,4), xlabel=None, ylabel=None, title=None,
+                             colors=None):
     """
-    Generic line plots in a grid for multiple columns over time, optionally grouped.
+    Generic line plots in a grid for multiple numeric columns over time, optionally grouped.
+    Automatically loops over multiple categorical variables if provided.
 
     Parameters:
     - df: pandas DataFrame
     - value_cols: list of numeric columns to track over time
-    - group_col: column to group by (optional)
+    - group_cols: single column or list of categorical columns to group by
     - facet_col: column defining subplots (optional)
-    - time_col: name of the time column to create from value_cols
-    - value_col_name: name of the numeric value column created after melt
+    - time_col: name of the time column created from value_cols
+    - value_col_name: name of the numeric value column after melt
     - agg_func: aggregation function ('mean', 'median', etc.)
     - figsize: figure size
     - xlabel, ylabel, title: labels and title
-    - colors: optional list of colors for each group
+    - colors: optional list of colors for groups
     """
     import matplotlib.pyplot as plt
     import pandas as pd
 
-    # Melt automatically if multiple columns
+    #Ensure group_cols is a list
+    if group_cols is not None and not isinstance(group_cols, list):
+        group_cols = [group_cols]
+
+    #Melt numeric columns once
     df_long = df.melt(
         id_vars=[c for c in df.columns if c not in value_cols],
         value_vars=value_cols,
@@ -45,65 +40,84 @@ def plot_line_grid_over_time(
 
     xlabel = xlabel or time_col
     ylabel = ylabel or value_col_name
-    title = title or f'{value_col_name} over {time_col}'
 
     if colors is None:
         colors = [UNIFORM_BLUE, PALE_PINK, 'green', 'orange', 'purple', 'brown']
 
-    if facet_col:
-        facets = df_long[facet_col].unique()
-        n_facets = len(facets)
+    #Loop over all categorical columns
+    if group_cols:
+        for var in group_cols:
+            t_title = title or f'{value_col_name} over {time_col} by {var}'
+            if facet_col:
+                facets = df_long[facet_col].unique()
+                n_facets = len(facets)
 
-        fig, axes = plt.subplots(1, n_facets, figsize=figsize, sharey=True)
-        if n_facets == 1:
-            axes = [axes]
+                fig, axes = plt.subplots(1, n_facets, figsize=figsize, sharey=True)
+                if n_facets == 1:
+                    axes = [axes]
 
-        for ax, facet in zip(axes, facets):
-            facet_data = df_long[df_long[facet_col] == facet]
-            if group_col:
-                grouped = facet_data.groupby([time_col, group_col])[value_col_name].agg(agg_func).reset_index()
-                for i, level in enumerate(sorted(grouped[group_col].dropna().unique())):
-                    plot_data = grouped[grouped[group_col] == level]
-                    ax.plot(
-                        plot_data[time_col],
-                        plot_data[value_col_name],
-                        marker='o', linewidth=2,
-                        label=str(level), color=colors[i % len(colors)]
-                    )
+                for ax, facet in zip(axes, facets):
+                    facet_data = df_long[df_long[facet_col] == facet]
+                    grouped = facet_data.groupby([time_col, var])[value_col_name].agg(agg_func).reset_index()
+                    for i, level in enumerate(sorted(grouped[var].dropna().unique())):
+                        plot_data = grouped[grouped[var] == level]
+                        ax.plot(plot_data[time_col], plot_data[value_col_name], marker='o', linewidth=2,
+                                label=str(level), color=colors[i % len(colors)])
+                    ax.set_title(facet)
+                    ax.set_xlabel(xlabel)
+                    ax.grid(True)
+
+                axes[0].set_ylabel(ylabel)
+                axes[-1].legend(title=var, bbox_to_anchor=(1.05,1), loc='upper left')
+                fig.suptitle(t_title, fontsize=13)
+                plt.tight_layout()
+                plt.show()
             else:
+                grouped = df_long.groupby([time_col, var])[value_col_name].agg(agg_func).reset_index()
+                plt.figure(figsize=figsize)
+                for i, level in enumerate(sorted(grouped[var].dropna().unique())):
+                    plot_data = grouped[grouped[var] == level]
+                    plt.plot(plot_data[time_col], plot_data[value_col_name], marker='o', linewidth=2,
+                             label=str(level), color=colors[i % len(colors)])
+                plt.xlabel(xlabel)
+                plt.ylabel(ylabel)
+                plt.title(t_title)
+                plt.legend(title=var)
+                plt.grid(True)
+                plt.tight_layout()
+                plt.show()
+    else:
+        #No categorical variables, simple plot
+        if facet_col:
+            facets = df_long[facet_col].unique()
+            n_facets = len(facets)
+
+            fig, axes = plt.subplots(1, n_facets, figsize=figsize, sharey=True)
+            if n_facets == 1:
+                axes = [axes]
+
+            for ax, facet in zip(axes, facets):
+                facet_data = df_long[df_long[facet_col] == facet]
                 grouped = facet_data.groupby(time_col)[value_col_name].agg(agg_func).reset_index()
                 ax.plot(grouped[time_col], grouped[value_col_name], marker='o', linewidth=2, color=UNIFORM_BLUE)
-            ax.set_title(facet)
-            ax.set_xlabel(xlabel)
-            ax.grid(True)
+                ax.set_title(facet)
+                ax.set_xlabel(xlabel)
+                ax.grid(True)
 
-        axes[0].set_ylabel(ylabel)
-        if group_col:
-            axes[-1].legend(title=group_col, bbox_to_anchor=(1.05, 1), loc='upper left')
-        fig.suptitle(title, fontsize=13)
-    else:
-        plt.figure(figsize=figsize)
-        if group_col:
-            grouped = df_long.groupby([time_col, group_col])[value_col_name].agg(agg_func).reset_index()
-            for i, level in enumerate(sorted(grouped[group_col].dropna().unique())):
-                plot_data = grouped[grouped[group_col] == level]
-                plt.plot(
-                    plot_data[time_col],
-                    plot_data[value_col_name],
-                    marker='o', linewidth=2,
-                    label=str(level), color=colors[i % len(colors)]
-                )
-            plt.legend(title=group_col)
+            axes[0].set_ylabel(ylabel)
+            plt.suptitle(title or f'{value_col_name} over {time_col}', fontsize=13)
+            plt.tight_layout()
+            plt.show()
         else:
             grouped = df_long.groupby(time_col)[value_col_name].agg(agg_func).reset_index()
+            plt.figure(figsize=figsize)
             plt.plot(grouped[time_col], grouped[value_col_name], marker='o', linewidth=2, color=UNIFORM_BLUE)
-        plt.xlabel(xlabel)
-        plt.ylabel(ylabel)
-        plt.title(title)
-        plt.grid(True)
-
-    plt.tight_layout()
-    plt.show()
+            plt.xlabel(xlabel)
+            plt.ylabel(ylabel)
+            plt.title(title or f'{value_col_name} over {time_col}')
+            plt.grid(True)
+            plt.tight_layout()
+            plt.show()
 
 #--- Function : plot_line_over_time ---
 def plot_line_over_time(
