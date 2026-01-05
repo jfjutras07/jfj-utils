@@ -50,12 +50,13 @@ def stats_diagnostics(df, numeric_cols=None, group_col=None, model=None, predict
         numeric_cols = df.select_dtypes(include='number').columns.tolist()
 
     #Prepare columns for plotting
-    cols_to_plot = numeric_cols.copy()
     if model is not None:
         resid = model.resid
         fitted = model.fittedvalues
         df_resid = pd.DataFrame({'Residuals': resid})
         cols_to_plot = ['Residuals']
+    else:
+        cols_to_plot = numeric_cols.copy()
 
     #QQ plots and Residuals vs Fitted
     n_plots = len(cols_to_plot) + (1 if model is not None else 0)
@@ -65,7 +66,10 @@ def stats_diagnostics(df, numeric_cols=None, group_col=None, model=None, predict
     axes = axes.flatten()
 
     for i, col in enumerate(cols_to_plot):
-        s = df_resid[col] if model else df[col]
+        if model is not None:
+            s = df_resid['Residuals']
+        else:
+            s = df[col]
         stats.probplot(s.dropna(), dist="norm", plot=axes[i])
 
         lines = axes[i].get_lines()
@@ -103,7 +107,10 @@ def stats_diagnostics(df, numeric_cols=None, group_col=None, model=None, predict
     #Normality tests
     normal_res = []
     for col in cols_to_plot:
-        s = df_resid[col] if model else df[col]
+        if model is not None:
+            s = df_resid['Residuals']
+        else:
+            s = df[col]
         s = s.dropna()
         n = len(s)
         mean, std = s.mean(), s.std()
