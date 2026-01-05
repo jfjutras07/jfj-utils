@@ -188,6 +188,7 @@ Active development — modules will be progressively added and refined.
 
 *explore_time.py*
 - `plot_line_over_time`
+- `plot_line_grid_over_time`
 
 *predicted_actual.py*
 - `plot_predicted_actual`
