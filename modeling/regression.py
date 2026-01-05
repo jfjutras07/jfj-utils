@@ -79,7 +79,7 @@ def gamma_regression(df, outcome, predictors, link='log'):
     model = smf.glm(formula=formula, data=df, family=sm.families.Gamma(link=link_func)).fit()
     print(model.summary())
     return model
-
+    
 # --- Function: linear_mixed_model ---
 def linear_mixed_model(df, fixed_effects, outcome, random_effect, include_interactions=False):
     """
@@ -121,8 +121,6 @@ def linear_mixed_model(df, fixed_effects, outcome, random_effect, include_intera
     
     #Print summary
     print(model_fit.summary())
-    
-    return model_fit
 
 #---Function: linear_regression---
 def linear_regression(df, outcome, predictors, include_interactions=False):
@@ -159,7 +157,6 @@ def linear_regression(df, outcome, predictors, include_interactions=False):
 
     #Print summary
     print(model.summary())
-    return model
 
 #---Function: poisson_regression---
 def poisson_regression(df, outcome, predictors):
@@ -190,7 +187,6 @@ def poisson_regression(df, outcome, predictors):
     formula = f"{outcome} ~ " + " * ".join(predictors)
     model = smf.poisson(formula, data=df).fit()
     print(model.summary())
-    return model
 
 # --- Function : polynomial_regression ---
 def polynomial_regression(df, outcome, predictor, max_degree=2):
@@ -229,7 +225,6 @@ def polynomial_regression(df, outcome, predictor, max_degree=2):
     
     model = smf.ols(formula, data=df_poly).fit()
     print(model.summary())
-    return model 
 
 # --- Function : quantile_regression ---
 def quantile_regression(df, outcome, predictor, quantile=0.5):
@@ -261,29 +256,23 @@ def quantile_regression(df, outcome, predictor, quantile=0.5):
     formula = f"{outcome} ~ {predictor}"
     model = smf.quantreg(formula=formula, data=df).fit(q=quantile)
     print(model.summary())
-    return model
 
 #---Function: robust_regression---
-def robust_regression(df, outcome, factor=None, covariates=None, predictors=None, estimator=sm.robust.norms.HuberT):
+def robust_regression(df, outcome, predictors, include_interactions=False, estimator=sm.robust.norms.HuberT):
     """
-    Perform a robust linear regression using RLM (Robust Linear Model).
-
-    Flexible usage:
-    1. ANCOVA-style: specify 'factor' and 'covariates'
-    2. Simple regression: specify 'predictors' only
+    Perform a multiple robust linear regression using RLM (Robust Linear Model) 
+    with optional interactions.
 
     Parameters:
     -----------
     df : pd.DataFrame
-        Dataset containing outcome and predictors.
+        Dataset containing predictors and outcome.
     outcome : str
         Dependent variable (numeric).
-    factor : str, optional
-        Categorical independent variable for ANCOVA-style regression.
-    covariates : list of str, optional
-        List of numeric covariates for ANCOVA-style regression.
-    predictors : list of str, optional
-        List of independent variables (numeric or categorical) for simple regression.
+    predictors : list of str
+        List of independent variables (numeric or categorical).
+    include_interactions : bool, default False
+        Whether to include all pairwise interactions between predictors.
     estimator : function, optional
         Robust estimator from statsmodels (default: HuberT).
 
@@ -292,27 +281,27 @@ def robust_regression(df, outcome, factor=None, covariates=None, predictors=None
     model : RLMResults
         Fitted robust linear model.
     """
-    #Build formula
-    if factor is not None:
-        df[factor] = df[factor].astype('category')
-        if covariates:
-            formula = f"{outcome} ~ C({factor}) * (" + " + ".join(covariates) + ")"
+    if not predictors:
+        raise ValueError("At least one predictor must be provided.")
+
+    #Convert object columns to category
+    formula_terms = []
+    for var in predictors:
+        if df[var].dtype.name == 'category' or df[var].dtype == object:
+            df[var] = df[var].astype('category')
+            formula_terms.append(f"C({var})")
         else:
-            formula = f"{outcome} ~ C({factor})"
-    elif predictors is not None:
-        formula_terms = []
-        for var in predictors:
-            # Convert to category if object or category dtype
-            if df[var].dtype.name == 'category' or df[var].dtype == object:
-                df[var] = df[var].astype('category')
-                formula_terms.append(f"C({var})")
-            else:
-                formula_terms.append(var)
-        formula = f"{outcome} ~ " + " + ".join(formula_terms)
+            formula_terms.append(var)
+
+    #Build formula
+    if include_interactions:
+        formula = f"{outcome} ~ " + " * ".join(formula_terms)  # main effects + interactions
     else:
-        raise ValueError("You must provide either 'factor' or 'predictors'.")
+        formula = f"{outcome} ~ " + " + ".join(formula_terms)  # main effects only
 
     #Fit robust linear model
     model = smf.rlm(formula=formula, data=df, M=estimator()).fit()
+
+    #Print summary
     print(model.summary())
-    return model
+
