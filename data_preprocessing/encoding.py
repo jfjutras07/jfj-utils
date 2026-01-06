@@ -73,8 +73,56 @@ def binary_encode_columns(
 
     return encoded_dfs[0] if single_df else encoded_dfs
 
-import pandas as pd
-from typing import List, Union
+#--- Function : label_encode_columns ---
+def label_encode_columns(
+    dfs: Union[pd.DataFrame, List[pd.DataFrame]],
+    categorical_cols: List[str]
+) -> Union[pd.DataFrame, List[pd.DataFrame]]:
+    """
+    Apply label encoding to selected categorical columns for one or multiple datasets.
+    Each unique category is mapped to an integer automatically.
+
+    Parameters:
+        dfs : pd.DataFrame or list of pd.DataFrame
+            Dataset(s) on which label encoding will be applied
+        categorical_cols : list of str
+            List of columns to label encode
+
+    Returns:
+        pd.DataFrame or list of pd.DataFrame
+            Label-encoded dataset(s)
+    """
+    #Ensure dfs is iterable
+    single_df = False
+    if isinstance(dfs, pd.DataFrame):
+        dfs = [dfs]
+        single_df = True
+
+    encoded_dfs = []
+
+    for df_idx, df in enumerate(dfs):
+        df = df.copy()
+
+        #Check column existence
+        missing_cols = [col for col in categorical_cols if col not in df.columns]
+        if missing_cols:
+            raise KeyError(
+                f"Columns not found in dataset {df_idx}: {missing_cols}"
+            )
+
+        #Apply label encoding
+        for col in categorical_cols:
+            df[col], _ = df[col].factorize(sort=True)
+
+        encoded_dfs.append(df)
+
+    #--- Validation message ---
+    print(
+        f"Label encoding successfully applied to {len(categorical_cols)} columns "
+        f"on {len(encoded_dfs)} dataset(s)."
+    )
+
+    return encoded_dfs[0] if single_df else encoded_dfs
 
 # --- Function : one_hot_encode_columns ---
 def one_hot_encode_columns(
@@ -123,6 +171,65 @@ def one_hot_encode_columns(
     # --- Validation message ---
     print(
         f"One-hot encoding successfully applied to {len(categorical_cols)} columns "
+        f"on {len(encoded_dfs)} dataset(s)."
+    )
+
+    return encoded_dfs[0] if single_df else encoded_dfs
+
+#--- Function : ordinal_encode_columns ---
+def ordinal_encode_columns(
+    dfs: Union[pd.DataFrame, List[pd.DataFrame]],
+    ordinal_mappings: dict
+) -> Union[pd.DataFrame, List[pd.DataFrame]]:
+    """
+    Apply ordinal encoding to selected columns for one or multiple datasets.
+    Each category is mapped to an integer according to the specified order.
+
+    Parameters:
+        dfs : pd.DataFrame or list of pd.DataFrame
+            Dataset(s) on which ordinal encoding will be applied
+        ordinal_mappings : dict
+            Dictionary of the form:
+            {
+                'column_name': ['category_in_order_0', 'category_in_order_1', ...]
+            }
+
+    Returns:
+        pd.DataFrame or list of pd.DataFrame
+            Ordinal-encoded dataset(s)
+    """
+    #Ensure dfs is iterable
+    single_df = False
+    if isinstance(dfs, pd.DataFrame):
+        dfs = [dfs]
+        single_df = True
+
+    encoded_dfs = []
+
+    for df_idx, df in enumerate(dfs):
+        df = df.copy()
+
+        #Check column existence
+        missing_cols = [col for col in ordinal_mappings if col not in df.columns]
+        if missing_cols:
+            raise KeyError(f"Columns not found in dataset {df_idx}: {missing_cols}")
+
+        #Apply ordinal encoding
+        for col, order in ordinal_mappings.items():
+            mapping = {cat: i for i, cat in enumerate(order)}
+            invalid_mask = ~df[col].isin(mapping.keys()) & df[col].notna()
+            if invalid_mask.any():
+                invalid_values = df.loc[invalid_mask, col].unique()
+                raise ValueError(
+                    f"Invalid values in column '{col}' (dataset {df_idx}): {invalid_values}"
+                )
+            df[col] = df[col].map(mapping)
+
+        encoded_dfs.append(df)
+
+    #--- Validation message ---
+    print(
+        f"Ordinal encoding successfully applied to {len(ordinal_mappings)} columns "
         f"on {len(encoded_dfs)} dataset(s)."
     )
 
