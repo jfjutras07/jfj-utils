@@ -27,7 +27,7 @@ def binary_encode_columns(
         pd.DataFrame or list of pd.DataFrame
             Binary-encoded dataset(s)
     """
-    #Ensure dfs is iterable
+    # Ensure dfs is iterable
     single_df = False
     if isinstance(dfs, pd.DataFrame):
         dfs = [dfs]
@@ -40,14 +40,14 @@ def binary_encode_columns(
 
         for col, mapping in binary_mappings.items():
 
-            #Check column existence
+            # Check column existence
             if col not in df.columns:
                 raise KeyError(f"Column '{col}' not found in dataset {df_idx}")
 
-            #Apply mapping
+            # Apply mapping
             df[col] = df[col].map(mapping)
 
-            #Sanity check: only {0,1}
+            # Sanity check: only {0,1}
             invalid_mask = ~df[col].isin([0, 1]) & df[col].notna()
 
             if invalid_mask.any():
@@ -64,5 +64,11 @@ def binary_encode_columns(
                     print(f"WARNING: {message}")
 
         encoded_dfs.append(df)
+
+    # --- Validation message ---
+    print(
+        f"Binary encoding successfully applied to "
+        f"{len(binary_mappings)} columns on {len(encoded_dfs)} dataset(s)."
+    )
 
     return encoded_dfs[0] if single_df else encoded_dfs
