@@ -10,6 +10,22 @@ def binary_encode_columns(
     """
     Apply explicit binary encoding to selected columns for one or multiple datasets
     and perform consistency checks.
+
+    Parameters:
+        dfs : pd.DataFrame or list of pd.DataFrame
+            Dataset(s) on which binary encoding will be applied
+        binary_mappings : dict
+            Dictionary of the form:
+            {
+                'column_name': {'positive_class': 1, 'negative_class': 0}
+            }
+        strict : bool, default=True
+            If True, raises an error when unmapped or invalid values are found.
+            If False, leaves NaNs and prints warnings.
+
+    Returns:
+        pd.DataFrame or list of pd.DataFrame
+            Binary-encoded dataset(s)
     """
     #Ensure dfs is iterable
     single_df = False
@@ -25,8 +41,10 @@ def binary_encode_columns(
             #Check column existence
             if col not in df.columns:
                 raise KeyError(f"Column '{col}' not found in dataset {df_idx}")
+            
             #Apply mapping
-            df[col] = df[col].map(mapping).astype(int)
+            df[col] = df[col].map(mapping)
+
             #Sanity check: only {0,1}
             invalid_mask = ~df[col].isin([0, 1]) & df[col].notna()
             if invalid_mask.any():
@@ -39,6 +57,10 @@ def binary_encode_columns(
                     raise ValueError(message)
                 else:
                     print(f"WARNING: {message}")
+
+            #Cast to int only for valid (non-NaN) values
+            df[col] = df[col].where(df[col].notna(), df[col]).astype(float)  # keep NaN as float
+
         encoded_dfs.append(df)
 
     #--- Validation message ---
