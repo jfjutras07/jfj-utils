@@ -77,6 +77,7 @@ Active development — modules will be progressively added and refined.
 - `best_transformation_for_df`
 
 *calculate_vif.py*
+- `calculate_vif`
 
 *check_normality.py*
 - `homogeneity_check`
@@ -84,6 +85,7 @@ Active development — modules will be progressively added and refined.
 - `skew_kurt_check`
 
 *chi_square_test.py*
+- `chi_square_test`
 
 *date_formats.py*
 - `detect_date_patterns`
@@ -95,7 +97,11 @@ Active development — modules will be progressively added and refined.
 - `correlation_check`
 - `VIF_check`
 
+*premodeling_check.py*
+- `premodeling_check`
+
 *stats_diagnostics.py*
+- `stats_diagnostics`
 
 *stats_non_param.py*
 - `dunn_friedman_posthoc`
@@ -161,8 +167,10 @@ Active development — modules will be progressively added and refined.
 ### Visualization: High-level plotting utilities for exploring data and communicating analytical results.
 
 *chi_square_heatmap.py*
-
+- `chi_square_heatmap`
+  
 *choropleth_map.py*
+- `choropleth_map`
 
 *confusion_matrix.py*
 - `plot_logreg_results`
