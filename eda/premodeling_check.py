@@ -41,7 +41,7 @@ def premodeling_regression_check(
     if len(numeric_cols) == df.shape[1]:
         report.append("No non-numeric columns detected.")
     else:
-        non_numeric = set(df.columns) - set(numeric_cols)
+        non_numeric = sorted(set(df.columns) - set(numeric_cols))
         report.append("Non-numeric columns detected (require encoding):")
         for col in non_numeric:
             report.append(f"- {col}")
@@ -77,16 +77,16 @@ def premodeling_regression_check(
         q1 = df[col].quantile(0.25)
         q3 = df[col].quantile(0.75)
         iqr = q3 - q1
-        if iqr == 0:
+        if iqr <= 0:
             continue
 
         lower = q1 - iqr_multiplier * iqr
         upper = q3 + iqr_multiplier * iqr
-        count = ((df[col] < lower) | (df[col] > upper)).sum()
+        count = int(((df[col] < lower) | (df[col] > upper)).sum())
 
         if count > 0:
-            outlier_counts[col] = int(count)
-            total_outliers += int(count)
+            outlier_counts[col] = count
+            total_outliers += count
 
     report.append("\n# Outliers (continuous features only)")
     if not outlier_counts:
@@ -105,7 +105,9 @@ def premodeling_regression_check(
 
         remaining = len(sorted_outliers) - top_outliers
         if remaining > 0:
-            report.append(f"- {remaining} additional features with minor outlier presence")
+            report.append(
+                f"- {remaining} additional features with minor outlier presence"
+            )
 
     # --------------------------------------------------
     # Correlation analysis (numeric only)
@@ -115,7 +117,7 @@ def premodeling_regression_check(
     if len(numeric_cols) >= 2:
         corr_matrix = df[numeric_cols].corr().abs()
 
-        for i in range(len(corr_matrix.columns)):
+        for i in range(1, len(corr_matrix.columns)):
             for j in range(i):
                 val = corr_matrix.iloc[i, j]
                 if val >= corr_threshold:
@@ -125,7 +127,7 @@ def premodeling_regression_check(
                         float(val)
                     ))
 
-    report.append("\n# High correlations (|r| ≥ {:.2f})".format(corr_threshold))
+    report.append(f"\n# High correlations (|r| ≥ {corr_threshold:.2f})")
     if not corr_pairs:
         report.append("No problematic correlations detected.")
     else:
@@ -137,7 +139,9 @@ def premodeling_regression_check(
 
         remaining = len(corr_pairs) - top_correlations
         if remaining > 0:
-            report.append(f"- {remaining} additional correlated pairs above threshold")
+            report.append(
+                f"- {remaining} additional correlated pairs above threshold"
+            )
 
     # --------------------------------------------------
     # Target validation
