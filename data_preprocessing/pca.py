@@ -1,8 +1,8 @@
 from sklearn.decomposition import PCA
 import pandas as pd
 
-#--- Function : perform_pca ---
-def perform_pca(X_scaled, variance_threshold=0.95):
+#--- Function : perform_pca (adapted) ---
+def perform_pca(X_scaled, variance_threshold=0.95, return_model=False):
     """
     Perform PCA on a pre-scaled dataset and return a DataFrame with principal components.
     
@@ -12,6 +12,8 @@ def perform_pca(X_scaled, variance_threshold=0.95):
         Scaled numeric data (standardized)
     variance_threshold : float, default=0.95
         Fraction of total variance to retain (determines number of components)
+    return_model : bool, default=False
+        Whether to return the fitted PCA model (needed to transform test sets)
     
     Returns:
     --------
@@ -19,6 +21,8 @@ def perform_pca(X_scaled, variance_threshold=0.95):
         DataFrame containing principal components
     explained_variance_ratio : np.array
         Variance explained by each principal component
+    pca_model : sklearn.decomposition.PCA (optional)
+        The fitted PCA model (returned only if return_model=True)
     """
     
     #Initialize PCA
@@ -33,4 +37,7 @@ def perform_pca(X_scaled, variance_threshold=0.95):
     #Convert to DataFrame
     df_pca = pd.DataFrame(X_pca, columns=pca_cols)
     
-    return df_pca, pca.explained_variance_ratio_
+    if return_model:
+        return df_pca, pca.explained_variance_ratio_, pca
+    else:
+        return df_pca, pca.explained_variance_ratio_
