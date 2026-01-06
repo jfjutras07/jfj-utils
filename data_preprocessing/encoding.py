@@ -42,7 +42,7 @@ def binary_encode_columns(
             if col not in df.columns:
                 raise KeyError(f"Column '{col}' not found in dataset {df_idx}")
             
-            #Apply mapping
+            #Apply mapping directly
             df[col] = df[col].map(mapping)
 
             #Sanity check: only {0,1}
@@ -58,10 +58,15 @@ def binary_encode_columns(
                 else:
                     print(f"WARNING: {message}")
 
-            #Cast to int only for valid (non-NaN) values
-            df[col] = df[col].where(df[col].notna(), df[col]).astype(float)  # keep NaN as float
-
         encoded_dfs.append(df)
+
+    #--- Validation message ---
+    print(
+        f"Binary encoding successfully applied to "
+        f"{len(binary_mappings)} columns on {len(encoded_dfs)} dataset(s)."
+    )
+
+    return encoded_dfs[0] if single_df else encoded_dfs
 
     #--- Validation message ---
     print(
