@@ -1,160 +1,179 @@
-import pandas as pd
 import numpy as np
+import pandas as pd
 
 def premodeling_regression_check(
     df: pd.DataFrame,
     target: str | None = None,
-    corr_threshold: float = 0.7
-) -> str:
+    corr_threshold: float = 0.7,
+    outlier_iqr_factor: float = 1.5
+):
     """
-    Generic pre-modeling diagnostic for regression tasks.
-    Designed to be model-agnostic (linear, regularized, trees, ensembles, deep learning).
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-        Dataset to analyze.
-    target : str, optional
-        Target column name.
-    corr_threshold : float
-        Absolute correlation threshold for multicollinearity warning.
-
-    Returns
-    -------
-    str
-        Markdown-style diagnostic report.
+    Expert-level pre-modeling validation for regression tasks.
+    Returns only problematic findings, or a clean readiness summary.
     """
 
     report = []
+    issues_found = False
+
+    # -------------------------------
+    # Helper: infer statistical type
+    # -------------------------------
+    def infer_feature_type(series: pd.Series):
+        if series.dropna().nunique() <= 2:
+            return "binary"
+        if (
+            series.dropna().nunique() <= 10
+            and np.all(np.mod(series.dropna(), 1) == 0)
+        ):
+            return "ordinal"
+        return "continuous"
+
     numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
 
-    # ------------------------------------------------------------------
-    # Missing values
-    # ------------------------------------------------------------------
-    na_cols = df.isna().sum()
-    na_cols = na_cols[na_cols > 0]
+    feature_types = {
+        col: infer_feature_type(df[col])
+        for col in numeric_cols
+    }
 
-    if not na_cols.empty:
-        report.append(
-            "# Missing values detected\n"
-            + "\n".join([f"- {col}: {int(count)}" for col, count in na_cols.items()])
-        )
-    else:
-        report.append("# Missing values\nNo missing values detected.")
-
-    # ------------------------------------------------------------------
-    # Non-numeric features
-    # ------------------------------------------------------------------
-    non_numeric_cols = df.columns.difference(numeric_cols)
-
-    if len(non_numeric_cols) > 0:
-        report.append(
-            "# Non-numeric columns detected\n"
-            + "\n".join([f"- {col}" for col in non_numeric_cols])
-        )
-    else:
-        report.append("# Feature types\nNo non-numeric columns detected.")
-
-    # ------------------------------------------------------------------
-    # Constant or quasi-constant columns
-    # ------------------------------------------------------------------
-    constant_cols = [col for col in df.columns if df[col].nunique(dropna=False) <= 1]
-
-    if constant_cols:
-        report.append(
-            "# Constant columns detected\n"
-            + "\n".join([f"- {col}" for col in constant_cols])
-        )
-    else:
-        report.append("# Feature variance\nNo constant columns detected.")
-
-    # ------------------------------------------------------------------
-    # Multicollinearity (correlation-based)
-    # ------------------------------------------------------------------
-    high_corr_pairs = []
-    if len(numeric_cols) > 1:
-        corr_matrix = df[numeric_cols].corr().abs()
-        for i in range(len(corr_matrix.columns)):
-            for j in range(i + 1, len(corr_matrix.columns)):
-                if corr_matrix.iloc[i, j] >= corr_threshold:
-                    high_corr_pairs.append(
-                        (
-                            corr_matrix.columns[i],
-                            corr_matrix.columns[j],
-                            float(corr_matrix.iloc[i, j])
-                        )
-                    )
-
-    if high_corr_pairs:
-        report.append(
-            "# High correlations detected (risk for linear and regularized models)\n"
-            + "\n".join(
-                [f"- {a} ↔ {b}: {v:.3f}" for a, b, v in high_corr_pairs]
-            )
-        )
-    else:
-        report.append("# Multicollinearity\nNo correlations above threshold detected.")
-
-    # ------------------------------------------------------------------
-    # Target validation
-    # ------------------------------------------------------------------
-    if target:
-        if target not in df.columns:
-            report.append(
-                f"# Target validation\nTarget column '{target}' not found."
-            )
-        else:
-            target_issues = []
-
-            if df[target].isna().any():
-                target_issues.append("contains missing values")
-
-            if df[target].nunique() <= 1:
-                target_issues.append("is constant")
-
-            if not pd.api.types.is_numeric_dtype(df[target]):
-                target_issues.append("is not numeric")
-
-            if target_issues:
-                report.append(
-                    "# Target validation issues\n"
-                    + "\n".join([f"- Target {issue}" for issue in target_issues])
-                )
-            else:
-                report.append("# Target validation\nNo issues detected with target variable.")
-    else:
-        report.append("# Target validation\nNo target provided (skipped).")
-
-    # ------------------------------------------------------------------
-    # Dataset size sanity check
-    # ------------------------------------------------------------------
-    if len(numeric_cols) > 0 and len(df) < 5 * len(numeric_cols):
-        report.append(
-            "# Dataset size warning\n"
-            f"Rows ({len(df)}) < 5 × numeric features ({len(numeric_cols)}). "
-            "Risk of overfitting for parametric models."
-        )
-    else:
-        report.append("# Dataset size\nNo size-related risks detected.")
-
-    # ------------------------------------------------------------------
-    # Final verdict
-    # ------------------------------------------------------------------
-    problems = [
-        section for section in report
-        if "detected" in section.lower() or "issues" in section.lower() or "warning" in section.lower()
+    continuous_cols = [
+        col for col, t in feature_types.items() if t == "continuous"
     ]
 
-    if not problems:
+    # -------------------------------
+    # Missing values
+    # -------------------------------
+    missing = df.isna().sum()
+    missing = missing[missing > 0]
+
+    if not missing.empty:
+        issues_found = True
+        report.append("# Missing values detected")
+        for col, cnt in missing.items():
+            report.append(f"- {col}: {cnt} missing values")
+    else:
+        report.append("# Missing values")
+        report.append("No missing values detected.")
+
+    # -------------------------------
+    # Constant / near-constant columns
+    # -------------------------------
+    constant_cols = [
+        col for col in numeric_cols if df[col].nunique() <= 1
+    ]
+
+    if constant_cols:
+        issues_found = True
+        report.append("\n# Constant features detected")
+        for col in constant_cols:
+            report.append(f"- {col}")
+    else:
+        report.append("\n# Feature variance")
+        report.append("No constant columns detected.")
+
+    # -------------------------------
+    # Outliers (continuous only)
+    # -------------------------------
+    outlier_summary = {}
+    total_outliers = 0
+
+    for col in continuous_cols:
+        q1 = df[col].quantile(0.25)
+        q3 = df[col].quantile(0.75)
+        iqr = q3 - q1
+
+        if iqr == 0:
+            continue
+
+        lower = q1 - outlier_iqr_factor * iqr
+        upper = q3 + outlier_iqr_factor * iqr
+
+        count = ((df[col] < lower) | (df[col] > upper)).sum()
+        if count > 0:
+            outlier_summary[col] = int(count)
+            total_outliers += int(count)
+
+    if outlier_summary:
+        issues_found = True
+        report.append("\n# Outliers detected (continuous features only)")
+        report.append(f"- Total outliers: {total_outliers}")
+        for col, cnt in outlier_summary.items():
+            report.append(f"- {col}: {cnt}")
+    else:
+        report.append("\n# Outliers")
+        report.append("No significant outliers detected in continuous features.")
+
+    # -------------------------------
+    # Correlation analysis
+    # -------------------------------
+    corr_pairs = []
+
+    if len(numeric_cols) > 1:
+        corr_matrix = df[numeric_cols].corr().abs()
+        upper = corr_matrix.where(
+            np.triu(np.ones(corr_matrix.shape), k=1).astype(bool)
+        )
+
+        for col in upper.columns:
+            for idx in upper.index:
+                val = upper.loc[idx, col]
+                if pd.notna(val) and val >= corr_threshold:
+                    corr_pairs.append((idx, col, round(val, 3)))
+
+    if corr_pairs:
+        issues_found = True
         report.append(
-            "# Final assessment\n"
-            "No missing values.\n"
-            "No non-numeric features.\n"
-            "No constant features.\n"
-            "No harmful multicollinearity.\n"
-            "No target-related issues.\n"
-            "No dataset size risks.\n"
+            "\n# High correlations detected (risk for linear and regularized models)"
+        )
+        for a, b, v in corr_pairs:
+            report.append(f"- {a} ↔ {b}: {v}")
+    else:
+        report.append("\n# Feature correlations")
+        report.append(
+            f"No feature pairs exceed correlation threshold ({corr_threshold})."
+        )
+
+    # -------------------------------
+    # Target validation
+    # -------------------------------
+    if target is not None:
+        if target not in df.columns:
+            issues_found = True
+            report.append("\n# Target validation")
+            report.append(f"- Target column '{target}' not found.")
+        elif df[target].nunique() <= 1:
+            issues_found = True
+            report.append("\n# Target validation")
+            report.append("- Target has no variance.")
+        else:
+            report.append("\n# Target validation")
+            report.append("No issues detected with target variable.")
+
+    # -------------------------------
+    # Dataset size vs dimensionality
+    # -------------------------------
+    n_rows, n_features = df.shape
+
+    if n_features > n_rows:
+        issues_found = True
+        report.append("\n# Dataset size risk")
+        report.append(
+            f"- High dimensionality: {n_features} features for {n_rows} rows"
+        )
+    else:
+        report.append("\n# Dataset size")
+        report.append("No size-related risks detected.")
+
+    # -------------------------------
+    # Final summary
+    # -------------------------------
+    if not issues_found:
+        report.append(
+            "\n# Summary\n"
+            "No missing values. "
+            "No constant features. "
+            "No problematic outliers. "
+            "No high correlations. "
             "Data is ready for regression modeling."
         )
 
-    return "\n\n".join(report)
+    return "\n".join(report)
