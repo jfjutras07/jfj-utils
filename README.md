@@ -56,6 +56,9 @@ Active development — modules will be progressively added and refined.
 - `clean_names`
 - `clean_names_multiple`
 
+*normalizing.py*
+- `normalize_columns`
+  
 *outliers.py*
 - `detect_outliers_iqr`
 - `detect_outliers_zscore`
