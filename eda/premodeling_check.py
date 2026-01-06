@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-
+#--- Function : premodeling_regression_check ---
 def premodeling_regression_check(
     df: pd.DataFrame,
     target: str | None = None,
@@ -18,9 +18,7 @@ def premodeling_regression_check(
 
     report = []
 
-    # --------------------------------------------------
-    # Missing values
-    # --------------------------------------------------
+    #Missing values
     missing = df.isnull().sum()
     missing = missing[missing > 0]
 
@@ -32,23 +30,19 @@ def premodeling_regression_check(
         for col, cnt in missing.items():
             report.append(f"- {col}: {cnt}")
 
-    # --------------------------------------------------
-    # Numeric feature validation
-    # --------------------------------------------------
+    #Feature types
     numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
 
     report.append("\n# Feature types")
     if len(numeric_cols) == df.shape[1]:
         report.append("No non-numeric columns detected.")
     else:
-        non_numeric = sorted(set(df.columns) - set(numeric_cols))
+        non_numeric = set(df.columns) - set(numeric_cols)
         report.append("Non-numeric columns detected (require encoding):")
-        for col in non_numeric:
+        for col in sorted(non_numeric):
             report.append(f"- {col}")
 
-    # --------------------------------------------------
-    # Constant / quasi-constant features
-    # --------------------------------------------------
+    #Constant features
     constant_cols = [c for c in numeric_cols if df[c].nunique(dropna=True) <= 1]
 
     report.append("\n# Feature variance")
@@ -59,65 +53,86 @@ def premodeling_regression_check(
         for col in constant_cols:
             report.append(f"- {col}")
 
-    # --------------------------------------------------
-    # Continuous feature detection (heuristic)
-    # --------------------------------------------------
-    continuous_cols = [
+    #Continuous feature detection
+    continuous_original_cols = [
         c for c in numeric_cols
-        if df[c].nunique(dropna=True) >= min_unique_for_continuous
+        if (
+            df[c].nunique(dropna=True) >= min_unique_for_continuous
+            and "_PC" not in c
+        )
     ]
 
-    # --------------------------------------------------
-    # Outlier detection (continuous features only)
-    # --------------------------------------------------
-    outlier_counts = {}
-    total_outliers = 0
+    continuous_pca_cols = [
+        c for c in numeric_cols
+        if (
+            df[c].nunique(dropna=True) >= min_unique_for_continuous
+            and "_PC" in c
+        )
+    ]
 
-    for col in continuous_cols:
-        q1 = df[col].quantile(0.25)
-        q3 = df[col].quantile(0.75)
-        iqr = q3 - q1
-        if iqr <= 0:
-            continue
+    #Remaining outlier detection helper
+    def detect_outliers(cols):
+        counts = {}
+        total = 0
 
-        lower = q1 - iqr_multiplier * iqr
-        upper = q3 + iqr_multiplier * iqr
-        count = int(((df[col] < lower) | (df[col] > upper)).sum())
+        for col in cols:
+            q1 = df[col].quantile(0.25)
+            q3 = df[col].quantile(0.75)
+            iqr = q3 - q1
+            if iqr == 0:
+                continue
 
-        if count > 0:
-            outlier_counts[col] = count
-            total_outliers += count
+            lower = q1 - iqr_multiplier * iqr
+            upper = q3 + iqr_multiplier * iqr
+            count = ((df[col] < lower) | (df[col] > upper)).sum()
 
-    report.append("\n# Outliers (continuous features only)")
-    if not outlier_counts:
+            if count > 0:
+                counts[col] = int(count)
+                total += int(count)
+
+        return total, counts
+
+    orig_total, orig_outliers = detect_outliers(continuous_original_cols)
+    pca_total, pca_outliers = detect_outliers(continuous_pca_cols)
+
+    #Outliers reporting
+    report.append("\n# Outliers")
+
+    #Original features
+    report.append("\n## Original continuous features")
+    if not orig_outliers:
         report.append("No significant outliers detected.")
     else:
-        sorted_outliers = sorted(
-            outlier_counts.items(),
-            key=lambda x: x[1],
-            reverse=True
-        )
-
-        report.append(f"- Total outliers detected: {total_outliers}")
+        sorted_out = sorted(orig_outliers.items(), key=lambda x: x[1], reverse=True)
+        report.append(f"- Total outliers detected: {orig_total}")
         report.append("- Top contributing features:")
-        for i, (col, cnt) in enumerate(sorted_outliers[:top_outliers], 1):
+        for i, (col, cnt) in enumerate(sorted_out[:top_outliers], 1):
             report.append(f"  {i}. {col}: {cnt}")
-
-        remaining = len(sorted_outliers) - top_outliers
+        remaining = len(sorted_out) - top_outliers
         if remaining > 0:
-            report.append(
-                f"- {remaining} additional features with minor outlier presence"
-            )
+            report.append(f"- {remaining} additional features with minor outlier presence")
 
-    # --------------------------------------------------
-    # Correlation analysis (numeric only)
-    # --------------------------------------------------
+    #PCA features
+    report.append("\n## PCA-derived features")
+    if not pca_outliers:
+        report.append("No significant PCA-related outliers detected.")
+    else:
+        sorted_out = sorted(pca_outliers.items(), key=lambda x: x[1], reverse=True)
+        report.append(f"- Total PCA outliers detected: {pca_total}")
+        report.append("- Top contributing components:")
+        for i, (col, cnt) in enumerate(sorted_out[:top_outliers], 1):
+            report.append(f"  {i}. {col}: {cnt}")
+        remaining = len(sorted_out) - top_outliers
+        if remaining > 0:
+            report.append(f"- {remaining} additional PCA components with minor outlier presence")
+
+    #Correlation analysis
     corr_pairs = []
 
     if len(numeric_cols) >= 2:
         corr_matrix = df[numeric_cols].corr().abs()
 
-        for i in range(1, len(corr_matrix.columns)):
+        for i in range(len(corr_matrix.columns)):
             for j in range(i):
                 val = corr_matrix.iloc[i, j]
                 if val >= corr_threshold:
@@ -132,20 +147,14 @@ def premodeling_regression_check(
         report.append("No problematic correlations detected.")
     else:
         corr_pairs = sorted(corr_pairs, key=lambda x: x[2], reverse=True)
-
         report.append("- Strongest correlations:")
         for i, (c1, c2, val) in enumerate(corr_pairs[:top_correlations], 1):
             report.append(f"  {i}. {c1} ↔ {c2}: {val:.3f}")
-
         remaining = len(corr_pairs) - top_correlations
         if remaining > 0:
-            report.append(
-                f"- {remaining} additional correlated pairs above threshold"
-            )
+            report.append(f"- {remaining} additional correlated pairs above threshold")
 
-    # --------------------------------------------------
-    # Target validation
-    # --------------------------------------------------
+    #Target validation
     report.append("\n# Target validation")
     if target is None:
         report.append("No target specified.")
@@ -159,29 +168,22 @@ def premodeling_regression_check(
         else:
             report.append("No issues detected with target variable.")
 
-    # --------------------------------------------------
-    # Dataset size sanity check
-    # --------------------------------------------------
+    #Dataset size
     report.append("\n# Dataset size")
     if df.shape[0] < 30:
         report.append("Dataset may be too small for reliable regression.")
     else:
         report.append("No size-related risks detected.")
 
-    # --------------------------------------------------
-    # Final verdict
-    # --------------------------------------------------
+    #Final assessment
     report.append("\n# Final assessment")
     if (
         missing.empty
         and not constant_cols
         and not corr_pairs
-        and not outlier_counts
+        and not orig_outliers
     ):
-        report.append(
-            "No structural issues detected. "
-            "Data is ready for regression modeling."
-        )
+        report.append("No structural issues detected. Data is ready for regression modeling.")
     else:
         report.append(
             "Dataset is usable for regression, but issues above should be reviewed "
