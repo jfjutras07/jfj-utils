@@ -40,7 +40,9 @@ Active development — modules will be progressively added and refined.
 
 *encoding.py*
 - `binary_encode_columns`
+- `label_encode_columns`
 - `one_hot_encode_columns`
+- `ordinal_encode_columns`
   
 *feature_engineering.py*
 - `mi_classification`
