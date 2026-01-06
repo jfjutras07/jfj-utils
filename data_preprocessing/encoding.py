@@ -105,6 +105,7 @@ def one_hot_encode_columns(
     """
     Apply one-hot encoding to selected categorical columns.
     If train_reference is provided, new columns will match train columns exactly.
+    Converted to float to be compatible with PCA.
     """
     single_df = False
     if isinstance(dfs, pd.DataFrame):
@@ -124,6 +125,9 @@ def one_hot_encode_columns(
                 if col not in df_encoded.columns:
                     df_encoded[col] = 0
             df_encoded = df_encoded[sorted(df_encoded.columns)]
+        # Convert all bool columns to float for PCA compatibility
+        bool_cols = df_encoded.select_dtypes(include='bool').columns
+        df_encoded[bool_cols] = df_encoded[bool_cols].astype(float)
         encoded_dfs.append(df_encoded)
 
     print(
