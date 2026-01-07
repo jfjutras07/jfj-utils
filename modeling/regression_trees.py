@@ -3,7 +3,7 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.metrics import r2_score, mean_absolute_error, mean_squared_error
 import numpy as np
 import pandas as pd
- from IPython.display import display
+from IPython.display import display
 
 #--- Function : random_forest_regression ---
 def random_forest_regression(train_df, test_df, outcome, predictors, cv=5):
