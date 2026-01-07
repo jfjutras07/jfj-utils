@@ -51,8 +51,6 @@ def compare_regularized_models(train_df, test_df, outcome, predictors, cv=5):
     print(f"\nModel Champion: {winner_name}")
     print(f"Non-zero Coefficients for {winner_name} (Sorted by impact):")
     display(active_coeffs)
-
-    return comparison_df, all_results
     
 #--- Function : elasticnet_regression ---
 def elasticnet_regression(train_df, test_df, outcome, predictors, cv=5):
