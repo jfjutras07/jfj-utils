@@ -2,49 +2,60 @@ from sklearn.linear_model import LassoCV
 from sklearn.linear_model import RidgeCV
 from sklearn.linear_model import ElasticNetCV
 from sklearn.metrics import r2_score, mean_absolute_error, mean_squared_error
+from IPython.display import display
 import numpy as np
 import pandas as pd
 
 #--- Function : compare_regularized_models ---
 def compare_regularized_models(train_df, test_df, outcome, predictors, cv=5):
     """
-    Execute and compare Lasso, Ridge, and ElasticNet regressions on the same data.
-    Provides a clean summary of performance and returns detailed results.
+    Executes and compares Lasso, Ridge, and ElasticNet regressions.
+    Prints individual model logs and displays a single final table 
+    of non-zero coefficients for the winning model.
     """
-    
-    print(f"Starting Regularized Models Comparison...")
+    print("Starting Regularized Models Comparison...")
     print(f"Predictors: {len(predictors)} | CV Folds: {cv}")
     print("-" * 35)
 
-    #Execute each model
+    #Execute individual regressions
+    # These functions are expected to print their specific logs (Alpha, R2, MAE)
     lasso_res = lasso_regression(train_df, test_df, outcome, predictors, cv=cv)
     ridge_res = ridge_regression(train_df, test_df, outcome, predictors, cv=cv)
     enet_res = elasticnet_regression(train_df, test_df, outcome, predictors, cv=cv)
 
-    #Compile metrics for comparison
+    #Compile metrics for ranking
     comparison_data = {
         "Lasso": lasso_res["metrics"],
         "Ridge": ridge_res["metrics"],
         "ElasticNet": enet_res["metrics"]
     }
 
-    #Create DataFrame and keep only the core metrics for the print summary
     comparison_df = pd.DataFrame(comparison_data).T
     comparison_df = comparison_df.sort_values(by="R2", ascending=False)
 
-    #Visual print (Concise)
+    #Print the final summary table
     print("\n--- Final Comparison Summary ---")
     print(comparison_df[["R2", "MAE", "RMSE"]].to_string())
     print("-" * 35)
 
+    #Extract and display non-zero coefficients for the champion model
+    winner_name = comparison_df.index[0]
     all_results = {
         "lasso": lasso_res,
         "ridge": ridge_res,
         "elasticnet": enet_res
     }
+    
+    winner_data = all_results[winner_name.lower()]
+    coeffs = winner_data['coefficients']
+    
+    #Filter for non-zero coefficients only
+    active_coeffs = coeffs[coeffs['Coefficient'] != 0].sort_values(by='Coefficient', ascending=False)
+    
+    print(f"\nModel Champion: {winner_name}")
+    print(f"Non-zero Coefficients for {winner_name}:")
+    display(active_coeffs)
 
-    #We return the objects, but thanks to your assignment in the notebook 
-    #(res, details = ...), the raw dictionary won't print anymore.
     return comparison_df, all_results
 
 #--- Function : elasticnet_regression ---
