@@ -5,6 +5,70 @@ from sklearn.metrics import r2_score, mean_absolute_error, mean_squared_error
 import numpy as np
 import pandas as pd
 
+#--- Function : compare_regularized_models ---
+def compare_regularized_models(train_df, test_df, outcome, predictors, cv=5):
+    """
+    Execute and compare Lasso, Ridge, and ElasticNet regressions on the same data.
+
+    When to use:
+    - During the model selection phase to identify the best regularization strategy.
+    - To understand if the feature space is sparse (Lasso) or dense/correlated (Ridge).
+    - To establish a robust linear baseline before moving to non-linear models.
+
+    Parameters:
+    -----------
+    train_df : pd.DataFrame
+        Training dataset.
+    test_df : pd.DataFrame
+        Testing dataset.
+    outcome : str
+        Dependent variable (target).
+    predictors : list of str
+        List of predictor variables.
+    cv : int, default 5
+        Number of folds for Cross-Validation.
+
+    Returns:
+    --------
+    comparison_df : pd.DataFrame
+        A summary table of metrics (R2, MAE, RMSE) for all three models.
+    all_results : dict
+        Dictionary containing the full output objects of each regression function.
+    """
+    
+    print(f"Starting Regularized Models Comparison...")
+    print(f"Predictors: {len(predictors)} | CV Folds: {cv}")
+    print("-" * 35)
+
+    #Execute each model using your existing functions
+    lasso_res = lasso_regression(train_df, test_df, outcome, predictors, cv=cv)
+    ridge_res = ridge_regression(train_df, test_df, outcome, predictors, cv=cv)
+    enet_res = elasticnet_regression(train_df, test_df, outcome, predictors, cv=cv)
+
+    #Compile metrics for comparison
+    comparison_data = {
+        "Lasso": lasso_res["metrics"],
+        "Ridge": ridge_res["metrics"],
+        "ElasticNet": enet_res["metrics"]
+    }
+
+    comparison_df = pd.DataFrame(comparison_data).T
+    
+    #Sort by R2 Score descending
+    comparison_df = comparison_df.sort_values(by="R2", ascending=False)
+
+    print("\n--- Final Comparison Summary ---")
+    print(comparison_df[["R2", "MAE", "RMSE"]])
+    print("-" * 35)
+
+    all_results = {
+        "lasso": lasso_res,
+        "ridge": ridge_res,
+        "elasticnet": enet_res
+    }
+
+    return comparison_df, all_results
+
 #--- Function : elasticnet_regression ---
 def elasticnet_regression(train_df, test_df, outcome, predictors, cv=5):
     """
