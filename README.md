@@ -156,6 +156,11 @@ Active development — modules will be progressively added and refined.
 - `quantile_regression`
 - `robust_regression`
 
+*regularization.py*
+- `elasticnet_regression`
+- `lasso_regression`
+- `ridge_regression`
+ 
 ### Optimization : Prescriptive analytics tools for simulation, decision support, and optimization.
 
 ### Visualization: High-level plotting utilities for exploring data and communicating analytical results.
