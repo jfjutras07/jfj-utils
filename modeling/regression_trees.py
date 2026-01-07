@@ -89,9 +89,3 @@ def random_forest_regression(train_df, test_df, outcome, predictors, cv=5):
 
     print("\nFeature Importance (Sorted by impact):")
     display(active_importance)
-
-    return {
-        "model": best_model,
-        "metrics": metrics,
-        "importance": active_importance
-    }
