@@ -157,6 +157,7 @@ Active development — modules will be progressively added and refined.
 - `robust_regression`
 
 *regularization.py*
+- `compare_regularized_models`
 - `elasticnet_regression`
 - `lasso_regression`
 - `ridge_regression`
