@@ -3,6 +3,7 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.metrics import r2_score, mean_absolute_error, mean_squared_error
 import numpy as np
 import pandas as pd
+ from IPython.display import display
 
 #--- Function : random_forest_regression ---
 def random_forest_regression(train_df, test_df, outcome, predictors, cv=5):
@@ -72,18 +73,25 @@ def random_forest_regression(train_df, test_df, outcome, predictors, cv=5):
     importance_df = pd.DataFrame({
         'Feature': predictors,
         'Importance': best_model.feature_importances_
-    }).sort_values(by='Importance', ascending=False)
+    })
+    
+    #Filter non-zero and sort by impact
+    active_importance = importance_df[importance_df['Importance'] > 0].copy()
+    active_importance = active_importance.sort_values(by='Importance', ascending=False)
 
     #Print summary
     print(f"--- Random Forest Summary ---")
     print(f"Best Params: {metrics['Best_Params']}")
     print(f"R2 Score (Test): {metrics['R2']:.4f}")
     print(f"MAE (Test): {metrics['MAE']:.4f}")
-    print(f"Top 3 Features: {importance_df['Feature'].iloc[:3].tolist()}")
+    print(f"Top 3 Features: {active_importance['Feature'].iloc[:3].tolist()}")
     print("-" * 35)
+
+    print("\nFeature Importance (Sorted by impact):")
+    display(active_importance)
 
     return {
         "model": best_model,
         "metrics": metrics,
-        "importance": importance_df
+        "importance": active_importance
     }
