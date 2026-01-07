@@ -10,15 +10,16 @@ import pandas as pd
 def compare_regularized_models(train_df, test_df, outcome, predictors, cv=5):
     """
     Executes and compares Lasso, Ridge, and ElasticNet regressions.
-    Prints individual model logs and displays a single final table 
-    of non-zero coefficients for the winning model.
+    Displays logs, summary table, and non-zero coefficients for the champion.
     """
+    import pandas as pd
+    from IPython.display import display
+
     print("Starting Regularized Models Comparison...")
     print(f"Predictors: {len(predictors)} | CV Folds: {cv}")
     print("-" * 35)
 
     #Execute individual regressions
-    # These functions are expected to print their specific logs (Alpha, R2, MAE)
     lasso_res = lasso_regression(train_df, test_df, outcome, predictors, cv=cv)
     ridge_res = ridge_regression(train_df, test_df, outcome, predictors, cv=cv)
     enet_res = elasticnet_regression(train_df, test_df, outcome, predictors, cv=cv)
@@ -29,35 +30,30 @@ def compare_regularized_models(train_df, test_df, outcome, predictors, cv=5):
         "Ridge": ridge_res["metrics"],
         "ElasticNet": enet_res["metrics"]
     }
+    comparison_df = pd.DataFrame(comparison_data).T.sort_values(by="R2", ascending=False)
 
-    comparison_df = pd.DataFrame(comparison_data).T
-    comparison_df = comparison_df.sort_values(by="R2", ascending=False)
-
-    #Print the final summary table
+    #Print Final Comparison Table
     print("\n--- Final Comparison Summary ---")
     print(comparison_df[["R2", "MAE", "RMSE"]].to_string())
     print("-" * 35)
 
-    #Extract and display non-zero coefficients for the champion model
+    #Extract and sort non-zero coefficients for the champion
     winner_name = comparison_df.index[0]
-    all_results = {
-        "lasso": lasso_res,
-        "ridge": ridge_res,
-        "elasticnet": enet_res
-    }
-    
+    all_results = {"lasso": lasso_res, "ridge": ridge_res, "elasticnet": enet_res}
     winner_data = all_results[winner_name.lower()]
-    coeffs = winner_data['coefficients']
     
-    #Filter for non-zero coefficients only
-    active_coeffs = coeffs[coeffs['Coefficient'] != 0].sort_values(by='Coefficient', ascending=False)
+    coeffs = winner_data['coefficients'].copy()
+    #Filter non-zero and sort by absolute impact
+    active_coeffs = coeffs[coeffs['Coefficient'] != 0].copy()
+    active_coeffs['Abs_Coefficient'] = active_coeffs['Coefficient'].abs()
+    active_coeffs = active_coeffs.sort_values(by='Abs_Coefficient', ascending=False).drop(columns=['Abs_Coefficient'])
     
     print(f"\nModel Champion: {winner_name}")
-    print(f"Non-zero Coefficients for {winner_name}:")
+    print(f"Non-zero Coefficients for {winner_name} (Sorted by impact):")
     display(active_coeffs)
 
     return comparison_df, all_results
-
+    
 #--- Function : elasticnet_regression ---
 def elasticnet_regression(train_df, test_df, outcome, predictors, cv=5):
     """
