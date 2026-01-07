@@ -143,9 +143,6 @@ Active development — modules will be progressively added and refined.
 
 ### Modeling: Helpers for fitting, evaluating, and comparing statistical and machine learning models.
 
-*binary_classifier_evaluation.py*
-- `evaluate_binary_classifier`
-
 *classification.py*
 - `logistic_regression`
 
@@ -158,9 +155,6 @@ Active development — modules will be progressively added and refined.
 - `polynomial_regression`
 - `quantile_regression`
 - `robust_regression`
-
-*regularization.py*
-- `fit_regularized_models`
 
 ### Optimization : Prescriptive analytics tools for simulation, decision support, and optimization.
 
