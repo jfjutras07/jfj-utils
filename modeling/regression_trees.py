@@ -43,6 +43,81 @@ def catboost_regression(train_df, test_df, outcome, predictors, cv=5):
 
     return best_model
 
+#---Function:compare_tree_models---
+def compare_tree_models(train_df, test_df, outcome, predictors, cv=5):
+    """
+    Executes and compares all tree-based and non-parametric models.
+    Displays logs, summary table, and feature importance for the champion.
+    """
+    import pandas as pd
+    from IPython.display import display
+
+    print("Starting Tree Models Comparison...")
+    print(f"Predictors: {len(predictors)} | CV Folds: {cv}")
+    print("-" * 35)
+
+    #Execute individual regressions
+    #Note: We wrap them to capture metrics manually if your functions only print them
+    results = {}
+    
+    print("\n[1/6] Running CatBoost...")
+    results['CatBoost'] = catboost_regression(train_df, test_df, outcome, predictors, cv=cv)
+    
+    print("\n[2/6] Running Decision Tree...")
+    results['DecisionTree'] = decision_tree_regression(train_df, test_df, outcome, predictors, cv=cv)
+    
+    print("\n[3/6] Running KNN...")
+    results['KNN'] = knn_regression(train_df, test_df, outcome, predictors, cv=cv)
+    
+    print("\n[4/6] Running LightGBM...")
+    results['LightGBM'] = lightgbm_regression(train_df, test_df, outcome, predictors, cv=cv)
+    
+    print("\n[5/6] Running Random Forest...")
+    results['RandomForest'] = random_forest_regression(train_df, test_df, outcome, predictors, cv=cv)
+    
+    print("\n[6/6] Running XGBoost...")
+    results['XGBoost'] = xgboost_regression(train_df, test_df, outcome, predictors, cv=cv)
+
+    #Compile metrics for ranking
+    X_test, y_test = test_df[predictors], test_df[outcome]
+    comparison_list = []
+
+    for name, model in results.items():
+        y_pred = model.predict(X_test)
+        comparison_list.append({
+            "Model": name,
+            "R2": r2_score(y_test, y_pred),
+            "MAE": mean_absolute_error(y_test, y_pred),
+            "RMSE": np.sqrt(mean_squared_error(y_test, y_pred))
+        })
+
+    comparison_df = pd.DataFrame(comparison_list).set_index("Model").sort_values(by="R2", ascending=False)
+
+    #Print Final Comparison Table
+    print("\n--- Final Tree Models Comparison ---")
+    print(comparison_df.to_string())
+    print("-" * 35)
+
+    #Identify Champion and display its feature importance (if available)
+    winner_name = comparison_df.index[0]
+    winner_model = results[winner_name]
+
+    print(f"\nModel Champion: {winner_name}")
+    
+    #Display importance for the winner if the model supports it (not for KNN)
+    if hasattr(winner_model, 'feature_importances_'):
+        importance_df = pd.DataFrame({
+            'Feature': predictors,
+            'Importance': winner_model.feature_importances_
+        }).sort_values(by='Importance', ascending=False).head(5)
+        
+        print(f"Top 5 Feature Importances for {winner_name}:")
+        display(importance_df)
+    else:
+        print(f"Feature importance not available for {winner_name} (e.g., KNN).")
+
+    return winner_model
+
 #---Function:decision_tree_regression---
 def decision_tree_regression(train_df, test_df, outcome, predictors, cv=5):
     """
