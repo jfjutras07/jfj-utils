@@ -46,10 +46,11 @@ def compare_regularized_models(train_df, test_df, outcome, predictors, cv=5):
     #Filter non-zero and sort by absolute impact
     active_coeffs = coeffs[coeffs['Coefficient'] != 0].copy()
     active_coeffs['Abs_Coefficient'] = active_coeffs['Coefficient'].abs()
-    active_coeffs = active_coeffs.sort_values(by='Abs_Coefficient', ascending=False).drop(columns=['Abs_Coefficient'])
+    #Limit to Top 5
+    active_coeffs = active_coeffs.sort_values(by='Abs_Coefficient', ascending=False).head(5).drop(columns=['Abs_Coefficient'])
     
     print(f"\nModel Champion: {winner_name}")
-    print(f"Non-zero Coefficients for {winner_name} (Sorted by impact):")
+    print(f"Top 5 Coefficients for {winner_name} (Sorted by impact):")
     display(active_coeffs)
     
 #--- Function : elasticnet_regression ---
