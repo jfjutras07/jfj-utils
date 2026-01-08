@@ -164,6 +164,7 @@ Active development — modules will be progressively added and refined.
 
 *regression_trees.py*
 - `catboost_regression`
+- `compare_tree_models`
 - `decision_tree_regression`
 - `knn_regression`
 - `lightgbm_regression`
