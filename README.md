@@ -145,6 +145,9 @@ Active development — modules will be progressively added and refined.
 
 ### Modeling: Helpers for fitting, evaluating, and comparing statistical and machine learning models.
 
+*advanced_models.py*
+- `svm_regression`
+  
 *classification.py*
 - `logistic_regression`
 
@@ -157,6 +160,10 @@ Active development — modules will be progressively added and refined.
 - `polynomial_regression`
 - `quantile_regression`
 - `robust_regression`
+
+*regression_trees.py*
+- `random_forest_regression`
+- `xgboost_regression`
 
 *regularization.py*
 - `compare_regularized_models`
