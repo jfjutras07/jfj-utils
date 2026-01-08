@@ -21,7 +21,7 @@ def premodeling_regression_check(
     issues = set()
 
     #Missing values
-    block = ["# Missing values"]
+    block = ["#Missing values"]
     missing = df.isnull().sum()
     missing = missing[missing > 0]
 
@@ -36,7 +36,7 @@ def premodeling_regression_check(
     sections["missing"] = block
 
     #Feature types
-    block = ["# Feature types"]
+    block = ["#Feature types"]
     numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
 
     if len(numeric_cols) == df.shape[1]:
@@ -51,7 +51,7 @@ def premodeling_regression_check(
     sections["types"] = block
 
     #Feature variance
-    block = ["# Feature variance"]
+    block = ["#Feature variance"]
     constant_cols = [c for c in numeric_cols if df[c].nunique(dropna=True) <= 1]
 
     if not constant_cols:
@@ -64,15 +64,17 @@ def premodeling_regression_check(
 
     sections["variance"] = block
 
-    #Continuous feature detection
+    #Continuous feature detection (Updated to include MCA _Dim)
     continuous_original_cols = [
         c for c in numeric_cols
-        if df[c].nunique(dropna=True) >= min_unique_for_continuous and "_PC" not in c
+        if df[c].nunique(dropna=True) >= min_unique_for_continuous 
+        and "_PC" not in c and "_Dim" not in c
     ]
 
     continuous_pca_cols = [
         c for c in numeric_cols
-        if df[c].nunique(dropna=True) >= min_unique_for_continuous and "_PC" in c
+        if df[c].nunique(dropna=True) >= min_unique_for_continuous 
+        and ("_PC" in c or "_Dim" in c)
     ]
 
     def detect_outliers(cols):
@@ -95,7 +97,7 @@ def premodeling_regression_check(
     orig_total, orig_outliers = detect_outliers(continuous_original_cols)
     pca_total, pca_outliers = detect_outliers(continuous_pca_cols)
 
-    block = ["# Outliers", "## Original continuous features"]
+    block = ["#Outliers", "##Original continuous features"]
     if not orig_outliers:
         block.append("No significant outliers detected.")
     else:
@@ -108,23 +110,23 @@ def premodeling_regression_check(
         if len(sorted_out) > top_outliers:
             block.append(f"- {len(sorted_out) - top_outliers} additional features with minor outlier presence")
 
-    block.append("## PCA-derived features")
+    block.append("##PCA/MCA-derived features")
     if not pca_outliers:
-        block.append("No significant PCA-related outliers detected.")
+        block.append("No significant PCA/MCA-related outliers detected.")
     else:
         issues.add("outliers_pca")
         sorted_out = sorted(pca_outliers.items(), key=lambda x: x[1], reverse=True)
-        block.append(f"- Total PCA outliers detected: {pca_total}")
+        block.append(f"- Total PCA/MCA outliers detected: {pca_total}")
         block.append("- Top contributing components:")
         for i, (col, cnt) in enumerate(sorted_out[:top_outliers], 1):
             block.append(f"  {i}. {col}: {cnt}")
         if len(sorted_out) > top_outliers:
-            block.append(f"- {len(sorted_out) - top_outliers} additional PCA components with minor outlier presence")
+            block.append(f"- {len(sorted_out) - top_outliers} additional components with minor outlier presence")
 
     sections["outliers"] = block
 
     #Correlations
-    block = [f"# High correlations (|r| ≥ {corr_threshold:.2f})"]
+    block = [f"#High correlations (|r| ≥ {corr_threshold:.2f})"]
     corr_pairs = []
 
     if len(numeric_cols) >= 2:
@@ -149,7 +151,7 @@ def premodeling_regression_check(
     sections["correlations"] = block
 
     #Target
-    block = ["# Target validation"]
+    block = ["#Target validation"]
     if target is None:
         block.append("No target specified.")
     elif target not in df.columns:
@@ -167,7 +169,7 @@ def premodeling_regression_check(
     sections["target"] = block
 
     #Dataset size
-    block = ["# Dataset size"]
+    block = ["#Dataset size"]
     if df.shape[0] < 30:
         issues.add("size")
         block.append("Dataset may be too small for reliable regression.")
@@ -177,7 +179,7 @@ def premodeling_regression_check(
     sections["size"] = block
 
     #Final assessment
-    final_block = ["# Final assessment"]
+    final_block = ["#Final assessment"]
     if not issues:
         final_block.append("No structural issues detected. Data is ready for regression modeling.")
     else:
