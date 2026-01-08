@@ -38,14 +38,16 @@ Active development — modules will be progressively added and refined.
 
 ### Data_preprocessing: Functions for cleaning, transforming, and preparing datasets for analysis and modeling.
 
+*dimensionality_reduction.py*
+- `perform_famd`
+- `perform_mca`
+- `perform_pca`
+  
 *encoding.py*
 - `binary_encode_columns`
 - `label_encode_columns`
 - `one_hot_encode_columns`
 - `ordinal_encode_columns`
-
-*famd.py*
-- `perform_famd`
   
 *feature_engineering.py*
 - `mi_classification`
@@ -54,9 +56,6 @@ Active development — modules will be progressively added and refined.
 *missing.py*
 - `missing_stats`
 - `missing_summary`
-
-*mca.py*
-- `perform_mca`
   
 *name_cleaning.py*
 - `clean_names`
@@ -69,9 +68,6 @@ Active development — modules will be progressively added and refined.
 - `detect_outliers_iqr`
 - `detect_outliers_zscore`
 - `winsorize_columns`
-
-*pca.py*
-- `perform_pca`
 
 *text_cleaning.py*
 - `clean_text`
