@@ -156,6 +156,7 @@ Active development — modules will be progressively added and refined.
 - `gamma_regression`
 - `linear_mixed_model`
 - `linear_regression`
+- `negative_binomial_regression`
 - `poisson_regression`
 - `polynomial_regression`
 - `quantile_regression`
