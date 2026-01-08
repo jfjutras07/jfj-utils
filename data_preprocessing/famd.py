@@ -18,7 +18,7 @@ def perform_famd(X_train, X_test=None, n_components=2, return_model=False):
     """
     
     #Initialize FAMD (Prince library)
-    famd = FAMD(n_components=n_components, random_state=42)
+    famd = FAMD(n_components=n_components, random_state=42, handle_unknown='ignore')
     
     #Fit and transform on Train
     X_train_famd = famd.fit_transform(X_train)
