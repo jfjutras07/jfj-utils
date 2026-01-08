@@ -4,7 +4,7 @@ import statsmodels.formula.api as smf
 import lifelines
 from lifelines import CoxPHFitter
 
-# --- Function : cox_regression ---
+#---Function:cox_regression---
 def cox_regression(df, duration_col, event_col, covariates):
     """
     Perform Cox Proportional Hazards regression for survival/time-to-event data.
@@ -12,7 +12,6 @@ def cox_regression(df, duration_col, event_col, covariates):
     When to use:
     - Outcome is time-to-event (duration) and event indicator (1=event, 0=censored).
     - Estimate hazard ratios for predictors (covariates).
-    - Can handle continuous or categorical covariates.
     - Useful in medical studies, reliability analysis, or any survival analysis.
 
     Parameters:
@@ -39,7 +38,7 @@ def cox_regression(df, duration_col, event_col, covariates):
     cph.print_summary()
     return cph
 
-# --- Function : gamma_regression ---
+#---Function:gamma_regression---
 def gamma_regression(df, outcome, predictors, include_interactions=False, link='log'):
     """
     Perform Gamma regression for positive continuous skewed data.
@@ -65,26 +64,16 @@ def gamma_regression(df, outcome, predictors, include_interactions=False, link='
     if not predictors:
         raise ValueError("At least one predictor must be provided.")
 
-    #Convert objects to category
-    formula_terms = []
-    for var in predictors:
-        if df[var].dtype.name == 'category' or df[var].dtype == object:
-            df[var] = df[var].astype('category')
-            formula_terms.append(f"C({var})")
-        else:
-            formula_terms.append(var)
-
-    if include_interactions:
-        formula = f"{outcome} ~ " + " * ".join(formula_terms)
-    else:
-        formula = f"{outcome} ~ " + " + ".join(formula_terms)
+    formula_terms = [f"C({v})" if df[v].dtype.name == 'category' or df[v].dtype == object else v for v in predictors]
+    sep = " * " if include_interactions else " + "
+    formula = f"{outcome} ~ " + sep.join(formula_terms)
 
     link_func = sm.families.links.log() if link=='log' else sm.families.links.identity()
     model = smf.glm(formula=formula, data=df, family=sm.families.Gamma(link=link_func)).fit()
     print(model.summary())
     return model
 
-# --- Function : linear_mixed_model ---
+#---Function:linear_mixed_model---
 def linear_mixed_model(df, fixed_effects, outcome, random_effect, include_interactions=False):
     """
     Perform a Linear Mixed Model (LMM) regression.
@@ -110,23 +99,16 @@ def linear_mixed_model(df, fixed_effects, outcome, random_effect, include_intera
     if not fixed_effects:
         raise ValueError("At least one fixed effect must be provided.")
 
-    #Convert objects to category
-    for var in fixed_effects:
-        if df[var].dtype.name == 'category' or df[var].dtype == object:
-            df[var] = df[var].astype('category')
-
-    if include_interactions:
-        fixed_formula = " * ".join(fixed_effects)
-    else:
-        fixed_formula = " + ".join(fixed_effects)
-
-    formula = f"{outcome} ~ {fixed_formula}"
+    formula_terms = [f"C({v})" if df[v].dtype.name == 'category' or df[v].dtype == object else v for v in fixed_effects]
+    sep = " * " if include_interactions else " + "
+    formula = f"{outcome} ~ {sep.join(formula_terms)}"
+    
     model = smf.mixedlm(formula=formula, data=df, groups=df[random_effect])
     model_fit = model.fit(reml=True)
     print(model_fit.summary())
     return model_fit
 
-# --- Function : linear_regression ---
+#---Function:linear_regression---
 def linear_regression(df, outcome, predictors, include_interactions=False):
     """
     Perform a multiple linear regression with optional interactions.
@@ -150,25 +132,48 @@ def linear_regression(df, outcome, predictors, include_interactions=False):
     if not predictors:
         raise ValueError("At least one predictor must be provided.")
 
-    #Convert objects to category
-    formula_terms = []
-    for var in predictors:
-        if df[var].dtype.name == 'category' or df[var].dtype == object:
-            df[var] = df[var].astype('category')
-            formula_terms.append(f"C({var})")
-        else:
-            formula_terms.append(var)
-
-    if include_interactions:
-        formula = f"{outcome} ~ " + " * ".join(formula_terms)
-    else:
-        formula = f"{outcome} ~ " + " + ".join(formula_terms)
+    formula_terms = [f"C({v})" if df[v].dtype.name == 'category' or df[v].dtype == object else v for v in predictors]
+    sep = " * " if include_interactions else " + "
+    formula = f"{outcome} ~ " + sep.join(formula_terms)
 
     model = smf.ols(formula=formula, data=df).fit()
     print(model.summary())
     return model
 
-# --- Function : poisson_regression ---
+#---Function:negative_binomial_regression---
+def negative_binomial_regression(df, outcome, predictors, include_interactions=False):
+    """
+    Perform a Negative Binomial regression for count data with overdispersion.
+
+    Parameters:
+    -----------
+    df : pd.DataFrame
+        Dataset containing predictors and outcome.
+    outcome : str
+        Dependent variable representing counts.
+    predictors : list of str
+        List of independent variables.
+    include_interactions : bool, default False
+        Whether to include all pairwise interactions.
+
+    Returns:
+    --------
+    model : statsmodels RegressionResults
+        Fitted Negative Binomial regression model.
+    """
+    if not predictors:
+        raise ValueError("At least one predictor must be provided.")
+
+    formula_terms = [f"C({v})" if df[v].dtype.name == 'category' or df[v].dtype == object else v for v in predictors]
+    sep = " * " if include_interactions else " + "
+    formula = f"{outcome} ~ " + sep.join(formula_terms)
+
+    #Uses log link by default as it is standard for Negative Binomial
+    model = smf.glm(formula=formula, data=df, family=sm.families.NegativeBinomial()).fit()
+    print(model.summary())
+    return model
+    
+#---Function:poisson_regression---
 def poisson_regression(df, outcome, predictors, include_interactions=False):
     """
     Perform a Poisson regression for count data.
@@ -192,24 +197,15 @@ def poisson_regression(df, outcome, predictors, include_interactions=False):
     if not predictors:
         raise ValueError("At least one predictor must be provided.")
 
-    formula_terms = []
-    for var in predictors:
-        if df[var].dtype.name == 'category' or df[var].dtype == object:
-            df[var] = df[var].astype('category')
-            formula_terms.append(f"C({var})")
-        else:
-            formula_terms.append(var)
-
-    if include_interactions:
-        formula = f"{outcome} ~ " + " * ".join(formula_terms)
-    else:
-        formula = f"{outcome} ~ " + " + ".join(formula_terms)
+    formula_terms = [f"C({v})" if df[v].dtype.name == 'category' or df[v].dtype == object else v for v in predictors]
+    sep = " * " if include_interactions else " + "
+    formula = f"{outcome} ~ " + sep.join(formula_terms)
 
     model = smf.poisson(formula=formula, data=df).fit()
     print(model.summary())
     return model
 
-# --- Function : polynomial_regression ---
+#---Function:polynomial_regression---
 def polynomial_regression(df, outcome, predictor, max_degree=2):
     """
     Perform polynomial regression up to a specified degree.
@@ -233,22 +229,14 @@ def polynomial_regression(df, outcome, predictor, max_degree=2):
     if max_degree < 1:
         raise ValueError("max_degree must be at least 1.")
 
-    df_poly = df.copy()
-    poly_terms = []
-    for d in range(2, max_degree+1):
-        col_name = f"{predictor}^{d}"
-        df_poly[col_name] = df_poly[predictor]**d
-        poly_terms.append(col_name)
+    poly_terms = [predictor] + [f"I({predictor}**{d})" for d in range(2, max_degree + 1)]
+    formula = f"{outcome} ~ " + " + ".join(poly_terms)
 
-    formula = f"{outcome} ~ {predictor}"
-    if poly_terms:
-        formula += " + " + " + ".join(poly_terms)
-
-    model = smf.ols(formula=formula, data=df_poly).fit()
+    model = smf.ols(formula=formula, data=df).fit()
     print(model.summary())
     return model
 
-# --- Function : quantile_regression ---
+#---Function:quantile_regression---
 def quantile_regression(df, outcome, predictor, quantile=0.5):
     """
     Perform quantile regression (median or other quantiles).
@@ -273,8 +261,8 @@ def quantile_regression(df, outcome, predictor, quantile=0.5):
     model = smf.quantreg(formula=formula, data=df).fit(q=quantile)
     print(model.summary())
     return model
-  
-# --- Function : robust_regression ---
+
+#---Function:robust_regression---
 def robust_regression(df, outcome, predictors, include_interactions=False, estimator=sm.robust.norms.HuberT):
     """
     Perform a multiple robust linear regression using RLM (Robust Linear Model) 
@@ -301,20 +289,10 @@ def robust_regression(df, outcome, predictors, include_interactions=False, estim
     if not predictors:
         raise ValueError("At least one predictor must be provided.")
 
-    formula_terms = []
-    for var in predictors:
-        if df[var].dtype.name == 'category' or df[var].dtype == object:
-            df[var] = df[var].astype('category')
-            formula_terms.append(f"C({var})")
-        else:
-            formula_terms.append(var)
-
-    if include_interactions:
-        formula = f"{outcome} ~ " + " * ".join(formula_terms)
-    else:
-        formula = f"{outcome} ~ " + " + ".join(formula_terms)
+    formula_terms = [f"C({v})" if df[v].dtype.name == 'category' or df[v].dtype == object else v for v in predictors]
+    sep = " * " if include_interactions else " + "
+    formula = f"{outcome} ~ " + sep.join(formula_terms)
 
     model = smf.rlm(formula=formula, data=df, M=estimator()).fit()
     print(model.summary())
     return model
-    
