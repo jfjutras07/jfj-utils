@@ -43,6 +43,9 @@ Active development — modules will be progressively added and refined.
 - `label_encode_columns`
 - `one_hot_encode_columns`
 - `ordinal_encode_columns`
+
+*famd.py*
+- `perform_famd`
   
 *feature_engineering.py*
 - `mi_classification`
@@ -52,6 +55,9 @@ Active development — modules will be progressively added and refined.
 - `missing_stats`
 - `missing_summary`
 
+*mca.py*
+- `perform_mca`
+  
 *name_cleaning.py*
 - `clean_names`
 - `clean_names_multiple`
@@ -66,7 +72,6 @@ Active development — modules will be progressively added and refined.
 
 *pca.py*
 - `perform_pca`
-- `perform_mca`
 
 *text_cleaning.py*
 - `clean_text`
