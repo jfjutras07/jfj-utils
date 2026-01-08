@@ -66,6 +66,7 @@ Active development — modules will be progressively added and refined.
 
 *pca.py*
 - `perform_pca`
+- `perform_mca`
 
 *text_cleaning.py*
 - `clean_text`
