@@ -9,7 +9,7 @@ from IPython.display import display
 #--- Function : random_forest_regression ---
 def random_forest_regression(train_df, test_df, outcome, predictors, cv=5):
     """
-    Random Forest with GridSearchCV. Displays Top 5 Features only.
+    Random Forest with GridSearchCV. Compares Train and Test R2 to detect overfitting.
     """
     if not predictors:
         raise ValueError("At least one predictor must be provided.")
@@ -30,40 +30,44 @@ def random_forest_regression(train_df, test_df, outcome, predictors, cv=5):
     grid_search.fit(X_train, y_train)
 
     best_model = grid_search.best_estimator_
-    y_pred = best_model.predict(X_test)
+    
+    #Predictions for both sets
+    y_pred_train = best_model.predict(X_train)
+    y_pred_test = best_model.predict(X_test)
 
     #Metrics calculation
     metrics = {
-        "R2": r2_score(y_test, y_pred),
-        "MAE": mean_absolute_error(y_test, y_pred),
-        "RMSE": np.sqrt(mean_squared_error(y_test, y_pred))
+        "R2_Train": r2_score(y_train, y_pred_train),
+        "R2_Test": r2_score(y_test, y_pred_test),
+        "MAE_Test": mean_absolute_error(y_test, y_pred_test),
+        "RMSE_Test": np.sqrt(mean_squared_error(y_test, y_pred_test))
     }
 
     #Feature importance (Top 5)
     importance_df = pd.DataFrame({
         'Feature': predictors,
         'Importance': best_model.feature_importances_
-    })
-    
-    #Filter non-zero and sort by impact
-    active_importance = importance_df[importance_df['Importance'] > 0].copy()
-    active_importance = active_importance.sort_values(by='Importance', ascending=False).head(5)
+    }).sort_values(by='Importance', ascending=False).head(5)
 
     #Print summary
     print(f"--- Random Forest Summary ---")
     print(f"Best Params: {grid_search.best_params_}")
-    print(f"R2 Score (Test): {metrics['R2']:.4f}")
-    print(f"MAE (Test): {metrics['MAE']:.4f}")
-    print(f"Top 3 Features: {active_importance['Feature'].iloc[:3].tolist()}")
+    print(f"R2 Score (Train): {metrics['R2_Train']:.4f}")
+    print(f"R2 Score (Test): {metrics['R2_Test']:.4f}")
+    print(f"Gap (Train-Test): {metrics['R2_Train'] - metrics['R2_Test']:.4f}")
+    print(f"MAE (Test): {metrics['MAE_Test']:.4f}")
+    print(f"Top 3 Features: {importance_df['Feature'].iloc[:3].tolist()}")
     print("-" * 35)
 
-    print("\nFeature Importance (Sorted by impact):")
-    display(active_importance)
+    print("\nFeature Importance (Top 5):")
+    display(importance_df)
+    
+    return best_model
 
 #--- Function : xgboost_regression ---
 def xgboost_regression(train_df, test_df, outcome, predictors, cv=5):
     """
-    XGBoost Regressor with GridSearchCV.
+    XGBoost Regressor with GridSearchCV. Compares Train and Test R2 to detect overfitting.
     """
     if not predictors:
         raise ValueError("At least one predictor must be provided.")
@@ -71,7 +75,7 @@ def xgboost_regression(train_df, test_df, outcome, predictors, cv=5):
     X_train, y_train = train_df[predictors], train_df[outcome]
     X_test, y_test = test_df[predictors], test_df[outcome]
 
-    # Hyperparameter tuning (focused on regularization for small datasets)
+    # Hyperparameter tuning
     param_grid = {
         'n_estimators': [100, 200],
         'max_depth': [3, 5, 7],
@@ -84,15 +88,20 @@ def xgboost_regression(train_df, test_df, outcome, predictors, cv=5):
     grid_search.fit(X_train, y_train)
 
     best_model = grid_search.best_estimator_
-    y_pred = best_model.predict(X_test)
+    
+    #Predictions for both sets
+    y_pred_train = best_model.predict(X_train)
+    y_pred_test = best_model.predict(X_test)
 
+    #Metrics calculation
     metrics = {
-        "R2": r2_score(y_test, y_pred),
-        "MAE": mean_absolute_error(y_test, y_pred),
-        "RMSE": np.sqrt(mean_squared_error(y_test, y_pred))
+        "R2_Train": r2_score(y_train, y_pred_train),
+        "R2_Test": r2_score(y_test, y_pred_test),
+        "MAE_Test": mean_absolute_error(y_test, y_pred_test),
+        "RMSE_Test": np.sqrt(mean_squared_error(y_test, y_pred_test))
     }
 
-    # Feature importance
+    #Feature importance
     importance_df = pd.DataFrame({
         'Feature': predictors,
         'Importance': best_model.feature_importances_
@@ -100,10 +109,14 @@ def xgboost_regression(train_df, test_df, outcome, predictors, cv=5):
 
     print(f"--- XGBoost Summary ---")
     print(f"Best Params: {grid_search.best_params_}")
-    print(f"R2 Score (Test): {metrics['R2']:.4f}")
-    print(f"MAE (Test): {metrics['MAE']:.4f}")
+    print(f"R2 Score (Train): {metrics['R2_Train']:.4f}")
+    print(f"R2 Score (Test): {metrics['R2_Test']:.4f}")
+    print(f"Gap (Train-Test): {metrics['R2_Train'] - metrics['R2_Test']:.4f}")
+    print(f"MAE (Test): {metrics['MAE_Test']:.4f}")
     print(f"Top 3 Features: {importance_df['Feature'].iloc[:3].tolist()}")
     print("-" * 35)
 
-    print("\nFeature Importance (Sorted by impact):")
+    print("\nFeature Importance (Top 5):")
     display(importance_df)
+    
+    return best_model
