@@ -9,26 +9,33 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.neighbors import KNeighborsRegressor
 from sklearn.tree import DecisionTreeRegressor
 from xgboost import XGBRegressor
+from sklearn.pipeline import Pipeline
+from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import StandardScaler
 
 #---Function:catboost_regression---
-def catboost_regression(train_df, test_df, outcome, predictors, cv=5):
+def catboost_regression(train_df, test_df, outcome, predictors, cv=5, for_stacking=False):
     """
     CatBoost Regressor with GridSearchCV. Compares Train and Test R2.
     """
-    if not predictors:
-        raise ValueError("At least one predictor must be provided.")
+    base_pipe = Pipeline([
+        ('imputer', SimpleImputer(strategy='median')),
+        ('model', CatBoostRegressor(random_state=42, verbose=0))
+    ])
+
+    if for_stacking:
+        return base_pipe
 
     X_train, y_train = train_df[predictors], train_df[outcome]
     X_test, y_test = test_df[predictors], test_df[outcome]
 
     param_grid = {
-        'iterations': [100, 200],
-        'depth': [4, 6],
-        'learning_rate': [0.05, 0.1]
+        'model__iterations': [100, 200],
+        'model__depth': [4, 6],
+        'model__learning_rate': [0.05, 0.1]
     }
 
-    cb = CatBoostRegressor(random_state=42, verbose=0)
-    grid_search = GridSearchCV(estimator=cb, param_grid=param_grid, cv=cv, scoring='r2', n_jobs=-1)
+    grid_search = GridSearchCV(estimator=base_pipe, param_grid=param_grid, cv=cv, scoring='r2', n_jobs=-1)
     grid_search.fit(X_train, y_train)
 
     best_model = grid_search.best_estimator_
@@ -49,15 +56,10 @@ def compare_tree_models(train_df, test_df, outcome, predictors, cv=5):
     Executes and compares all tree-based and non-parametric models.
     Displays logs, summary table, and feature importance for the champion.
     """
-    import pandas as pd
-    from IPython.display import display
-
     print("Starting Tree Models Comparison...")
     print(f"Predictors: {len(predictors)} | CV Folds: {cv}")
     print("-" * 35)
 
-    #Execute individual regressions
-    #Note: We wrap them to capture metrics manually if your functions only print them
     results = {}
     
     print("\n[1/6] Running CatBoost...")
@@ -78,7 +80,6 @@ def compare_tree_models(train_df, test_df, outcome, predictors, cv=5):
     print("\n[6/6] Running XGBoost...")
     results['XGBoost'] = xgboost_regression(train_df, test_df, outcome, predictors, cv=cv)
 
-    #Compile metrics for ranking
     X_test, y_test = test_df[predictors], test_df[outcome]
     comparison_list = []
 
@@ -93,22 +94,22 @@ def compare_tree_models(train_df, test_df, outcome, predictors, cv=5):
 
     comparison_df = pd.DataFrame(comparison_list).set_index("Model").sort_values(by="R2", ascending=False)
 
-    #Print Final Comparison Table
     print("\n--- Final Tree Models Comparison ---")
     print(comparison_df.to_string())
     print("-" * 35)
 
-    #Identify Champion and display its feature importance (if available)
     winner_name = comparison_df.index[0]
     winner_model = results[winner_name]
 
     print(f"\nModel Champion: {winner_name}")
     
-    #Display importance for the winner if the model supports it (not for KNN)
-    if hasattr(winner_model, 'feature_importances_'):
+    # Check if the winner is a Pipeline or a raw model to extract importance
+    actual_model = winner_model.named_steps['model'] if isinstance(winner_model, Pipeline) else winner_model
+
+    if hasattr(actual_model, 'feature_importances_'):
         importance_df = pd.DataFrame({
             'Feature': predictors,
-            'Importance': winner_model.feature_importances_
+            'Importance': actual_model.feature_importances_
         }).sort_values(by='Importance', ascending=False).head(5)
         
         print(f"Top 5 Feature Importances for {winner_name}:")
@@ -119,23 +120,27 @@ def compare_tree_models(train_df, test_df, outcome, predictors, cv=5):
     return winner_model
 
 #---Function:decision_tree_regression---
-def decision_tree_regression(train_df, test_df, outcome, predictors, cv=5):
+def decision_tree_regression(train_df, test_df, outcome, predictors, cv=5, for_stacking=False):
     """
     Decision Tree Regressor with GridSearchCV. Compares Train and Test R2.
     """
-    if not predictors:
-        raise ValueError("At least one predictor must be provided.")
+    base_pipe = Pipeline([
+        ('imputer', SimpleImputer(strategy='median')),
+        ('model', DecisionTreeRegressor(random_state=42))
+    ])
+
+    if for_stacking:
+        return base_pipe
 
     X_train, y_train = train_df[predictors], train_df[outcome]
     X_test, y_test = test_df[predictors], test_df[outcome]
 
     param_grid = {
-        'max_depth': [None, 5, 10, 20],
-        'min_samples_leaf': [1, 5, 10]
+        'model__max_depth': [None, 5, 10, 20],
+        'model__min_samples_leaf': [1, 5, 10]
     }
 
-    dt = DecisionTreeRegressor(random_state=42)
-    grid_search = GridSearchCV(estimator=dt, param_grid=param_grid, cv=cv, scoring='r2', n_jobs=-1)
+    grid_search = GridSearchCV(estimator=base_pipe, param_grid=param_grid, cv=cv, scoring='r2', n_jobs=-1)
     grid_search.fit(X_train, y_train)
 
     best_model = grid_search.best_estimator_
@@ -151,23 +156,28 @@ def decision_tree_regression(train_df, test_df, outcome, predictors, cv=5):
     return best_model
 
 #---Function:knn_regression---
-def knn_regression(train_df, test_df, outcome, predictors, cv=5):
+def knn_regression(train_df, test_df, outcome, predictors, cv=5, for_stacking=False):
     """
     K-Nearest Neighbors Regressor with GridSearchCV. Compares Train and Test R2.
     """
-    if not predictors:
-        raise ValueError("At least one predictor must be provided.")
+    base_pipe = Pipeline([
+        ('imputer', SimpleImputer(strategy='median')),
+        ('scaler', StandardScaler()),
+        ('model', KNeighborsRegressor())
+    ])
+
+    if for_stacking:
+        return base_pipe
 
     X_train, y_train = train_df[predictors], train_df[outcome]
     X_test, y_test = test_df[predictors], test_df[outcome]
 
     param_grid = {
-        'n_neighbors': [3, 5, 11],
-        'weights': ['uniform', 'distance']
+        'model__n_neighbors': [3, 5, 11],
+        'model__weights': ['uniform', 'distance']
     }
 
-    knn = KNeighborsRegressor()
-    grid_search = GridSearchCV(estimator=knn, param_grid=param_grid, cv=cv, scoring='r2', n_jobs=-1)
+    grid_search = GridSearchCV(estimator=base_pipe, param_grid=param_grid, cv=cv, scoring='r2', n_jobs=-1)
     grid_search.fit(X_train, y_train)
 
     best_model = grid_search.best_estimator_
@@ -183,34 +193,33 @@ def knn_regression(train_df, test_df, outcome, predictors, cv=5):
     return best_model
 
 #---Function:lightgbm_regression---
-def lightgbm_regression(train_df, test_df, outcome, predictors, cv=5):
+def lightgbm_regression(train_df, test_df, outcome, predictors, cv=5, for_stacking=False):
     """
     LightGBM Regressor with GridSearchCV. Compares Train and Test R2.
     """
-    if not predictors:
-        raise ValueError("At least one predictor must be provided.")
+    base_pipe = Pipeline([
+        ('imputer', SimpleImputer(strategy='median')),
+        ('model', LGBMRegressor(random_state=42, importance_type='gain', verbosity=-1))
+    ])
+
+    if for_stacking:
+        return base_pipe
 
     X_train, y_train = train_df[predictors], train_df[outcome]
     X_test, y_test = test_df[predictors], test_df[outcome]
 
     param_grid = {
-        'n_estimators': [100, 500],
-        'learning_rate': [0.01, 0.1],
-        'num_leaves': [31, 50]
+        'model__n_estimators': [100, 500],
+        'model__learning_rate': [0.01, 0.1],
+        'model__num_leaves': [31, 50]
     }
 
-    lgb = LGBMRegressor(random_state=42, importance_type='gain', verbosity=-1)
-    grid_search = GridSearchCV(estimator=lgb, param_grid=param_grid, cv=cv, scoring='r2', n_jobs=-1)
+    grid_search = GridSearchCV(estimator=base_pipe, param_grid=param_grid, cv=cv, scoring='r2', n_jobs=-1)
     grid_search.fit(X_train, y_train)
 
     best_model = grid_search.best_estimator_
     y_pred_train = best_model.predict(X_train)
     y_pred_test = best_model.predict(X_test)
-
-    importance_df = pd.DataFrame({
-        'Feature': predictors, 
-        'Importance': best_model.feature_importances_
-    }).sort_values(by='Importance', ascending=False).head(5)
 
     print(f"--- LightGBM Summary ---")
     print(f"Best Params: {grid_search.best_params_}")
@@ -218,110 +227,79 @@ def lightgbm_regression(train_df, test_df, outcome, predictors, cv=5):
     print(f"R2 Score (Test): {r2_score(y_test, y_pred_test):.4f}")
     print("-" * 35)
 
-    print("\nFeature Importance (Top 5):")
-    display(importance_df)
-
     return best_model
 
 #---Function:random_forest_regression---
-def random_forest_regression(train_df, test_df, outcome, predictors, cv=5):
+def random_forest_regression(train_df, test_df, outcome, predictors, cv=5, for_stacking=False):
     """
-    Random Forest with GridSearchCV. Compares Train and Test R2 to detect overfitting.
+    Random Forest with GridSearchCV. Compares Train and Test R2.
     """
-    if not predictors:
-        raise ValueError("At least one predictor must be provided.")
+    base_pipe = Pipeline([
+        ('imputer', SimpleImputer(strategy='median')),
+        ('model', RandomForestRegressor(random_state=42))
+    ])
+
+    if for_stacking:
+        return base_pipe
 
     X_train, y_train = train_df[predictors], train_df[outcome]
     X_test, y_test = test_df[predictors], test_df[outcome]
 
     param_grid = {
-        'n_estimators': [100, 200, 300],
-        'max_depth': [None, 5, 10, 15],
-        'min_samples_split': [2, 5, 10]
+        'model__n_estimators': [100, 200, 300],
+        'model__max_depth': [None, 5, 10, 15],
+        'model__min_samples_split': [2, 5, 10]
     }
 
-    rf = RandomForestRegressor(random_state=42)
-    grid_search = GridSearchCV(estimator=rf, param_grid=param_grid, cv=cv, scoring='r2', n_jobs=-1)
+    grid_search = GridSearchCV(estimator=base_pipe, param_grid=param_grid, cv=cv, scoring='r2', n_jobs=-1)
     grid_search.fit(X_train, y_train)
 
     best_model = grid_search.best_estimator_
     y_pred_train = best_model.predict(X_train)
     y_pred_test = best_model.predict(X_test)
-
-    metrics = {
-        "R2_Train": r2_score(y_train, y_pred_train),
-        "R2_Test": r2_score(y_test, y_pred_test),
-        "MAE_Test": mean_absolute_error(y_test, y_pred_test),
-        "RMSE_Test": np.sqrt(mean_squared_error(y_test, y_pred_test))
-    }
-
-    importance_df = pd.DataFrame({
-        'Feature': predictors,
-        'Importance': best_model.feature_importances_
-    }).sort_values(by='Importance', ascending=False).head(5)
 
     print(f"--- Random Forest Summary ---")
     print(f"Best Params: {grid_search.best_params_}")
-    print(f"R2 Score (Train): {metrics['R2_Train']:.4f}")
-    print(f"R2 Score (Test): {metrics['R2_Test']:.4f}")
-    print(f"Gap (Train-Test): {metrics['R2_Train'] - metrics['R2_Test']:.4f}")
-    print(f"MAE (Test): {metrics['MAE_Test']:.4f}")
-    print(f"Top 3 Features: {importance_df['Feature'].iloc[:3].tolist()}")
+    print(f"R2 Score (Train): {r2_score(y_train, y_pred_train):.4f}")
+    print(f"R2 Score (Test): {r2_score(y_test, y_pred_test):.4f}")
     print("-" * 35)
 
-    print("\nFeature Importance (Top 5):")
-    display(importance_df)
-    
     return best_model
 
 #---Function:xgboost_regression---
-def xgboost_regression(train_df, test_df, outcome, predictors, cv=5):
+def xgboost_regression(train_df, test_df, outcome, predictors, cv=5, for_stacking=False):
     """
-    XGBoost Regressor with GridSearchCV. Compares Train and Test R2 to detect overfitting.
+    XGBoost Regressor with GridSearchCV. Compares Train and Test R2.
     """
-    if not predictors:
-        raise ValueError("At least one predictor must be provided.")
+    base_pipe = Pipeline([
+        ('imputer', SimpleImputer(strategy='median')),
+        ('model', XGBRegressor(random_state=42, objective='reg:squarederror'))
+    ])
+
+    if for_stacking:
+        return base_pipe
 
     X_train, y_train = train_df[predictors], train_df[outcome]
     X_test, y_test = test_df[predictors], test_df[outcome]
 
     param_grid = {
-        'n_estimators': [100, 200],
-        'max_depth': [3, 5, 7],
-        'learning_rate': [0.01, 0.05, 0.1],
-        'subsample': [0.8, 1.0]
+        'model__n_estimators': [100, 200],
+        'model__max_depth': [3, 5, 7],
+        'model__learning_rate': [0.01, 0.05, 0.1],
+        'model__subsample': [0.8, 1.0]
     }
 
-    xgb = XGBRegressor(random_state=42, objective='reg:squarederror')
-    grid_search = GridSearchCV(estimator=xgb, param_grid=param_grid, cv=cv, scoring='r2', n_jobs=-1)
+    grid_search = GridSearchCV(estimator=base_pipe, param_grid=param_grid, cv=cv, scoring='r2', n_jobs=-1)
     grid_search.fit(X_train, y_train)
 
     best_model = grid_search.best_estimator_
     y_pred_train = best_model.predict(X_train)
     y_pred_test = best_model.predict(X_test)
 
-    metrics = {
-        "R2_Train": r2_score(y_train, y_pred_train),
-        "R2_Test": r2_score(y_test, y_pred_test),
-        "MAE_Test": mean_absolute_error(y_test, y_pred_test),
-        "RMSE_Test": np.sqrt(mean_squared_error(y_test, y_pred_test))
-    }
-
-    importance_df = pd.DataFrame({
-        'Feature': predictors,
-        'Importance': best_model.feature_importances_
-    }).sort_values(by='Importance', ascending=False).head(5)
-
     print(f"--- XGBoost Summary ---")
     print(f"Best Params: {grid_search.best_params_}")
-    print(f"R2 Score (Train): {metrics['R2_Train']:.4f}")
-    print(f"R2 Score (Test): {metrics['R2_Test']:.4f}")
-    print(f"Gap (Train-Test): {metrics['R2_Train'] - metrics['R2_Test']:.4f}")
-    print(f"MAE (Test): {metrics['MAE_Test']:.4f}")
-    print(f"Top 3 Features: {importance_df['Feature'].iloc[:3].tolist()}")
+    print(f"R2 Score (Train): {r2_score(y_train, y_pred_train):.4f}")
+    print(f"R2 Score (Test): {r2_score(y_test, y_pred_test):.4f}")
     print("-" * 35)
 
-    print("\nFeature Importance (Top 5):")
-    display(importance_df)
-    
     return best_model
