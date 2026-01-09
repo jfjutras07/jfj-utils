@@ -151,6 +151,8 @@ Active development — modules will be progressively added and refined.
 ### Modeling: Helpers for fitting, evaluating, and comparing statistical and machine learning models.
 
 *advanced_models.py*
+- `bayesian_mlp_regression`
+- `mlp_regression`
 - `svm_regression`
   
 *classification.py*
