@@ -69,6 +69,11 @@ Active development — modules will be progressively added and refined.
 - `detect_outliers_zscore`
 - `winsorize_columns`
 
+*scaling.py*
+- `minmax_scaler`
+- `robust_scaler`
+- `standard_scaler`
+
 *text_cleaning.py*
 - `clean_text`
 
