@@ -173,6 +173,7 @@ Active development — modules will be progressively added and refined.
 
 *advanced_models.py*
 - `bayesian_mlp_regression`
+- `gaussian_process_regression`
 - `mlp_regression`
 - `svm_regression`
   
