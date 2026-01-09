@@ -100,6 +100,13 @@ Active development — modules will be progressively added and refined.
 *describe_structure.py*
 - `describe_structure`
 
+*explainability.py*
+- `interaction_effects`
+- `lime_analysis`
+- `pdp_analysis`
+- `permutation_importance`
+- `shap_analysis`
+
 *multicollinearity.py*
 - `correlation_check`
 - `VIF_check`
