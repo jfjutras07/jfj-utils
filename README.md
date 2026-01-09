@@ -94,6 +94,9 @@ Active development — modules will be progressively added and refined.
 *chi_square_test.py*
 - `chi_square_test`
 
+*classification.py*
+- `logistic_regression`
+
 *date_formats.py*
 - `detect_date_patterns`
 
@@ -113,6 +116,17 @@ Active development — modules will be progressively added and refined.
 
 *premodeling_check.py*
 - `premodeling_regresion_check`
+
+*regression.py*
+- `cox_regression`
+- `gamma_regression`
+- `linear_mixed_model`
+- `linear_regression`
+- `negative_binomial_regression`
+- `poisson_regression`
+- `polynomial_regression`
+- `quantile_regression`
+- `robust_regression`
 
 *stats_diagnostics.py*
 - `stats_diagnostics`
@@ -162,16 +176,10 @@ Active development — modules will be progressively added and refined.
 - `mlp_regression`
 - `svm_regression`
   
-*classification.py*
-- `logistic_regression`
+*classification_models.py*
 
-*regression.py*
-- `cox_regression`
-- `gamma_regression`
-- `linear_mixed_model`
+*regression_models.py*
 - `linear_regression`
-- `negative_binomial_regression`
-- `poisson_regression`
 - `polynomial_regression`
 - `quantile_regression`
 - `robust_regression`
