@@ -10,6 +10,8 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.metrics import r2_score, mean_absolute_error, mean_squared_error
 from sklearn.inspection import permutation_importance
 from IPython.display import display
+from sklearn.gaussian_process import GaussianProcessRegressor
+from sklearn.gaussian_process.kernels import RBF, ConstantKernel as C, WhiteKernel
 
 #---Function:bayesian_regression---
 def bayesian_regression(train_df, test_df, outcome, predictors, for_stacking=False):
@@ -37,6 +39,52 @@ def bayesian_regression(train_df, test_df, outcome, predictors, for_stacking=Fal
     print(f"--- Bayesian Regression Summary ---")
     print(f"R2 Score (Test): {r2_score(y_test, y_pred):.4f}")
     print(f"Average Prediction Uncertainty (Std): {np.mean(y_std):.4f}")
+    print("-" * 35)
+
+    return pipeline
+
+#---Function:gaussian_process_regression---
+def gaussian_process_regression(train_df, test_df, outcome, predictors, for_stacking=False):
+    """
+    Gaussian Process Regressor (GPR).
+    Solo mode: fits, evaluates uncertainty, and returns the model.
+    Stacking mode: returns the un-fitted pipeline.
+    
+    Note: GPR is computationally expensive. Best for datasets < 2000-3000 rows.
+    """
+    # Kernel definition: RBF is the standard 'smooth' kernel. 
+    # WhiteKernel handles noise in the data.
+    kernel = C(1.0, (1e-3, 1e3)) * RBF(10, (1e-2, 1e2)) + WhiteKernel(noise_level=1)
+    
+    model = GaussianProcessRegressor(kernel=kernel, n_restarts_optimizer=10, random_state=42)
+    
+    pipeline = Pipeline([
+        ('imputer', SimpleImputer(strategy='median')),
+        ('scaler', StandardScaler()),
+        ('model', model)
+    ])
+
+    if for_stacking:
+        return pipeline
+
+    X_train, y_train = train_df[predictors], train_df[outcome]
+    X_test, y_test = test_df[predictors], test_df[outcome]
+
+    print("Training Gaussian Process (this may take a moment)...")
+    pipeline.fit(X_train, y_train)
+    
+    # In solo mode, we can also extract the standard deviation (uncertainty)
+    # We need to transform X_test manually for the internal model predict call
+    X_test_scaled = pipeline.named_steps['scaler'].transform(
+        pipeline.named_steps['imputer'].transform(X_test)
+    )
+    y_pred, sigma = pipeline.named_steps['model'].predict(X_test_scaled, return_std=True)
+
+    print(f"--- Gaussian Process Summary ---")
+    print(f"R2 Score: {r2_score(y_test, y_pred):.4f}")
+    print(f"MAE: {mean_absolute_error(y_test, y_pred):.4f}")
+    print(f"Average Prediction Uncertainty (Sigma): {np.mean(sigma):.4f}")
+    print(f"Learned Kernel: {pipeline.named_steps['model'].kernel_}")
     print("-" * 35)
 
     return pipeline
