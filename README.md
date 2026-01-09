@@ -185,6 +185,9 @@ Active development — modules will be progressively added and refined.
 - `quantile_regression`
 - `robust_regression`
 
+*regression_stacking.py*
+- `stacking_ensemble`
+
 *regression_trees.py*
 - `catboost_regression`
 - `compare_tree_models`
