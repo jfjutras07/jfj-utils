@@ -1,7 +1,7 @@
 import pandas as pd
 from sklearn.feature_selection import mutual_info_regression, mutual_info_classif
 
-# --- Funciton : mi_classification ---
+# --- Function : mi_classification ---
 def mi_classification(X: pd.DataFrame, y: pd.Series) -> pd.Series:
     """
     Compute Mutual Information (MI) scores for a classification problem.
