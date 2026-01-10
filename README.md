@@ -83,9 +83,6 @@ Active development — modules will be progressively added and refined.
 - `best_transformation`
 - `best_transformation_for_df`
 
-*calculate_vif.py*
-- `calculate_vif`
-
 *check_normality.py*
 - `homogeneity_check`
 - `normality_check`
