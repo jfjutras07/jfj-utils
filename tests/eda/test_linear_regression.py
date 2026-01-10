@@ -4,7 +4,7 @@ import io
 import sys
 import statsmodels.api as sm
 import statsmodels.formula.api as smf
-from modeling.regression import linear_regression
+from eda.regression import linear_regression
 
 #--- Function : test_linear_regression ---
 def test_linear_regression():
