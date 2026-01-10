@@ -1,5 +1,5 @@
 import pandas as pd
-from data_preprocessing.mca import perform_mca
+from data_preprocessing.dimensionality_reduction import perform_mca
 from prince import MCA
 
 #--- Test: perform_mca ---
