@@ -1,5 +1,5 @@
 import pandas as pd
-from jfj_utils.data_preprocessing.encoding import one_hot_encode_columns
+from data_preprocessing.encoding import one_hot_encode_columns
 
 #--- Test: one_hot_encode_columns ---
 def test_one_hot_encode_columns():
@@ -27,6 +27,7 @@ def test_one_hot_encode_columns():
 
     # Test with drop_first=True
     df_encoded2 = one_hot_encode_columns(df, ["color"], drop_first=True)
+    # Check that one column is dropped
     assert "color_red" not in df_encoded2.columns or "color_blue" in df_encoded2.columns
 
     # Test with train_reference
