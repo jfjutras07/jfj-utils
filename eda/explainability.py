@@ -11,19 +11,40 @@ def interaction_effects(model, test_df, predictors, top_n=5):
     Identify interactions by comparing 2D Partial Dependence vs 1D.
     Higher values indicate that features impact the outcome more when combined.
     """
+    # Select features
     X_test = test_df[predictors]
     
-    #Get top features from permutation to narrow down search
-    perm_res = permutation_importance(model, X_test, test_df.iloc[:, 0], n_repeats=5)
-    top_feats = [predictors[i] for i in perm_res.importances_mean.argsort()[-top_n:]]
+    # Target: Ensuring the first column is used as the label
+    y_test = test_df.iloc[:, 0]
+    
+    # Run permutation importance 
+    # Standard sklearn signature: (estimator, X, y)
+    perm_res = permutation_importance(
+        model, 
+        X_test, 
+        y_test, 
+        n_repeats=5, 
+        random_state=42
+    )
+    
+    # Get indices of top importance mean
+    top_indices = perm_res.importances_mean.argsort()[-top_n:]
+    top_feats = [predictors[i] for i in top_indices]
     
     print(f"--- Top Interaction Analysis for: {top_feats} ---")
+    
     if len(top_feats) >= 2:
         fig, ax = plt.subplots(figsize=(10, 8))
+        # Display interaction between the two most important features
         PartialDependenceDisplay.from_estimator(
-            model, X_test, [(top_feats[-1], top_feats[-2])], ax=ax
+            model, 
+            X_test, 
+            [(top_feats[-1], top_feats[-2])], 
+            ax=ax
         )
         plt.show()
+        
+    return top_feats
 
 #---Function:lime_analysis---
 def lime_analysis(model, train_df, test_df, predictors, row_index=0):
