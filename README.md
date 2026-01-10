@@ -176,6 +176,9 @@ Active development — modules will be progressively added and refined.
   
 *classification_models.py*
 
+*model_diagnostics.py*
+- `plot_regression_diagnostics`
+
 *model_stability.py*
 - `check_regression_model_stability`
 
