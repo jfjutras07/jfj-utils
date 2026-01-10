@@ -104,7 +104,7 @@ Active development — modules will be progressively added and refined.
 - `interaction_effects`
 - `lime_analysis`
 - `pdp_analysis`
-- `permutation_importance`
+- `permutation_importance_calc`
 - `shap_analysis`
 
 *multicollinearity.py*
