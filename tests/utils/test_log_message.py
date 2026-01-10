@@ -1,6 +1,6 @@
 import io
 import sys
-from utils import log_message, timeit
+from utils import log_message
 
 #--- Function : test_log_message ---
 def test_log_message():
