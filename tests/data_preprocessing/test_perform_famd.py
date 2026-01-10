@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from data_preprocessing.famd import perform_famd
+from data_preprocessing.dimensionality_reduction import perform_famd
 from prince import FAMD
 
 #--- Test: perform_famd ---
