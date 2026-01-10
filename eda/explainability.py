@@ -14,17 +14,16 @@ def interaction_effects(model, test_df, predictors, top_n=5):
     # Select features
     X_test = test_df[predictors]
     
-    # Target: Ensuring the first column is used as the label
+    # Target: First column logic
     y_test = test_df.iloc[:, 0]
     
     # Run permutation importance 
-    # Standard sklearn signature: (estimator, X, y)
+    # Removed random_state to ensure compatibility with older sklearn versions
     perm_res = permutation_importance(
         model, 
         X_test, 
         y_test, 
-        n_repeats=5, 
-        random_state=42
+        n_repeats=5
     )
     
     # Get indices of top importance mean
@@ -35,7 +34,7 @@ def interaction_effects(model, test_df, predictors, top_n=5):
     
     if len(top_feats) >= 2:
         fig, ax = plt.subplots(figsize=(10, 8))
-        # Display interaction between the two most important features
+        # Display interaction between the top two features
         PartialDependenceDisplay.from_estimator(
             model, 
             X_test, 
