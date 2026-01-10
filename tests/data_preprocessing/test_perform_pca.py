@@ -19,13 +19,19 @@ def test_perform_pca():
         "score": [2, 4]
     })
 
-    # Test PCA without returning model
-    train_pca, test_pca, explained_variance = perform_pca(df_train, df_test, variance_threshold=0.95, return_model=False)
+    # Execute PCA
+    results = perform_pca(df_train, df_test, variance_threshold=0.95)
+    
+    train_pca = results["coords"]
+    test_pca = results["coords_test"]
+    eigen_summary = results["eigenvalues"]
+    model = results["model"]
 
     # Check types
     assert isinstance(train_pca, pd.DataFrame)
     assert isinstance(test_pca, pd.DataFrame)
-    assert isinstance(explained_variance, np.ndarray)
+    assert isinstance(eigen_summary, pd.DataFrame)
+    assert isinstance(model, PCA)
 
     # Check column names
     expected_cols = [f'PC{i+1}' for i in range(train_pca.shape[1])]
@@ -37,9 +43,5 @@ def test_perform_pca():
     assert test_pca.shape[0] == df_test.shape[0]
 
     # Check explained variance is non-negative
-    assert (explained_variance >= 0).all()
-
-    # Test PCA with return_model=True
-    train_pca2, test_pca2, explained_variance2, model = perform_pca(df_train, df_test, variance_threshold=0.95, return_model=True)
-    from sklearn.decomposition import PCA
-    assert isinstance(model, PCA)
+    # (Note: Using the 'eigenvalue' column created in the function)
+    assert (eigen_summary["eigenvalue"] >= 0).all()
