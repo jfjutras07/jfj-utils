@@ -176,6 +176,9 @@ Active development — modules will be progressively added and refined.
   
 *classification_models.py*
 
+*model_stability.py*
+- `check_regression_model_stability`
+
 *regression_models.py*
 - `linear_regression`
 - `polynomial_regression`
