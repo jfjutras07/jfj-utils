@@ -221,6 +221,7 @@ Active development — modules will be progressively added and refined.
 - `plot_box_plot`
 - `plot_correlation_heatmap`
 - `plot_heatmap_grid`
+- `plot_mi_vs_correlation`
 - `plot_numeric_bivariate`
 - `plot_numeric_distribution`
 - `plot_pairplot`
