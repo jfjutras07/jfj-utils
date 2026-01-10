@@ -32,10 +32,15 @@ def binary_encode_columns(
             if col not in df.columns:
                 raise KeyError(f"Column '{col}' not found in dataset {df_idx}")
             
+            # Record where NAs were BEFORE mapping to detect invalid categories
+            initial_na = df[col].isna()
             df[col] = df[col].map(mapping)
-            invalid_mask = ~df[col].isin([0, 1]) & df[col].notna()
+            
+            # Check for values that were not NA but became NA (meaning they weren't in the map)
+            invalid_mask = df[col].isna() & ~initial_na
+            
             if invalid_mask.any():
-                invalid_values = df.loc[invalid_mask, col].unique()
+                invalid_values = df.loc[invalid_mask, col].unique() if 'initial_na' in locals() else "unknown"
                 message = (
                     f"Invalid values found after binary encoding in column '{col}' "
                     f"(dataset {df_idx}): {invalid_values}"
