@@ -22,10 +22,7 @@ def test_interaction_effects():
     y = df["y"]
 
     # Train model
-    model = RandomForestRegressor(
-        n_estimators=20,
-        random_state=42
-    )
+    model = RandomForestRegressor(n_estimators=20)
     model.fit(X, y)
 
     # Disable plot rendering
