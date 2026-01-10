@@ -5,7 +5,7 @@ import sys
 import matplotlib.pyplot as plt
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.inspection import permutation_importance, PartialDependenceDisplay
-from eda.explanability import interaction_effects
+from eda.explainability import interaction_effects
 
 #--- Function : test_interaction_effects ---
 def test_interaction_effects():
