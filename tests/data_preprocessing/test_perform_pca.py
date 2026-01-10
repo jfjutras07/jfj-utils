@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 from sklearn.decomposition import PCA
-from data_preprocessing.pca import perform_pca
+from data_preprocessing.dimensionality_reduction import perform_pca
 
 #--- Test: perform_pca ---
 def test_perform_pca():
