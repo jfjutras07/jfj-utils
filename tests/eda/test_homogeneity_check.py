@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import io
 import sys
-from eda.check_normality import homogeneity_check  # Ajuste selon ton module
+from eda.check_normality import homogeneity_check 
 
 #--- Function : test_homogeneity_check ---
 def test_homogeneity_check():
