@@ -1,6 +1,7 @@
 from prince import FAMD
 from prince import MCA
 from sklearn.decomposition import PCA
+import numpy as np
 import pandas as pd
 
 #--- Function : perform_famd ---
