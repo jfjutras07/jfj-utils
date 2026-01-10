@@ -79,8 +79,8 @@ def pdp_plots(model, train_df, predictors, target_features):
     plt.show()
     return display
 
-#---Function:permutation_importance ---
-def permutation_importance(model, test_df, outcome, predictors, n_repeats=10):
+#---Function:permutation_importance_calc ---
+def permutation_importance_calc(model, test_df, outcome, predictors, n_repeats=10):
     """
     Calculate global importance by measuring score drop after feature shuffling.
     Reliable for any model type including Stacking and Neural Networks.
