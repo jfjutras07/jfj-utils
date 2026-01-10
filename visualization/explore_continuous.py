@@ -171,7 +171,81 @@ def plot_heatmap_grid(df, value_col, index_col, columns_col=None, aggfunc='media
     plt.xlabel(columns_col if columns_col else value_col)
     plt.tight_layout()
     plt.show()
-                       
+
+#--- Function: plot_mi_vs_correlation ---
+def plot_mi_vs_correlation(X, y, target_type='classification', method='spearman', figsize=(10, 12)):
+    """
+    Diagnostic plot comparing Mutual Information and Absolute Correlation scores.
+    Uses UNIFORM_BLUE for MI and PALE_PINK for Correlation to identify non-linearities.
+
+    Parameters:
+    -----------
+    X : pd.DataFrame
+        Feature matrix.
+    y : pd.Series
+        Target variable.
+    target_type : str
+        'classification' or 'regression'.
+    method : str
+        Correlation method: 'pearson', 'spearman', or 'kendall'.
+    figsize : tuple
+        Size of the figure.
+    """
+    #Compute MI Scores (calls your existing mi_classification or mi_regression)
+    if target_type == 'classification':
+        mi_scores = mi_classification(X, y)
+    else:
+        mi_scores = mi_regression(X, y)
+
+    #Compute Correlation with target
+    #Ensure y is encoded if categorical
+    y_encoded = y.copy()
+    if not pd.api.types.is_numeric_dtype(y_encoded):
+        y_encoded, _ = y_encoded.factorize()
+
+    correlations = {}
+    for col in X.columns:
+        x_col = X[col].copy()
+        if not pd.api.types.is_numeric_dtype(x_col):
+            x_col, _ = x_col.factorize()
+        # Take absolute value to compare strength/magnitude
+        correlations[col] = abs(x_col.corr(y_encoded, method=method))
+
+    #Align correlations with the sorted MI index
+    corr_series = pd.Series(correlations).reindex(mi_scores.index)
+
+    #Create Plotting DataFrame
+    plot_df = pd.DataFrame({
+        'Mutual Information': mi_scores,
+        'Absolute Correlation': corr_series
+    }).sort_values('Mutual Information', ascending=True) # Ascending for horizontal bar orientation
+
+    #Plotting
+    fig, ax = plt.subplots(figsize=figsize)
+    y_pos = np.arange(len(plot_df))
+    bar_height = 0.4
+
+    #MI Bars (Top of pair)
+    ax.barh(y_pos + bar_height/2, plot_df['Mutual Information'], height=bar_height, 
+            label='Mutual Information', color=UNIFORM_BLUE, edgecolor="black")
+
+    #Correlation Bars (Bottom of pair)
+    ax.barh(y_pos - bar_height/2, plot_df['Absolute Correlation'], height=bar_height, 
+            label=f'Abs {method.capitalize()} Corr', color=PALE_PINK, edgecolor="black")
+
+    #Formatting
+    ax.set_yticks(y_pos)
+    ax.set_yticklabels(plot_df.index)
+    ax.set_xlabel("Relationship Strength")
+    ax.set_title(f"Diagnostic: MI vs {method.capitalize()} Correlation")
+    ax.legend(loc='lower right', frameon=True)
+    ax.grid(axis='x', linestyle='--', alpha=0.5)
+
+    sns.despine()
+    plt.tight_layout()
+    plt.show()
+    plt.close()
+
 #---Function: plot_numeric_bivariate---
 def plot_numeric_bivariate(df, numeric_cols, hue='Gender', bins=40):
     """
