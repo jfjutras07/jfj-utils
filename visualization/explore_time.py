@@ -183,3 +183,89 @@ def plot_line_over_time(
     plt.grid(True)
     plt.tight_layout()
     plt.show()
+
+import matplotlib.pyplot as plt
+import pandas as pd
+import math
+from .style import UNIFORM_BLUE, PALE_PINK
+
+#--- Function : plot_temporal_data ---
+def plot_temporal_data(df, value_cols, time_col='Time', group_cols=None,
+                       facet_col=None, agg_func='mean', title=None,
+                       colors=None, figsize=(6,4)):
+    """
+    Generic temporal exploration for multiple numeric columns, with optional grouping and faceting.
+    Facets are arranged 2 per row automatically for easy comparison.
+
+    Parameters:
+    - df: pandas DataFrame
+    - value_cols: list of numeric columns to explore over time
+    - time_col: column representing time (week, month, day, etc.)
+    - group_cols: list of categorical columns to group by (optional)
+    - facet_col: column defining subplots (optional)
+    - agg_func: aggregation function ('mean', 'median', etc.)
+    - title: main title for all plots
+    - colors: list of colors to cycle through groups
+    - figsize: size for each subplot
+    """
+    
+    if colors is None:
+        colors = [UNIFORM_BLUE, PALE_PINK, 'green', 'orange', 'purple', 'brown']
+
+    if group_cols is not None and not isinstance(group_cols, list):
+        group_cols = [group_cols]
+
+    # Melt numeric columns for long format
+    df_long = df.melt(
+        id_vars=[c for c in df.columns if c not in value_cols],
+        value_vars=value_cols,
+        var_name=time_col,
+        value_name='Value'
+    )
+
+    # Determine facets
+    facets = [None]
+    if facet_col:
+        facets = df_long[facet_col].dropna().unique()
+
+    # Layout: 2 facets per row
+    n_facets = len(facets)
+    n_rows = math.ceil(n_facets / 2)
+    n_cols = min(2, n_facets)
+
+    fig, axes = plt.subplots(n_rows, n_cols, figsize=(figsize[0]*n_cols, figsize[1]*n_rows), squeeze=False)
+
+    for idx, facet in enumerate(facets):
+        r = idx // 2
+        c = idx % 2
+        ax = axes[r, c]
+
+        facet_data = df_long if facet is None else df_long[df_long[facet_col] == facet]
+
+        if group_cols:
+            for i, var in enumerate(group_cols):
+                grouped = facet_data.groupby([time_col, var])['Value'].agg(agg_func).reset_index()
+                for level in sorted(grouped[var].dropna().unique()):
+                    plot_data = grouped[grouped[var] == level]
+                    ax.plot(plot_data[time_col], plot_data['Value'], marker='o',
+                            label=f'{var}: {level}', color=colors[i % len(colors)], linewidth=2)
+        else:
+            grouped = facet_data.groupby(time_col)['Value'].agg(agg_func).reset_index()
+            ax.plot(grouped[time_col], grouped['Value'], marker='o', color=UNIFORM_BLUE, linewidth=2)
+
+        ax.set_title(facet if facet else 'All data')
+        ax.set_xlabel(time_col)
+        ax.set_ylabel('Value')
+        ax.grid(True)
+        ax.legend(fontsize=8)
+
+    # Hide any empty subplots
+    for idx in range(n_facets, n_rows*n_cols):
+        r = idx // 2
+        c = idx % 2
+        fig.delaxes(axes[r, c])
+
+    if title:
+        fig.suptitle(title, fontsize=14, fontweight='bold')
+    plt.tight_layout(rect=[0, 0, 1, 0.95])
+    plt.show()
