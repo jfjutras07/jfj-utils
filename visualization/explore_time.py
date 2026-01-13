@@ -2,6 +2,10 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from .style import UNIFORM_BLUE, PALE_PINK
 import math
+import warnings
+import pandas as pd
+warnings.simplefilter(action='ignore', category=FutureWarning)
+warnings.simplefilter(action='ignore', category=UserWarning)
 
 #--- Function : plot_line_grid_over_time ---
 def plot_line_grid_over_time(df, value_cols, group_cols=None, facet_col=None,
