@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import pandas as pd
 from .style import UNIFORM_BLUE, PALE_PINK
+import math
 
 #--- Function : plot_line_grid_over_time ---
 def plot_line_grid_over_time(df, value_cols, group_cols=None, facet_col=None,
@@ -184,18 +185,13 @@ def plot_line_over_time(
     plt.tight_layout()
     plt.show()
 
-import matplotlib.pyplot as plt
-import pandas as pd
-import math
-from .style import UNIFORM_BLUE, PALE_PINK
-
 #--- Function : plot_temporal_data ---
 def plot_temporal_data(df, value_cols, time_col='Time', group_cols=None,
-                       facet_col=None, agg_func='mean', title=None,
-                       colors=None, figsize=(6,4)):
+                       facet_col=None, agg_func='mean', rolling_window=None, 
+                       show_std=False, title=None, colors=None, figsize=(6,4)):
     """
     Generic temporal exploration for multiple numeric columns, with optional grouping and faceting.
-    Facets are arranged 2 per row automatically for easy comparison.
+    Enhanced with rolling average and standard deviation for robust signal analysis.
 
     Parameters:
     - df: pandas DataFrame
@@ -204,6 +200,8 @@ def plot_temporal_data(df, value_cols, time_col='Time', group_cols=None,
     - group_cols: list of categorical columns to group by (optional)
     - facet_col: column defining subplots (optional)
     - agg_func: aggregation function ('mean', 'median', etc.)
+    - rolling_window: int, size of the window for smoothing (optional)
+    - show_std: bool, if True, shows the standard deviation as a shaded area
     - title: main title for all plots
     - colors: list of colors to cycle through groups
     - figsize: size for each subplot
@@ -219,7 +217,7 @@ def plot_temporal_data(df, value_cols, time_col='Time', group_cols=None,
     df_long = df.melt(
         id_vars=[c for c in df.columns if c not in value_cols],
         value_vars=value_cols,
-        var_name=time_col,
+        var_name='Variable', # Plus propre pour distinguer de la colonne temporelle
         value_name='Value'
     )
 
@@ -244,19 +242,45 @@ def plot_temporal_data(df, value_cols, time_col='Time', group_cols=None,
 
         if group_cols:
             for i, var in enumerate(group_cols):
-                grouped = facet_data.groupby([time_col, var])['Value'].agg(agg_func).reset_index()
-                for level in sorted(grouped[var].dropna().unique()):
-                    plot_data = grouped[grouped[var] == level]
-                    ax.plot(plot_data[time_col], plot_data['Value'], marker='o',
-                            label=f'{var}: {level}', color=colors[i % len(colors)], linewidth=2)
+                # On agrège par la fonction choisie ET l'écart-type
+                grouped = facet_data.groupby([time_col, var])['Value'].agg([agg_func, 'std']).reset_index()
+                
+                for j, level in enumerate(sorted(grouped[var].dropna().unique())):
+                    plot_data = grouped[grouped[var] == level].sort_values(time_col)
+                    
+                    y_values = plot_data[agg_func]
+                    if rolling_window:
+                        y_values = y_values.rolling(window=rolling_window, center=True).mean()
+                    
+                    color = colors[j % len(colors)]
+                    line, = ax.plot(plot_data[time_col], y_values, marker='o',
+                                    label=f'{var}: {level}', color=color, linewidth=2)
+                    
+                    if show_std:
+                        ax.fill_between(plot_data[time_col], 
+                                        plot_data[agg_func] - plot_data['std'], 
+                                        plot_data[agg_func] + plot_data['std'], 
+                                        color=color, alpha=0.15)
         else:
-            grouped = facet_data.groupby(time_col)['Value'].agg(agg_func).reset_index()
-            ax.plot(grouped[time_col], grouped['Value'], marker='o', color=UNIFORM_BLUE, linewidth=2)
+            grouped = facet_data.groupby(time_col)['Value'].agg([agg_func, 'std']).reset_index()
+            grouped = grouped.sort_values(time_col)
+            
+            y_values = grouped[agg_func]
+            if rolling_window:
+                y_values = y_values.rolling(window=rolling_window, center=True).mean()
+                
+            ax.plot(grouped[time_col], y_values, marker='o', color=UNIFORM_BLUE, linewidth=2)
+            
+            if show_std:
+                ax.fill_between(grouped[time_col], 
+                                grouped[agg_func] - grouped['std'], 
+                                grouped[agg_func] + grouped['std'], 
+                                color=UNIFORM_BLUE, alpha=0.15)
 
         ax.set_title(facet if facet else 'All data')
         ax.set_xlabel(time_col)
         ax.set_ylabel('Value')
-        ax.grid(True)
+        ax.grid(True, linestyle='--', alpha=0.7)
         ax.legend(fontsize=8)
 
     # Hide any empty subplots
