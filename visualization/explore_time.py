@@ -206,7 +206,10 @@ def plot_temporal_data(df, value_cols, time_col='Time', group_cols=None,
     - colors: list of colors to cycle through groups
     - figsize: size for each subplot
     """
-    
+
+    import warnings
+    warnings.simplefilter(action='ignore', category=FutureWarning)  # ignore pandas FutureWarning
+
     if colors is None:
         colors = [UNIFORM_BLUE, PALE_PINK, 'green', 'orange', 'purple', 'brown']
 
@@ -217,7 +220,7 @@ def plot_temporal_data(df, value_cols, time_col='Time', group_cols=None,
     df_long = df.melt(
         id_vars=[c for c in df.columns if c not in value_cols],
         value_vars=value_cols,
-        var_name='Variable', # Plus propre pour distinguer de la colonne temporelle
+        var_name='Variable',
         value_name='Value'
     )
 
@@ -242,7 +245,7 @@ def plot_temporal_data(df, value_cols, time_col='Time', group_cols=None,
 
         if group_cols:
             for i, var in enumerate(group_cols):
-                grouped = facet_data.groupby([time_col, var])['Value'].agg([agg_func, 'std']).reset_index()
+                grouped = facet_data.groupby([time_col, var], observed=False)['Value'].agg([agg_func, 'std']).reset_index()
                 
                 for j, level in enumerate(sorted(grouped[var].dropna().unique())):
                     plot_data = grouped[grouped[var] == level].sort_values(time_col)
@@ -268,7 +271,7 @@ def plot_temporal_data(df, value_cols, time_col='Time', group_cols=None,
             if rolling_window:
                 y_values = y_values.rolling(window=rolling_window, center=True).mean()
                 
-            ax.plot(grouped[time_col], y_values, marker='o', color=UNIFORM_BLUE, linewidth=2, label='All data')
+            ax.plot(grouped[time_col], y_values, marker='o', color=UNIFORM_BLUE, linewidth=2)
             
             if show_std:
                 ax.fill_between(grouped[time_col], 
@@ -280,10 +283,7 @@ def plot_temporal_data(df, value_cols, time_col='Time', group_cols=None,
         ax.set_xlabel(time_col)
         ax.set_ylabel('Value')
         ax.grid(True, linestyle='--', alpha=0.7)
-
-        # Legend only if there are labels
-        if ax.get_legend_handles_labels()[0]:
-            ax.legend(fontsize=8)
+        ax.legend(fontsize=8)
 
     # Hide any empty subplots
     for idx in range(n_facets, n_rows*n_cols):
@@ -295,4 +295,3 @@ def plot_temporal_data(df, value_cols, time_col='Time', group_cols=None,
         fig.suptitle(title, fontsize=14, fontweight='bold')
     plt.tight_layout(rect=[0, 0, 1, 0.95])
     plt.show()
-
