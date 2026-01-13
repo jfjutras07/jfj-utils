@@ -1,6 +1,142 @@
 import numpy as np
 import pandas as pd
 
+#--- Function : premodeling_clustering_check ---
+def premodeling_clustering_check(
+    df: pd.DataFrame,
+    corr_threshold: float = 0.8,
+    top_outliers: int = 5,
+    top_correlations: int = 10,
+    min_unique_for_continuous: int = 10,
+    iqr_multiplier: float = 1.5,
+    final_assessment: bool = True
+) -> str:
+    """
+    Expert-level pre-modeling validation for clustering tasks (e.g., K-Means, DBSCAN).
+    Focuses on distance-based metrics, scale consistency, and feature distribution.
+    """
+
+    sections = {}
+    issues = set()
+
+    #Missing values
+    block = ["#Missing values"]
+    missing = df.isnull().sum()
+    missing = missing[missing > 0]
+    if missing.empty:
+        block.append("No missing values detected.")
+    else:
+        issues.add("missing")
+        block.append("Missing values detected (Clustering algorithms require complete data):")
+        for col, cnt in missing.items():
+            block.append(f"- {col}: {cnt}")
+    sections["missing"] = block
+
+    #Feature types & Encoding
+    block = ["#Feature types"]
+    numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+    if len(numeric_cols) == df.shape[1]:
+        block.append("All features are numeric (Optimal for distance calculations).")
+    else:
+        issues.add("types")
+        non_numeric = sorted(set(df.columns) - set(numeric_cols))
+        block.append("Non-numeric columns detected (Clustering requires numerical vectors):")
+        for col in non_numeric:
+            block.append(f"- {col}")
+    sections["types"] = block
+
+    #Scaling & Magnitude check
+    block = ["#Scale & Magnitude check"]
+    means = df[numeric_cols].mean()
+    stds = df[numeric_cols].std()
+    
+    #Flag if scales are vastly different (Ratio > 10 between max and min std)
+    if not stds.empty and (stds.max() / (stds.min() + 1e-9) > 10):
+        issues.add("scale")
+        block.append("Warning: Large difference in feature scales detected.")
+        block.append(f"- Max STD: {stds.max():.2f} ({stds.idxmax()})")
+        block.append(f"- Min STD: {stds.min():.2f} ({stds.idxmin()})")
+        block.append("Recommendation: Standardize features (Mean=0, Std=1) before clustering.")
+    else:
+        block.append("Feature scales appear relatively consistent.")
+    sections["scale"] = block
+
+    #Outliers (Crucial for Centroid-based clustering like K-Means)
+    def detect_outliers(cols):
+        counts = {}
+        total = 0
+        for col in cols:
+            q1 = df[col].quantile(0.25)
+            q3 = df[col].quantile(0.75)
+            iqr = q3 - q1
+            if iqr == 0: continue
+            lower, upper = q1 - iqr_multiplier * iqr, q3 + iqr_multiplier * iqr
+            count = ((df[col] < lower) | (df[col] > upper)).sum()
+            if count > 0:
+                counts[col] = int(count)
+                total += int(count)
+        return total, counts
+
+    continuous_cols = [c for c in numeric_cols if df[c].nunique() >= min_unique_for_continuous]
+    out_total, out_counts = detect_outliers(continuous_cols)
+
+    block = ["#Outliers"]
+    if not out_counts:
+        block.append("No significant outliers detected.")
+    else:
+        issues.add("outliers")
+        sorted_out = sorted(out_counts.items(), key=lambda x: x[1], reverse=True)
+        block.append(f"Outliers can distort cluster centroids (Total: {out_total}):")
+        for i, (col, cnt) in enumerate(sorted_out[:top_outliers], 1):
+            block.append(f"  {i}. {col}: {cnt} points")
+    sections["outliers"] = block
+
+    #Multicollinearity (Redundant features weight distance twice)
+    block = [f"#Feature Redundancy (|r| ≥ {corr_threshold:.2f})"]
+    corr_pairs = []
+    if len(numeric_cols) >= 2:
+        corr_matrix = df[numeric_cols].corr().abs()
+        for i in range(len(corr_matrix.columns)):
+            for j in range(i):
+                if corr_matrix.iloc[i, j] >= corr_threshold:
+                    corr_pairs.append((corr_matrix.columns[j], corr_matrix.columns[i], float(corr_matrix.iloc[i, j])))
+
+    if not corr_pairs:
+        block.append("No redundant features detected.")
+    else:
+        issues.add("redundancy")
+        corr_pairs = sorted(corr_pairs, key=lambda x: x[2], reverse=True)
+        block.append("Highly correlated features detected (May bias distance metrics):")
+        for i, (c1, c2, val) in enumerate(corr_pairs[:top_correlations], 1):
+            block.append(f"  {i}. {c1} ↔ {c2}: {val:.3f}")
+    sections["redundancy"] = block
+
+    #Final Assessment
+    final_block = ["#Final assessment"]
+    if not issues:
+        final_block.append("Data is well-structured for clustering. (Recommended: K-Means or Hierarchical).")
+    else:
+        final_block.append(
+            "Data is ready for clustering, but review the issues above. "
+            "Clustering is highly sensitive to Scaling, Outliers, and Redundant Features."
+        )
+
+    #Rendering
+    output = []
+    if final_assessment:
+        for key in sections:
+            output.extend(sections[key])
+            output.append("")
+        output.extend(final_block)
+    else:
+        relevant_keys = [k for k in sections if k in issues or k == "outliers"]
+        for key in relevant_keys:
+            output.extend(sections[key])
+            output.append("")
+        output.extend(final_block)
+
+    return "\n".join(output).strip()
+
 #--- Function : premodeling_regression_check ---
 def premodeling_regression_check(
     df: pd.DataFrame,
