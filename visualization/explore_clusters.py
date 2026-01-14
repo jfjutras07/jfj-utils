@@ -8,22 +8,21 @@ from sklearn.metrics import silhouette_score, silhouette_samples, calinski_harab
 from .style import UNIFORM_BLUE, PALE_PINK
 
 #--- Function : plot_cluster_diagnostics ---
-def plot_cluster_diagnostics(df_scaled, labels, model_name="Champion Model", inertia_list=None, k_range=None):
+def plot_cluster_diagnostics(df_scaled, labels, model_name="Champion Model"):
     """
-    Displays a 2x2 validation dashboard for a single clustering model.
-    Top: Silhouette Analysis | Elbow Method (Inertia)
-    Bottom: Calinski-Harabasz Index | Davies-Bouldin Index
+    Displays a 1x2 validation dashboard for a single clustering model.
+    Left: Silhouette Analysis (Cohesion) | Right: Employee Distribution (Population)
     """
     print(f"Generating validation dashboard for: {model_name}...")
     print(f"Data points: {df_scaled.shape[0]} | Features: {df_scaled.shape[1]}")
     print("-" * 50)
 
     sns.set_theme(style="whitegrid")
-    fig, axes = plt.subplots(2, 2, figsize=(16, 12))
-    plt.subplots_adjust(hspace=0.3, wspace=0.3)
+    fig, axes = plt.subplots(1, 2, figsize=(16, 6))
+    plt.subplots_adjust(wspace=0.3)
     
     # Silhouette Analysis
-    ax1 = axes[0, 0]
+    ax1 = axes[0]
     sil_values = silhouette_samples(df_scaled, labels)
     sil_avg = silhouette_score(df_scaled, labels)
     y_lower = 10
@@ -50,34 +49,14 @@ def plot_cluster_diagnostics(df_scaled, labels, model_name="Champion Model", ine
     ax1.set_ylabel("Cluster")
     ax1.legend()
 
-    # Elbow Method
-    ax2 = axes[0, 1]
-    if inertia_list and k_range:
-        sns.lineplot(x=k_range, y=inertia_list, marker='o', ax=ax2, color=UNIFORM_BLUE)
-        ax2.set_title("Elbow Method (Inertia Optimization)", fontsize=14)
-        ax2.set_xlabel("Number of clusters (k)")
-        ax2.set_ylabel("Inertia")
-    else:
-        counts = pd.Series(labels).value_counts().sort_index()
-        sns.barplot(x=counts.index, y=counts.values, ax=ax2, palette=custom_colors, hue=counts.index, legend=False)
-        ax2.set_title("Employee Distribution per Cluster", fontsize=14)
-        ax2.set_xlabel("Cluster ID")
-        ax2.set_ylabel("Count")
+    # Employee Distribution
+    ax2 = axes[1]
+    counts = pd.Series(labels).value_counts().sort_index()
+    sns.barplot(x=counts.index, y=counts.values, ax=ax2, palette=custom_colors, hue=counts.index, legend=False)
+    ax2.set_title("Employee Distribution per Cluster", fontsize=14)
+    ax2.set_xlabel("Cluster ID")
+    ax2.set_ylabel("Count")
 
-    # Calinski-Harabasz Index
-    ax3 = axes[1, 0]
-    ch_score = calinski_harabasz_score(df_scaled, labels)
-    sns.barplot(x=["Calinski-Harabasz"], y=[ch_score], ax=ax3, color=UNIFORM_BLUE, width=0.4)
-    ax3.set_title(f"CH Index: {ch_score:.2f} (Higher is better)", fontsize=12)
-    ax3.set_ylabel("Score")
-
-    # Davies-Bouldin Index
-    ax4 = axes[1, 1]
-    db_score = davies_bouldin_score(df_scaled, labels)
-    sns.barplot(x=["Davies-Bouldin"], y=[db_score], ax=ax4, color=PALE_PINK, width=0.4)
-    ax4.set_title(f"DB Index: {db_score:.4f} (Lower is better)", fontsize=12)
-    ax4.set_ylabel("Score")
-
-    plt.suptitle(f"Final Clustering Diagnostics: {model_name}", fontsize=18, y=0.96)
+    plt.suptitle(f"Final Clustering Diagnostics: {model_name}", fontsize=18, y=1.05)
+    plt.tight_layout()
     plt.show()
-    print("Dashboard successfully generated.")
