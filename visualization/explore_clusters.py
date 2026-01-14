@@ -6,28 +6,53 @@ import warnings
 import math
 import pandas as pd
 import numpy as np
+from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score, silhouette_samples, calinski_harabasz_score, davies_bouldin_score
 from .style import UNIFORM_BLUE, PALE_PINK
 
 #--- Function : plot_cluster_diagnostics ---
 def plot_cluster_diagnostics(df_scaled, labels, model_name="Champion Model"):
     """
-    Displays a 1x2 validation dashboard for a single clustering model.
-    Left: Silhouette Analysis (Cohesion) | Right: Employee Distribution (Population)
+    Displays a 1x3 validation dashboard for a single clustering model.
+    Left: Elbow Method (Inertia) | Middle: Silhouette Analysis (Cohesion) | Right: Cluster Distribution (Population)
     """
     sns.set_theme(style="whitegrid")
-    fig, axes = plt.subplots(1, 2, figsize=(16, 6))
+    fig, axes = plt.subplots(1, 3, figsize=(22, 6))
     plt.subplots_adjust(wspace=0.3)
     
+    unique_labels = np.unique(labels)
+    num_clusters_selected = len(unique_labels[unique_labels != -1])
+    custom_colors = [UNIFORM_BLUE, PALE_PINK, "#9b59b6", "#34495e", "#16a085"]
+
+    # Elbow Method (Inertia)
+    ax0 = axes[0]
+    wcss = []
+    cluster_range = range(1, 11)
+    
+    # Sampling for speed on large generic datasets
+    sample_size = min(len(df_scaled), 50000)
+    df_sample = df_scaled.sample(sample_size, random_state=42) if len(df_scaled) > 50000 else df_scaled
+    
+    for i in cluster_range:
+        kmeans_temp = KMeans(n_clusters=i, init='k-means++', random_state=42, n_init=10)
+        kmeans_temp.fit(df_sample)
+        wcss.append(kmeans_temp.inertia_)
+    
+    ax0.plot(cluster_range, wcss, marker='o', linestyle='--', color=UNIFORM_BLUE)
+    # Highlight the current number of clusters
+    if num_clusters_selected in cluster_range:
+        ax0.axvline(x=num_clusters_selected, color='red', linestyle=':', label=f'Selected: {num_clusters_selected}')
+    
+    ax0.set_title("Elbow Method (Inertia)", fontsize=14)
+    ax0.set_xlabel("Number of Clusters")
+    ax0.set_ylabel("WCSS (Within-Cluster Sum of Squares)")
+    ax0.legend()
+
     # Silhouette Analysis
-    ax1 = axes[0]
+    ax1 = axes[1]
     sil_values = silhouette_samples(df_scaled, labels)
     sil_avg = silhouette_score(df_scaled, labels)
     y_lower = 10
-    unique_labels = np.unique(labels)
-    num_clusters = len(unique_labels)
-    
-    custom_colors = [UNIFORM_BLUE, PALE_PINK, "#9b59b6", "#34495e", "#16a085"]
     
     for i, cluster_id in enumerate(unique_labels):
         if cluster_id == -1: continue 
@@ -41,21 +66,21 @@ def plot_cluster_diagnostics(df_scaled, labels, model_name="Champion Model"):
         ax1.text(-0.05, y_lower + 0.5 * ith_cluster_sil.shape[0], str(cluster_id))
         y_lower = y_upper + 10
         
-    ax1.axvline(x=sil_avg, color="red", linestyle="--", label=f'Average: {sil_avg:.2f}')
+    ax1.axvline(x=sil_avg, color="red", linestyle="--", label=f'Avg Score: {sil_avg:.2f}')
     ax1.set_title("Silhouette Profile (Cohesion)", fontsize=14)
     ax1.set_xlabel("Silhouette coefficient")
-    ax1.set_ylabel("Cluster")
+    ax1.set_ylabel("Cluster ID")
     ax1.legend()
 
-    # Employee Distribution
-    ax2 = axes[1]
+    # Data Distribution (Generic Population)
+    ax2 = axes[2]
     counts = pd.Series(labels).value_counts().sort_index()
     sns.barplot(x=counts.index, y=counts.values, ax=ax2, palette=custom_colors, hue=counts.index, legend=False)
-    ax2.set_title("Employee Distribution per Cluster", fontsize=14)
+    ax2.set_title("Distribution per Cluster (Population)", fontsize=14)
     ax2.set_xlabel("Cluster ID")
-    ax2.set_ylabel("Count")
+    ax2.set_ylabel("Number of Observations")
 
-    plt.suptitle(f"Final Clustering Diagnostics: {model_name}", fontsize=18, y=1.05)
+    plt.suptitle(f"Clustering Diagnostics Dashboard: {model_name}", fontsize=18, y=1.05)
     plt.tight_layout()
     plt.show()
 
