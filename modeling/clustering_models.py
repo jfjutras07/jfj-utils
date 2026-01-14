@@ -2,7 +2,6 @@ import numpy as np
 import pandas as pd
 from sklearn.cluster import KMeans, AgglomerativeClustering, DBSCAN, Birch
 from sklearn.mixture import GaussianMixture
-from sklearn_extra.cluster import KMedoids
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import RobustScaler
 
@@ -65,10 +64,14 @@ def compare_clustering_models(df, predictors, k=4):
     # Executing each model
     results['Agglomerative'] = agglomerative_clustering(df, predictors, k=k)
     results['BIRCH'] = birch_clustering(df, predictors, k=k)
-    results['DBSCAN'] = dbscan_clustering(df, predictors) # Uses internal density
+    results['DBSCAN'] = dbscan_clustering(df, predictors)
     results['GMM'] = gaussian_mixture_clustering(df, predictors, k=k)
     results['KMeans'] = kmeans_clustering(df, predictors, k=k)
-    results['KMedoids'] = kmedoids_clustering(df, predictors, k=k)
+    
+    # Attempt KMedoids (Handles potential import error gracefully)
+    km_model = kmedoids_clustering(df, predictors, k=k)
+    if km_model is not None:
+        results['KMedoids'] = km_model
 
     print("\n--- Summary of Clustering Assignments ---")
     summary_data = []
@@ -151,7 +154,17 @@ def kmeans_clustering(df, predictors, k=4, for_compare=False):
 def kmedoids_clustering(df, predictors, k=4, for_compare=False):
     """
     K-Medoids (PAM) clustering - Uses medoids instead of centroids.
+    Note: Requires scikit-learn-extra. Handled with lazy import for compatibility.
     """
+    try:
+        from sklearn_extra.cluster import KMedoids
+    except (ImportError, Exception):
+        if not for_compare:
+            print("--- K-Medoids Skip ---")
+            print("Status: scikit-learn-extra not available or incompatible with NumPy version.")
+            print("-" * 35)
+        return None
+
     base_pipe = Pipeline([
         ('scaler', RobustScaler()),
         ('model', KMedoids(n_clusters=k, random_state=42, method='pam'))
