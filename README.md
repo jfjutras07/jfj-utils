@@ -231,8 +231,9 @@ Active development — modules will be progressively added and refined.
 - `plot_classification_diagnostics`
 
 *explore_clusters.py*
+- `plot_cluster_diagnostics`
 - `plot_cluster_projections`
-- `plot_clustering_diagnostics`
+- `plot_cluster_radar_charts`
 
 *explore_continuous.py*
 - `plot_box_grid`
