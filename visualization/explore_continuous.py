@@ -81,14 +81,14 @@ def plot_box_plot(df, value_cols, category_col, hue_col=None,
     y_col = value_cols[0]
     
     # Default palette
-    if palette is None:
-        if hue_col:
-            # Create a simple palette for two categories
+    if hue_col is None:
+        palette = "#1f77b4"  # force single color if no hue
+    else:
+        if palette is None:
+            # Create a simple palette for two categories if hue is provided
             unique_hue = df[hue_col].unique()
             default_colors = ["#1f77b4", "#ff69b4"]  # blue and pink
             palette = {k: default_colors[i % len(default_colors)] for i, k in enumerate(unique_hue)}
-        else:
-            palette = "#1f77b4"  # single color
     
     plt.figure(figsize=figsize)
     sns.boxplot(data=df, x=category_col, y=y_col, hue=hue_col, palette=palette, dodge=True)
