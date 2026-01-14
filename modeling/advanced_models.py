@@ -14,80 +14,94 @@ from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import RBF, ConstantKernel as C, WhiteKernel
 
 #---Function:bayesian_regression---
-def bayesian_regression(train_df, test_df, outcome, predictors, for_stacking=False):
+def bayesian_regression(train_df, test_df, outcome, predictors, cv=5, for_stacking=False):
     """
-    Bayesian Ridge Regression. Provides probabilistic approach to linear regression.
+    Bayesian Ridge Regression with automated tuning.
+    English comment: Grid search optimizes the regularization parameters alpha and lambda.
     """
-    model = BayesianRidge()
-    pipeline = Pipeline([
+    base_pipe = Pipeline([
         ('imputer', SimpleImputer(strategy='median')),
         ('scaler', StandardScaler()),
-        ('model', model)
+        ('model', BayesianRidge())
     ])
 
     if for_stacking:
-        return pipeline
+        return base_pipe
 
     X_train, y_train = train_df[predictors], train_df[outcome]
     X_test, y_test = test_df[predictors], test_df[outcome]
 
-    pipeline.fit(X_train, y_train)
-    
-    #Standard BayesianRidge prediction also allows return_std=True
-    y_pred, y_std = pipeline.named_steps['model'].predict(pipeline.named_steps['scaler'].transform(X_test), return_std=True)
+    # English comment: Tuning initial hyper-prior parameters
+    param_grid = {
+        'model__alpha_1': [1e-6, 1e-5],
+        'model__lambda_1': [1e-6, 1e-5],
+        'model__alpha_init': [None, 1.0]
+    }
 
-    print(f"--- Bayesian Regression Summary ---")
+    grid_search = GridSearchCV(base_pipe, param_grid, cv=cv, scoring='r2', n_jobs=-1)
+    grid_search.fit(X_train, y_train)
+
+    best_pipeline = grid_search.best_estimator_
+    
+    # English comment: Extract predictions and uncertainty
+    y_pred, y_std = best_pipeline.named_steps['model'].predict(
+        best_pipeline.named_steps['scaler'].transform(
+            best_pipeline.named_steps['imputer'].transform(X_test)
+        ), 
+        return_std=True
+    )
+
+    print(f"--- Bayesian Regression Optimized ---")
+    print(f"Best Params: {grid_search.best_params_}")
     print(f"R2 Score (Test): {r2_score(y_test, y_pred):.4f}")
     print(f"Average Prediction Uncertainty (Std): {np.mean(y_std):.4f}")
     print("-" * 35)
 
-    return pipeline
+    return best_pipeline
 
 #---Function:gaussian_process_regression---
-def gaussian_process_regression(train_df, test_df, outcome, predictors, for_stacking=False):
+def gaussian_process_regression(train_df, test_df, outcome, predictors, cv=3, for_stacking=False):
     """
-    Gaussian Process Regressor (GPR).
-    Solo mode: fits, evaluates uncertainty, and returns the model.
-    Stacking mode: returns the un-fitted pipeline.
-    
-    Note: GPR is computationally expensive. Best for datasets < 2000-3000 rows.
+    Gaussian Process Regressor (GPR) with automated noise-level tuning.
+    English comment: Optimized for datasets where noise estimation is key.
     """
-    # Kernel definition: RBF is the standard 'smooth' kernel. 
-    # WhiteKernel handles noise in the data.
     kernel = C(1.0, (1e-3, 1e3)) * RBF(10, (1e-2, 1e2)) + WhiteKernel(noise_level=1)
     
-    model = GaussianProcessRegressor(kernel=kernel, n_restarts_optimizer=10, random_state=42)
-    
-    pipeline = Pipeline([
+    base_pipe = Pipeline([
         ('imputer', SimpleImputer(strategy='median')),
         ('scaler', StandardScaler()),
-        ('model', model)
+        ('model', GaussianProcessRegressor(kernel=kernel, n_restarts_optimizer=10, random_state=42))
     ])
 
     if for_stacking:
-        return pipeline
+        return base_pipe
 
     X_train, y_train = train_df[predictors], train_df[outcome]
     X_test, y_test = test_df[predictors], test_df[outcome]
 
-    print("Training Gaussian Process (this may take a moment)...")
-    pipeline.fit(X_train, y_train)
+    # English comment: Tuning the alpha parameter (regularization/noise)
+    param_grid = {'model__alpha': [1e-10, 1e-5, 1e-2]}
     
-    # In solo mode, we can also extract the standard deviation (uncertainty)
-    # We need to transform X_test manually for the internal model predict call
-    X_test_scaled = pipeline.named_steps['scaler'].transform(
-        pipeline.named_steps['imputer'].transform(X_test)
+    # Note: Reduced CV due to computational cost of GPR
+    grid_search = GridSearchCV(base_pipe, param_grid, cv=cv, scoring='r2', n_jobs=-1)
+    grid_search.fit(X_train, y_train)
+    
+    best_pipeline = grid_search.best_estimator_
+    
+    # English comment: Manual transform for internal predict call to get uncertainty
+    X_test_scaled = best_pipeline.named_steps['scaler'].transform(
+        best_pipeline.named_steps['imputer'].transform(X_test)
     )
-    y_pred, sigma = pipeline.named_steps['model'].predict(X_test_scaled, return_std=True)
+    y_pred, sigma = best_pipeline.named_steps['model'].predict(X_test_scaled, return_std=True)
 
-    print(f"--- Gaussian Process Summary ---")
+    print(f"--- Gaussian Process Optimized ---")
+    print(f"Best Alpha: {grid_search.best_params_['model__alpha']}")
     print(f"R2 Score: {r2_score(y_test, y_pred):.4f}")
-    print(f"MAE: {mean_absolute_error(y_test, y_pred):.4f}")
-    print(f"Average Prediction Uncertainty (Sigma): {np.mean(sigma):.4f}")
-    print(f"Learned Kernel: {pipeline.named_steps['model'].kernel_}")
+    print(f"Average Uncertainty (Sigma): {np.mean(sigma):.4f}")
+    print(f"Learned Kernel: {best_pipeline.named_steps['model'].kernel_}")
     print("-" * 35)
 
-    return pipeline
+    return best_pipeline
 
 #---Function:mlp_regression---
 def mlp_regression(train_df, test_df, outcome, predictors, cv=5, for_stacking=False):
