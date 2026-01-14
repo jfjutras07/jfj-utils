@@ -15,8 +15,8 @@ def check_clustering_model_stability(model, df, predictors, seeds=[0, 21, 42, 84
 
     Parameters:
     -----------
-    model : clustering estimator
-        Unfitted clustering model (KMeans, GMM, Agglomerative, etc.).
+    model : clustering estimator or Pipeline
+        Fitted or unfitted clustering model (KMeans, GMM, Agglomerative, etc.).
     df : pd.DataFrame
         Dataset containing clustering features.
     predictors : list
@@ -27,6 +27,10 @@ def check_clustering_model_stability(model, df, predictors, seeds=[0, 21, 42, 84
         Fraction of data used for subsampling stability.
     """
 
+    import numpy as np
+    from sklearn.metrics import adjusted_rand_score
+    from sklearn.base import clone
+
     X = df[predictors].copy()
 
     # Containers
@@ -34,12 +38,13 @@ def check_clustering_model_stability(model, df, predictors, seeds=[0, 21, 42, 84
     ari_seed_scores = []
     ari_subsample_scores = []
 
-    # Random seed stability
+    # --- Random seed stability ---
     for seed in seeds:
         try:
-            model_temp = model.__class__(**model.get_params())
-            if hasattr(model_temp, "random_state"):
-                model_temp.set_params(random_state=seed)
+            model_temp = clone(model)
+            # If the pipeline has a random_state, set it
+            if hasattr(model_temp.named_steps['model'], 'random_state'):
+                model_temp.named_steps['model'].random_state = seed
             labels = model_temp.fit_predict(X)
             labels_by_seed[seed] = labels
         except Exception as e:
@@ -52,15 +57,15 @@ def check_clustering_model_stability(model, df, predictors, seeds=[0, 21, 42, 84
         ari = adjusted_rand_score(base_labels, labels_by_seed[seed])
         ari_seed_scores.append(ari)
 
-    # Subsampling stability
+    # --- Subsampling stability ---
     base_idx = None
     base_sub_labels = None
 
     for seed in seeds:
         X_sub = X.sample(frac=subsample_frac, random_state=seed)
-        model_temp = model.__class__(**model.get_params())
-        if hasattr(model_temp, "random_state"):
-            model_temp.set_params(random_state=seed)
+        model_temp = clone(model)
+        if hasattr(model_temp.named_steps['model'], 'random_state'):
+            model_temp.named_steps['model'].random_state = seed
 
         labels_sub = model_temp.fit_predict(X_sub)
 
@@ -75,9 +80,9 @@ def check_clustering_model_stability(model, df, predictors, seeds=[0, 21, 42, 84
             )
             ari_subsample_scores.append(ari)
 
-    # Reporting
+    # --- Reporting ---
     print("\n--- Clustering Algorithmic Stability Check ---")
-    print(f"Model Class              : {model.__class__.__name__}")
+    print(f"Model Class              : {model.named_steps['model'].__class__.__name__}")
     print(f"Seeds Evaluated           : {seeds}")
     print(f"Subsample Fraction        : {subsample_frac}")
     print("-" * 50)
@@ -94,7 +99,7 @@ def check_clustering_model_stability(model, df, predictors, seeds=[0, 21, 42, 84
     print(f"  Mean ARI (subsampling)  = {np.mean(ari_subsample_scores):.3f}")
     print("-" * 50)
 
-    # Formal stability diagnostic
+    # --- Formal stability diagnostic ---
     mean_ari = np.mean(ari_seed_scores + ari_subsample_scores)
 
     if mean_ari > 0.85:
