@@ -13,10 +13,6 @@ def plot_cluster_diagnostics(df_scaled, labels, model_name="Champion Model"):
     Displays a 1x2 validation dashboard for a single clustering model.
     Left: Silhouette Analysis (Cohesion) | Right: Employee Distribution (Population)
     """
-    print(f"Generating validation dashboard for: {model_name}...")
-    print(f"Data points: {df_scaled.shape[0]} | Features: {df_scaled.shape[1]}")
-    print("-" * 50)
-
     sns.set_theme(style="whitegrid")
     fig, axes = plt.subplots(1, 2, figsize=(16, 6))
     plt.subplots_adjust(wspace=0.3)
