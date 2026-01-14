@@ -56,3 +56,48 @@ def plot_cluster_diagnostics(df_scaled, labels, model_name="Champion Model"):
     plt.suptitle(f"Final Clustering Diagnostics: {model_name}", fontsize=18, y=1.05)
     plt.tight_layout()
     plt.show()
+
+#--- Function : plot_cluster_projections ---
+def plot_cluster_projections(df_scaled, labels, model_name="Champion Model"):
+    """
+    Displays 2D and 3D cluster projections side-by-side using PCA.
+    Helps visualize spatial separation and overlap between groups.
+    """
+    print(f"Generating spatial projections for: {model_name}...")
+    print("-" * 50)
+
+    # PCA Projections
+    pca_2d = PCA(n_components=2).fit_transform(df_scaled)
+    pca_3d = PCA(n_components=3).fit_transform(df_scaled)
+    
+    # Style setup
+    custom_colors = [UNIFORM_BLUE, PALE_PINK, "#9b59b6", "#34495e", "#16a085"]
+    fig = plt.figure(figsize=(20, 8))
+
+    # 2D Projection
+    ax1 = fig.add_subplot(1, 2, 1)
+    sns.scatterplot(
+        x=pca_2d[:, 0], y=pca_2d[:, 1], 
+        hue=labels, palette=custom_colors[:len(np.unique(labels))], 
+        ax=ax1, s=60, alpha=0.7, edgecolor='white'
+    )
+    ax1.set_title("2D PCA Projection", fontsize=14)
+    ax1.set_xlabel("First Principal Component")
+    ax1.set_ylabel("Second Principal Component")
+    ax1.legend(title="Cluster", loc='best')
+
+    # 3D Projection
+    ax2 = fig.add_subplot(1, 2, 2, projection='3d')
+    scatter = ax2.scatter(
+        pca_3d[:, 0], pca_3d[:, 1], pca_3d[:, 2], 
+        c=[custom_colors[l % len(custom_colors)] for l in labels],
+        s=40, alpha=0.6, edgecolor='white'
+    )
+    ax2.set_title("3D PCA Projection", fontsize=14)
+    ax2.set_xlabel("PC1")
+    ax2.set_ylabel("PC2")
+    ax2.set_zlabel("PC3")
+
+    plt.suptitle(f"Spatial Cluster Separation: {model_name}", fontsize=18, y=1.02)
+    plt.tight_layout()
+    plt.show()
