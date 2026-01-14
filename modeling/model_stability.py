@@ -9,11 +9,7 @@ def check_clustering_model_stability(models, df, predictors):
     Internal Validity Check for Clustering.
     Evaluates one or multiple models using Silhouette, Calinski-Harabasz, and Davies-Bouldin.
     """
-    import numpy as np
-    import pandas as pd
-    from sklearn.metrics import silhouette_score, calinski_harabasz_score, davies_bouldin_score
-
-    #English comment: Ensure models is a dictionary for uniform processing
+    #Ensure models is a dictionary for uniform processing
     if not isinstance(models, dict):
         models = {"Model_1": models}
 
