@@ -4,68 +4,61 @@ from sklearn.model_selection import cross_val_score
 from sklearn.metrics import silhouette_score, calinski_harabasz_score, davies_bouldin_score
 
 #--- Function : check_clustering_model_stability ---
-def check_clustering_model_stability(model, df, predictors):
+def check_clustering_model_stability(models, df, predictors):
     """
     Internal Validity Check for Clustering.
-    Evaluates the cohesion and separation of clusters using mathematical 
-    internal metrics.
-
-    Parameters:
-    -----------
-    model : fitted estimator or Pipeline
-        The clustering model (champion) to evaluate.
-    df : pd.DataFrame
-        DataFrame containing the features.
-    predictors : list
-        The list of features used during the clustering process.
+    Evaluates one or multiple models using Silhouette, Calinski-Harabasz, and Davies-Bouldin.
     """
+    import numpy as np
+    import pandas as pd
+    from sklearn.metrics import silhouette_score, calinski_harabasz_score, davies_bouldin_score
+
+    #English comment: Ensure models is a dictionary for uniform processing
+    if not isinstance(models, dict):
+        models = {"Model_1": models}
+
+    results = []
     X = df[predictors]
-    
-    # Extract labels from the model
-    # Some models store labels_ after fitting, others require fit_predict
-    if hasattr(model, 'labels_'):
-        labels = model.labels_
-    else:
-        labels = model.fit_predict(X)
 
-    # Count actual clusters (excluding noise points -1 if using DBSCAN)
-    unique_labels = np.unique(labels)
-    n_clusters = len(unique_labels[unique_labels != -1])
-    
-    if n_clusters < 2:
-        print("Performance Check Failed: The model produced fewer than 2 clusters.")
-        return None
+    print(f"{'Model Name':<25} | {'Clusters':<8} | {'Silh.':<7} | {'CH Index':<10} | {'DB Index':<8}")
+    print("-" * 75)
 
-    # Computing Core Metrics
-    sil_score = silhouette_score(X, labels)
-    ch_score = calinski_harabasz_score(X, labels)
-    db_index = davies_bouldin_score(X, labels)
+    for name, model in models.items():
+        #English comment: Extract labels from fitted model or fit if necessary
+        if hasattr(model, 'labels_'):
+            labels = model.labels_
+        else:
+            labels = model.fit_predict(X)
 
-    print(f"--- Clustering Performance Check ---")
-    print(f"Number of Clusters      : {n_clusters}")
-    print(f"Silhouette Score (Cohesion) : {sil_score:.4f}  (Goal: -> 1.0)")
-    print(f"Calinski-Harabasz Index     : {ch_score:.2f} (Goal: High)")
-    print(f"Davies-Bouldin Index        : {db_index:.4f}  (Goal: -> 0.0)")
-    print("-" * 45)
+        #English comment: Filter noise for density-based models like DBSCAN
+        mask = labels != -1
+        unique_labels = np.unique(labels[mask])
+        n_clusters = len(unique_labels)
 
-    # Formal Diagnostic based on Silhouette Score thresholds
-    if sil_score > 0.50:
-        print("Status: EXCELLENT. Strong and well-separated cluster structure.")
-    elif sil_score > 0.25:
-        print("Status: ACCEPTABLE. Moderate structure detected; some overlap likely.")
-    elif sil_score > 0:
-        print("Status: WEAK. Poorly defined clusters; high risk of overlap.")
-    else:
-        print("Status: INVALID. Model failed to capture a meaningful structure.")
-    
-    print("-" * 45)
-    
-    return {
-        "silhouette": sil_score,
-        "calinski_harabasz": ch_score,
-        "davies_bouldin": db_index,
-        "n_clusters": n_clusters
-    }
+        if n_clusters < 2:
+            print(f"{name:<25} | Failed: fewer than 2 clusters.")
+            continue
+
+        #Computing Core Metrics
+        sil = silhouette_score(X[mask], labels[mask])
+        ch = calinski_harabasz_score(X[mask], labels[mask])
+        db = davies_bouldin_score(X[mask], labels[mask])
+
+        #Status Diagnostic
+        status = "EXCELLENT" if sil > 0.50 else "ACCEPTABLE" if sil > 0.25 else "WEAK" if sil > 0 else "INVALID"
+
+        print(f"{name:<25} | {n_clusters:<8} | {sil:<7.4f} | {ch:<10.2f} | {db:<8.4f} ({status})")
+
+        results.append({
+            "model_name": name,
+            "n_clusters": n_clusters,
+            "silhouette": sil,
+            "calinski_harabasz": ch,
+            "davies_bouldin": db,
+            "status": status
+        })
+
+    return pd.DataFrame(results).sort_values(by="silhouette", ascending=False)
 
 #--- Function : check_regression_model_stability ---
 def check_regression_model_stability(model, X, y, cv=5, scoring='r2'):
