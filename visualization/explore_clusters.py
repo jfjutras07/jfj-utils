@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import warnings
 import math
+import pandas as pd
 import numpy as np
 from sklearn.metrics import silhouette_score, silhouette_samples, calinski_harabasz_score, davies_bouldin_score
 from .style import UNIFORM_BLUE, PALE_PINK
