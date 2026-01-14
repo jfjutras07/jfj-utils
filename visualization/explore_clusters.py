@@ -5,6 +5,7 @@ import math
 from sklearn.metrics import silhouette_score, silhouette_samples, calinski_harabasz_score, davies_bouldin_score
 from .style import UNIFORM_BLUE, PALE_PINK
 
+#--- Function : plot_cluster_diagnostics ---
 def plot_cluster_diagnostics(df_scaled, labels, model_name="Champion Model", inertia_list=None, k_range=None):
     """
     Displays a 2x2 validation dashboard for a single clustering model.
