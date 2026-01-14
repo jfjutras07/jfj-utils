@@ -15,64 +15,61 @@ except ImportError:
     pass
 from .style import UNIFORM_BLUE, PALE_PINK
 
-#--- Function : plot_cluster_diagnostics ---
-def plot_cluster_diagnostics(df_scaled, labels=None, model_name="KMeans", tune_grid=None):
+#---Function : plot_cluster_diagnostics ---
+def plot_cluster_diagnostics(df_scaled, labels, model_name="Clustering Model"):
     """
-    Displays a 1x3 validation dashboard for a single clustering model.
-    Optimizes the model if tune_grid is provided for: KMeans, Agglomerative, GMM, Birch, DBSCAN, K-Medoids.
-    """
-    #Optimization Logic
-    #English comment: If tune_grid is provided, search for the best silhouette score
-    if tune_grid is not None:
-        best_score = -1
-        best_labels = None
-        best_params = None
-        
-        #Standardize iteration logic for K-based models vs Density-based
-        if any(m in model_name.upper() for m in ["KMEANS", "AGGLOMERATIVE", "GMM", "BIRCH", "KMEDOIDS"]):
-            for k in tune_grid.get('k', [2, 3, 4, 5]):
-                if "KMEANS" in model_name.upper():
-                    m = KMeans(n_clusters=k, n_init=10, random_state=42).fit(df_scaled)
-                    l = m.labels_
-                elif "AGGLOMERATIVE" in model_name.upper():
-                    l = AgglomerativeClustering(n_clusters=k).fit_predict(df_scaled)
-                elif "GMM" in model_name.upper():
-                    l = GaussianMixture(n_components=k, random_state=42).fit_predict(df_scaled)
-                elif "BIRCH" in model_name.upper():
-                    l = Birch(n_clusters=k).fit_predict(df_scaled)
-                elif "KMEDOIDS" in model_name.upper():
-                    l = KMedoids(n_clusters=k, random_state=42).fit_predict(df_scaled)
-                
-                score = silhouette_score(df_scaled, l)
-                if score > best_score:
-                    best_score, best_labels, best_params = score, l, k
-            model_name = f"{model_name} (Best k={best_params})"
-            
-        elif "DBSCAN" in model_name.upper():
-            for eps in tune_grid.get('eps', [0.3, 0.5]):
-                for ms in tune_grid.get('min_samples', [10, 50]):
-                    l = DBSCAN(eps=eps, min_samples=ms).fit_predict(df_scaled)
-                    n_c = len(set(l)) - (1 if -1 in l else 0)
-                    if n_c > 1:
-                        mask = l != -1
-                        score = silhouette_score(df_scaled[mask], l[mask])
-                        if score > best_score:
-                            best_score, best_labels, best_params = score, l, (eps, ms)
-            model_name = f"{model_name} (Best eps={best_params[0]}, ms={best_params[1]})"
-        
-        labels = best_labels
+    Displays a 1x3 validation dashboard for a clustering model.
+    Computes internal validity metrics and visual diagnostics.
 
-    #Standard Visualization Logic
+    Internal Validity Check for Clustering.
+    Evaluates the cohesion and separation of clusters using mathematical
+    internal metrics.
+    """
+
+    # Imports & style
     sns.set_theme(style="whitegrid")
+
+    # Basic checks
+    unique_labels = np.unique(labels)
+    n_clusters = len(unique_labels[unique_labels != -1])
+
+    if n_clusters < 2:
+        print("Performance Check Failed: The model produced fewer than 2 clusters.")
+        return None
+
+    # Internal validity metrics
+    mask = labels != -1
+
+    sil_score = silhouette_score(df_scaled[mask], labels[mask])
+    ch_score = calinski_harabasz_score(df_scaled[mask], labels[mask])
+    db_index = davies_bouldin_score(df_scaled[mask], labels[mask])
+
+    print("\n--- Clustering Performance Check ---")
+    print(f"Model                     : {model_name}")
+    print(f"Number of Clusters         : {n_clusters}")
+    print(f"Silhouette Score           : {sil_score:.4f}  (Goal: -> 1.0)")
+    print(f"Calinski-Harabasz Index    : {ch_score:.2f} (Goal: High)")
+    print(f"Davies-Bouldin Index       : {db_index:.4f}  (Goal: -> 0.0)")
+    print("-" * 45)
+
+    # Formal diagnostic based on silhouette score
+    if sil_score > 0.50:
+        print("Status: EXCELLENT. Strong and well-separated cluster structure.")
+    elif sil_score > 0.25:
+        print("Status: ACCEPTABLE. Moderate structure detected; some overlap likely.")
+    elif sil_score > 0:
+        print("Status: WEAK. Poorly defined clusters; high risk of overlap.")
+    else:
+        print("Status: INVALID. Model failed to capture a meaningful structure.")
+    print("-" * 45)
+
+    # Visualization dashboard
     fig, axes = plt.subplots(1, 3, figsize=(22, 6))
     plt.subplots_adjust(wspace=0.3)
-    
-    unique_labels = np.unique(labels)
-    num_clusters_selected = len(unique_labels[unique_labels != -1])
-    #English comment: Use imported UNIFORM_BLUE and PALE_PINK for strict consistency
+
     custom_colors = [UNIFORM_BLUE, PALE_PINK, "#9b59b6", "#34495e", "#16a085"]
 
-    #Elbow Method or K-Distance
+    # Elbow method or K-distance
     ax0 = axes[0]
     if any(x in model_name.upper() for x in ["DBSCAN", "OPTICS"]):
         from sklearn.neighbors import NearestNeighbors
@@ -80,7 +77,7 @@ def plot_cluster_diagnostics(df_scaled, labels=None, model_name="KMeans", tune_g
         neigh = NearestNeighbors(n_neighbors=k_neighbors)
         nbrs = neigh.fit(df_scaled)
         distances, _ = nbrs.kneighbors(df_scaled)
-        sorted_distances = np.sort(distances[:, k_neighbors-1], axis=0)
+        sorted_distances = np.sort(distances[:, k_neighbors - 1], axis=0)
         ax0.plot(sorted_distances, color=custom_colors[0])
         ax0.set_title(f"K-Distance Plot (k={k_neighbors})", fontsize=14)
     else:
@@ -88,45 +85,63 @@ def plot_cluster_diagnostics(df_scaled, labels=None, model_name="KMeans", tune_g
         cluster_range = range(1, 11)
         sample_size = min(len(df_scaled), 5000)
         df_sample = df_scaled.sample(sample_size, random_state=42) if len(df_scaled) > 5000 else df_scaled
+
         for i in cluster_range:
-            kmeans_temp = KMeans(n_clusters=i, init='k-means++', random_state=42, n_init=10)
+            kmeans_temp = KMeans(n_clusters=i, random_state=42, n_init=10)
             kmeans_temp.fit(df_sample)
             wcss.append(kmeans_temp.inertia_)
+
         ax0.plot(cluster_range, wcss, marker='o', linestyle='--', color=custom_colors[0])
-        if num_clusters_selected in cluster_range:
-            ax0.axvline(x=num_clusters_selected, color='red', linestyle=':', label=f'Selected: {num_clusters_selected}')
+        ax0.axvline(x=n_clusters, color='red', linestyle=':', label=f'Selected: {n_clusters}')
         ax0.set_title("Elbow Method (Inertia)", fontsize=14)
         ax0.legend()
 
-    #Middle: Silhouette Analysis
+    # Silhouette analysis
     ax1 = axes[1]
-    mask = labels != -1
-    if len(np.unique(labels[mask])) > 1:
-        sil_values = silhouette_samples(df_scaled[mask], labels[mask])
-        sil_avg = silhouette_score(df_scaled[mask], labels[mask])
-        y_lower = 10
-        for i, cluster_id in enumerate(np.unique(labels[mask])):
-            ith_cluster_sil = sil_values[labels[mask] == cluster_id]
-            ith_cluster_sil.sort()
-            y_upper = y_lower + ith_cluster_sil.shape[0]
-            color = custom_colors[i % len(custom_colors)]
-            ax1.fill_betweenx(np.arange(y_lower, y_upper), 0, ith_cluster_sil, facecolor=color, alpha=0.7)
-            y_lower = y_upper + 10
-        ax1.axvline(x=sil_avg, color="red", linestyle="--", label=f'Avg Score: {sil_avg:.2f}')
+    sil_values = silhouette_samples(df_scaled[mask], labels[mask])
+    y_lower = 10
+
+    for i, cluster_id in enumerate(np.unique(labels[mask])):
+        ith_cluster_sil = sil_values[labels[mask] == cluster_id]
+        ith_cluster_sil.sort()
+        y_upper = y_lower + ith_cluster_sil.shape[0]
+        color = custom_colors[i % len(custom_colors)]
+        ax1.fill_betweenx(
+            np.arange(y_lower, y_upper),
+            0,
+            ith_cluster_sil,
+            facecolor=color,
+            alpha=0.7
+        )
+        y_lower = y_upper + 10
+
+    ax1.axvline(x=sil_score, color="red", linestyle="--", label=f"Avg: {sil_score:.2f}")
     ax1.set_title("Silhouette Profile (Cohesion)", fontsize=14)
     ax1.legend()
 
-    #Data Distribution
+    # Cluster distribution
     ax2 = axes[2]
     counts = pd.Series(labels).value_counts().sort_index()
-    sns.barplot(x=counts.index.astype(str), y=counts.values, ax=ax2, palette=custom_colors, hue=counts.index.astype(str), legend=False)
+    sns.barplot(
+        x=counts.index.astype(str),
+        y=counts.values,
+        ax=ax2,
+        palette=custom_colors,
+        hue=counts.index.astype(str),
+        legend=False
+    )
     ax2.set_title("Distribution per Cluster", fontsize=14)
 
     plt.suptitle(f"Clustering Diagnostics Dashboard: {model_name}", fontsize=18, y=1.05)
     plt.tight_layout()
     plt.show()
-    
-    return labels #Returns the labels of the best optimized model
+
+    return {
+        "silhouette": sil_score,
+        "calinski_harabasz": ch_score,
+        "davies_bouldin": db_index,
+        "n_clusters": n_clusters
+    }
 
 #--- Function : plot_cluster_projections ---
 def plot_cluster_projections(df_scaled, labels, model_name="Champion Model"):
