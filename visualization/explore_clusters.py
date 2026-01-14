@@ -10,11 +10,10 @@ from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score, silhouette_samples, calinski_harabasz_score, davies_bouldin_score
 from .style import UNIFORM_BLUE, PALE_PINK
 
-#--- Function : plot_cluster_diagnostics ---
 def plot_cluster_diagnostics(df_scaled, labels, model_name="Champion Model"):
     """
     Displays a 1x3 validation dashboard for a single clustering model.
-    Left: Elbow Method (Inertia) | Middle: Silhouette Analysis (Cohesion) | Right: Cluster Distribution (Population)
+    Left: Elbow Method or K-Distance | Middle: Silhouette Analysis | Right: Cluster Distribution
     """
     sns.set_theme(style="whitegrid")
     fig, axes = plt.subplots(1, 3, figsize=(22, 6))
@@ -22,60 +21,72 @@ def plot_cluster_diagnostics(df_scaled, labels, model_name="Champion Model"):
     
     unique_labels = np.unique(labels)
     num_clusters_selected = len(unique_labels[unique_labels != -1])
+    # English comment: Define custom colors for visualization consistency
     custom_colors = [UNIFORM_BLUE, PALE_PINK, "#9b59b6", "#34495e", "#16a085"]
 
-    # Elbow Method (Inertia)
+    # --- Left: Elbow Method or K-Distance ---
     ax0 = axes[0]
-    wcss = []
-    cluster_range = range(1, 11)
-    
-    # Sampling for speed on large generic datasets
-    sample_size = min(len(df_scaled), 50000)
-    df_sample = df_scaled.sample(sample_size, random_state=42) if len(df_scaled) > 50000 else df_scaled
-    
-    for i in cluster_range:
-        kmeans_temp = KMeans(n_clusters=i, init='k-means++', random_state=42, n_init=10)
-        kmeans_temp.fit(df_sample)
-        wcss.append(kmeans_temp.inertia_)
-    
-    ax0.plot(cluster_range, wcss, marker='o', linestyle='--', color=UNIFORM_BLUE)
-    # Highlight the current number of clusters
-    if num_clusters_selected in cluster_range:
-        ax0.axvline(x=num_clusters_selected, color='red', linestyle=':', label=f'Selected: {num_clusters_selected}')
-    
-    ax0.set_title("Elbow Method (Inertia)", fontsize=14)
-    ax0.set_xlabel("Number of Clusters")
-    ax0.set_ylabel("WCSS (Within-Cluster Sum of Squares)")
-    ax0.legend()
+    if any(x in model_name.upper() for x in ["DBSCAN", "OPTICS"]):
+        # English comment: For density-based models, use K-distance to validate Epsilon
+        from sklearn.neighbors import NearestNeighbors
+        k_neighbors = 4
+        neigh = NearestNeighbors(n_neighbors=k_neighbors)
+        nbrs = neigh.fit(df_scaled)
+        distances, _ = nbrs.kneighbors(df_scaled)
+        sorted_distances = np.sort(distances[:, k_neighbors-1], axis=0)
+        
+        ax0.plot(sorted_distances, color=UNIFORM_BLUE)
+        ax0.set_title(f"K-Distance Plot (k={k_neighbors})", fontsize=14)
+        ax0.set_xlabel("Points sorted by distance")
+        ax0.set_ylabel("Epsilon Distance")
+    else:
+        # English comment: Standard Elbow method for centroid-based algorithms
+        wcss = []
+        cluster_range = range(1, 11)
+        sample_size = min(len(df_scaled), 50000)
+        df_sample = df_scaled.sample(sample_size, random_state=42) if len(df_scaled) > 50000 else df_scaled
+        
+        for i in cluster_range:
+            kmeans_temp = KMeans(n_clusters=i, init='k-means++', random_state=42, n_init=10)
+            kmeans_temp.fit(df_sample)
+            wcss.append(kmeans_temp.inertia_)
+        
+        ax0.plot(cluster_range, wcss, marker='o', linestyle='--', color=UNIFORM_BLUE)
+        if num_clusters_selected in cluster_range:
+            ax0.axvline(x=num_clusters_selected, color='red', linestyle=':', label=f'Selected: {num_clusters_selected}')
+        ax0.set_title("Elbow Method (Inertia)", fontsize=14)
+        ax0.set_xlabel("Number of Clusters")
+        ax0.set_ylabel("WCSS")
+        ax0.legend()
 
-    # Silhouette Analysis
+    # --- Middle: Silhouette Analysis ---
     ax1 = axes[1]
-    sil_values = silhouette_samples(df_scaled, labels)
-    sil_avg = silhouette_score(df_scaled, labels)
-    y_lower = 10
-    
-    for i, cluster_id in enumerate(unique_labels):
-        if cluster_id == -1: continue 
+    # English comment: Filter noise (-1) to avoid skewed silhouette visualization
+    mask = labels != -1
+    if len(np.unique(labels[mask])) > 1:
+        sil_values = silhouette_samples(df_scaled[mask], labels[mask])
+        sil_avg = silhouette_score(df_scaled[mask], labels[mask])
+        y_lower = 10
         
-        ith_cluster_sil = sil_values[labels == cluster_id]
-        ith_cluster_sil.sort()
-        y_upper = y_lower + ith_cluster_sil.shape[0]
-        color = custom_colors[i % len(custom_colors)]
-        
-        ax1.fill_betweenx(np.arange(y_lower, y_upper), 0, ith_cluster_sil, facecolor=color, alpha=0.7)
-        ax1.text(-0.05, y_lower + 0.5 * ith_cluster_sil.shape[0], str(cluster_id))
-        y_lower = y_upper + 10
-        
-    ax1.axvline(x=sil_avg, color="red", linestyle="--", label=f'Avg Score: {sil_avg:.2f}')
+        for i, cluster_id in enumerate(np.unique(labels[mask])):
+            ith_cluster_sil = sil_values[labels[mask] == cluster_id]
+            ith_cluster_sil.sort()
+            y_upper = y_lower + ith_cluster_sil.shape[0]
+            color = custom_colors[i % len(custom_colors)]
+            ax1.fill_betweenx(np.arange(y_lower, y_upper), 0, ith_cluster_sil, facecolor=color, alpha=0.7)
+            ax1.text(-0.05, y_lower + 0.5 * ith_cluster_sil.shape[0], str(cluster_id))
+            y_lower = y_upper + 10
+            
+        ax1.axvline(x=sil_avg, color="red", linestyle="--", label=f'Avg Score: {sil_avg:.2f}')
     ax1.set_title("Silhouette Profile (Cohesion)", fontsize=14)
     ax1.set_xlabel("Silhouette coefficient")
     ax1.set_ylabel("Cluster ID")
     ax1.legend()
 
-    # Data Distribution (Generic Population)
+    # --- Right: Data Distribution ---
     ax2 = axes[2]
     counts = pd.Series(labels).value_counts().sort_index()
-    sns.barplot(x=counts.index, y=counts.values, ax=ax2, palette=custom_colors, hue=counts.index, legend=False)
+    sns.barplot(x=counts.index.astype(str), y=counts.values, ax=ax2, palette=custom_colors, hue=counts.index.astype(str), legend=False)
     ax2.set_title("Distribution per Cluster (Population)", fontsize=14)
     ax2.set_xlabel("Cluster ID")
     ax2.set_ylabel("Number of Observations")
