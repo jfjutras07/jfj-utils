@@ -61,35 +61,26 @@ def plot_box_grid(df, value_cols, group_col='Economic_status', n_rows=2, n_cols=
         plt.tight_layout()
         plt.show()
 
-#--- Function plot_box_plot ---
+#--- Function : plot_box_plot ---
 def plot_box_plot(df, value_cols, category_col, hue_col=None,
-                  palette=BIVARIATE_PALETTE, figsize=(16, 6)):
-    """
-    Boxplot for a single numeric column versus a categorical column, optionally split by hue.
-    
-    Parameters:
-    - df: DataFrame
-    - value_cols: list of numeric columns (only the first one is used)
-    - category_col: column for x-axis
-    - hue_col: optional hue column
-    - palette: seaborn palette name, list, or dict mapping hue values
-    - figsize: figure size tuple
-    """
+                  palette=None, figsize=(16, 6)):
     import matplotlib.pyplot as plt
     import seaborn as sns
-    
+
     y_col = value_cols[0]
-    
+
     # Default palette
     if hue_col is None:
-        palette = "#1f77b4"  # force single color if no hue
+        # Use a single color if no hue
+        if palette is None:
+            palette = ["#1f77b4"]  # wrap in a list
     else:
         if palette is None:
-            # Create a simple palette for two categories if hue is provided
+            # Create a simple palette for two categories
             unique_hue = df[hue_col].unique()
-            default_colors = ["#1f77b4", "#ff69b4"]  # blue and pink
+            default_colors = ["#1f77b4", "#ff69b4"]
             palette = {k: default_colors[i % len(default_colors)] for i, k in enumerate(unique_hue)}
-    
+
     plt.figure(figsize=figsize)
     sns.boxplot(data=df, x=category_col, y=y_col, hue=hue_col, palette=palette, dodge=True)
     plt.title(f'{y_col} by {category_col}' + (f' and {hue_col}' if hue_col else ''))
