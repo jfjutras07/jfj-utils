@@ -2,6 +2,8 @@ import numpy as np
 import pandas as pd
 from sklearn.model_selection import cross_val_score
 from sklearn.metrics import silhouette_score, calinski_harabasz_score, davies_bouldin_score
+from sklearn.metrics import adjusted_rand_score
+from sklearn.base import clone
 
 #---Function : check_clustering_model_stability ---
 def check_clustering_model_stability(model, df, predictors, seeds=[0, 21, 42, 84], subsample_frac=0.8):
@@ -26,11 +28,6 @@ def check_clustering_model_stability(model, df, predictors, seeds=[0, 21, 42, 84
     subsample_frac : float
         Fraction of data used for subsampling stability.
     """
-
-    import numpy as np
-    from sklearn.metrics import adjusted_rand_score
-    from sklearn.base import clone
-
     X = df[predictors].copy()
 
     # Containers
@@ -58,25 +55,30 @@ def check_clustering_model_stability(model, df, predictors, seeds=[0, 21, 42, 84
         ari_seed_scores.append(ari)
 
     # --- Subsampling stability ---
-    base_idx = None
-    base_sub_labels = None
+    base_sub_labels_series = None
 
     for seed in seeds:
         X_sub = X.sample(frac=subsample_frac, random_state=seed)
         model_temp = clone(model)
+        
         if hasattr(model_temp.named_steps['model'], 'random_state'):
             model_temp.named_steps['model'].random_state = seed
 
         labels_sub = model_temp.fit_predict(X_sub)
+        
+        # Correction : Utilisation d'une Series pour aligner les labels par Index
+        current_sub_labels = pd.Series(labels_sub, index=X_sub.index)
 
-        if base_idx is None:
-            base_idx = X_sub.index
-            base_sub_labels = labels_sub
+        if base_sub_labels_series is None:
+            base_sub_labels_series = current_sub_labels
         else:
-            common_idx = base_idx.intersection(X_sub.index)
+            # Intersection des index pour comparer uniquement les employés présents dans les deux échantillons
+            common_idx = base_sub_labels_series.index.intersection(current_sub_labels.index)
+            
+            # Comparaison alignée sur les index communs
             ari = adjusted_rand_score(
-                base_sub_labels[np.isin(base_idx, common_idx)],
-                labels_sub[np.isin(X_sub.index, common_idx)]
+                base_sub_labels_series.loc[common_idx],
+                current_sub_labels.loc[common_idx]
             )
             ari_subsample_scores.append(ari)
 
@@ -100,7 +102,9 @@ def check_clustering_model_stability(model, df, predictors, seeds=[0, 21, 42, 84
     print("-" * 50)
 
     # --- Formal stability diagnostic ---
-    mean_ari = np.mean(ari_seed_scores + ari_subsample_scores)
+    # Combine scores for overall assessment
+    all_scores = ari_seed_scores + ari_subsample_scores
+    mean_ari = np.mean(all_scores) if all_scores else 0
 
     if mean_ari > 0.85:
         print("Status: HIGHLY STABLE. Cluster structure is robust.")
@@ -114,8 +118,8 @@ def check_clustering_model_stability(model, df, predictors, seeds=[0, 21, 42, 84
     print("-" * 50)
 
     return {
-        "ari_seeds_mean": np.mean(ari_seed_scores),
-        "ari_subsampling_mean": np.mean(ari_subsample_scores),
+        "ari_seeds_mean": np.mean(ari_seed_scores) if ari_seed_scores else 0,
+        "ari_subsampling_mean": np.mean(ari_subsample_scores) if ari_subsample_scores else 0,
         "ari_overall_mean": mean_ari,
         "ari_seeds": ari_seed_scores,
         "ari_subsampling": ari_subsample_scores
