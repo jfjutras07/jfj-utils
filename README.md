@@ -112,6 +112,7 @@ Active development — modules will be progressively added and refined.
 - `VIF_check`
 
 *premodeling_check.py*
+- `premodeling_clustering_check`
 - `premodeling_regresion_check`
 
 *regression.py*
@@ -176,12 +177,19 @@ Active development — modules will be progressively added and refined.
   
 *classification_models.py*
 
-*model_diagnostics.py*
-- `plot_regression_diagnostics`
+*clustering_models.py*
+- `agglomerative_clustering`
+- `birch_clustering`
+- `compare_clustering_models`
+- `dbscan_clustering`
+- `gaussian_mixture_clustering`
+- `kmeans_clustering`
+- `kmedoids_clustering`
 
 *model_stability.py*
 - `check_regression_model_stability`
-
+- `check_clustering_model_stability`
+  
 *regression_models.py*
 - `linear_regression`
 - `polynomial_regression`
@@ -222,6 +230,12 @@ Active development — modules will be progressively added and refined.
 *explore_binary.py*
 - `plot_binary_distribution`
 
+*explore_classification.py*
+- `plot_classification_diagnostics`
+
+*explore_clusters.py*
+- `plot_clustering_diagnostics`
+
 *explore_continuous.py*
 - `plot_box_grid`
 - `plot_box_plot`
@@ -247,6 +261,9 @@ Active development — modules will be progressively added and refined.
 - `plot_discrete_bivariate_grid`
 - `plot_discrete_dot_bivariate`
 - `plot_discrete_lollipop_bivariate`
+
+*explore_regression.py*
+- `plot_regression_diagnostics`
 
 *explore_time.py*
 - `plot_line_over_time`
