@@ -224,9 +224,6 @@ Active development — modules will be progressively added and refined.
 *choropleth_map.py*
 - `choropleth_map`
 
-*confusion_matrix.py*
-- `plot_logreg_results`
-
 *explore_binary.py*
 - `plot_binary_distribution`
 
@@ -234,6 +231,7 @@ Active development — modules will be progressively added and refined.
 - `plot_classification_diagnostics`
 
 *explore_clusters.py*
+- `plot_cluster_projections`
 - `plot_clustering_diagnostics`
 
 *explore_continuous.py*
