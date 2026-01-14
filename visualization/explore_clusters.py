@@ -6,9 +6,13 @@ import warnings
 import math
 import pandas as pd
 import numpy as np
-from sklearn.cluster import KMeans, AgglomerativeClustering, BIRCH, DBSCAN
+from sklearn.cluster import KMeans, AgglomerativeClustering, Birch, DBSCAN
 from sklearn.mixture import GaussianMixture
 from sklearn.metrics import silhouette_score, silhouette_samples, calinski_harabasz_score, davies_bouldin_score
+try:
+    from sklearn_extra.cluster import KMedoids
+except ImportError:
+    pass
 from .style import UNIFORM_BLUE, PALE_PINK
 
 def plot_cluster_diagnostics(df_scaled, labels=None, model_name="KMeans", tune_grid=None):
@@ -17,7 +21,7 @@ def plot_cluster_diagnostics(df_scaled, labels=None, model_name="KMeans", tune_g
     Optimizes the model if tune_grid is provided for: KMeans, Agglomerative, GMM, BIRCH, DBSCAN, K-Medoids.
     """
     #Optimization Logic
-    # English comment: If tune_grid is provided, search for the best silhouette score
+    #English comment: If tune_grid is provided, search for the best silhouette score
     if tune_grid is not None:
         best_score = -1
         best_labels = None
@@ -34,7 +38,7 @@ def plot_cluster_diagnostics(df_scaled, labels=None, model_name="KMeans", tune_g
                 elif "GMM" in model_name.upper():
                     l = GaussianMixture(n_components=k, random_state=42).fit_predict(df_scaled)
                 elif "BIRCH" in model_name.upper():
-                    l = BIRCH(n_clusters=k).fit_predict(df_scaled)
+                    l = Birch(n_clusters=k).fit_predict(df_scaled)
                 elif "KMEDOIDS" in model_name.upper():
                     l = KMedoids(n_clusters=k, random_state=42).fit_predict(df_scaled)
                 
