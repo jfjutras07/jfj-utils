@@ -6,34 +6,41 @@ from sklearn.impute import SimpleImputer
 from sklearn.linear_model import LinearRegression, HuberRegressor, QuantileRegressor
 from sklearn.metrics import r2_score, mean_absolute_error, mean_squared_error
 
-#---Function:linear_regression---
-def linear_regression(train_df, test_df, outcome, predictors, for_stacking=False):
+#---Function:polynomial_regression---
+def polynomial_regression(train_df, test_df, outcome, predictors, cv=5, for_stacking=False):
     """
-    Standard Ordinary Least Squares (OLS) regression.
-    Wrapped in a pipeline with scaling for numerical stability.
+    Polynomial regression with automated degree tuning. 
+    English comment: GridSearchCV finds the optimal polynomial degree to balance bias and variance.
     """
-    model = LinearRegression()
-    pipeline = Pipeline([
+    base_pipe = Pipeline([
         ('imputer', SimpleImputer(strategy='median')),
+        ('poly', PolynomialFeatures(include_bias=False)),
         ('scaler', StandardScaler()),
-        ('model', model)
+        ('model', LinearRegression())
     ])
     
     if for_stacking:
-        return pipeline
+        return base_pipe
         
     X_train, y_train = train_df[predictors], train_df[outcome]
     X_test, y_test = test_df[predictors], test_df[outcome]
     
-    pipeline.fit(X_train, y_train)
-    y_pred = pipeline.predict(X_test)
+    # English comment: Testing degrees 1, 2, and 3
+    param_grid = {'poly__degree': [1, 2, 3]}
     
-    print(f"--- Linear Regression Summary ---")
+    grid_search = GridSearchCV(base_pipe, param_grid, cv=cv, scoring='r2', n_jobs=-1)
+    grid_search.fit(X_train, y_train)
+    
+    best_model = grid_search.best_estimator_
+    y_pred = best_model.predict(X_test)
+    
+    print(f"--- Polynomial Regression Optimized ---")
+    print(f"Best Degree: {grid_search.best_params_['poly__degree']}")
     print(f"R2 Score: {r2_score(y_test, y_pred):.4f}")
-    print(f"MAE: {mean_absolute_error(y_test, y_pred):.4f}")
+    print(f"RMSE: {np.sqrt(mean_squared_error(y_test, y_pred)):.4f}")
     print("-" * 35)
     
-    return pipeline
+    return best_model
 
 #---Function:polynomial_regression---
 def polynomial_regression(train_df, test_df, outcome, predictors, degree=2, for_stacking=False):
@@ -65,61 +72,74 @@ def polynomial_regression(train_df, test_df, outcome, predictors, degree=2, for_
     return model_pipe
 
 #---Function:quantile_regression---
-def quantile_regression(train_df, test_df, outcome, predictors, quantile=0.5, for_stacking=False):
+def quantile_regression(train_df, test_df, outcome, predictors, quantile=0.5, cv=5, for_stacking=False):
     """
-    Quantile regression (Median regression by default).
-    Useful for predicting specific percentiles or handling heteroscedasticity.
+    Quantile regression with automated alpha (regularization) tuning.
+    English comment: Grid search optimizes the alpha penalty for specific quantile predictions.
     """
-    model = QuantileRegressor(quantile=quantile, alpha=0, solver='highs')
-    
-    pipeline = Pipeline([
+    base_pipe = Pipeline([
         ('imputer', SimpleImputer(strategy='median')),
         ('scaler', StandardScaler()),
-        ('model', model)
+        ('model', QuantileRegressor(quantile=quantile, solver='highs'))
     ])
     
     if for_stacking:
-        return pipeline
+        return base_pipe
         
     X_train, y_train = train_df[predictors], train_df[outcome]
     X_test, y_test = test_df[predictors], test_df[outcome]
+
+    # English comment: Testing different regularization strengths
+    param_grid = {'model__alpha': [0, 0.01, 0.1, 1.0]}
     
-    pipeline.fit(X_train, y_train)
-    y_pred = pipeline.predict(X_test)
+    grid_search = GridSearchCV(base_pipe, param_grid, cv=cv, scoring='neg_mean_absolute_error', n_jobs=-1)
+    grid_search.fit(X_train, y_train)
     
-    print(f"--- Quantile Regression (q={quantile}) Summary ---")
+    best_model = grid_search.best_estimator_
+    y_pred = best_model.predict(X_test)
+    
+    print(f"--- Quantile Regression (q={quantile}) Optimized ---")
+    print(f"Best Alpha: {grid_search.best_params_['model__alpha']}")
     print(f"R2 Score: {r2_score(y_test, y_pred):.4f}")
     print(f"MAE: {mean_absolute_error(y_test, y_pred):.4f}")
     print("-" * 35)
     
-    return pipeline
+    return best_model
 
 #---Function:robust_regression---
-def robust_regression(train_df, test_df, outcome, predictors, for_stacking=False):
+def robust_regression(train_df, test_df, outcome, predictors, cv=5, for_stacking=False):
     """
-    Robust regression using Huber loss.
-    Less sensitive to outliers than standard OLS.
+    Robust regression using Huber loss with automated epsilon tuning.
+    English comment: GridSearchCV finds the best threshold for outlier robustness.
     """
-    model = HuberRegressor(max_iter=1000)
-    
-    pipeline = Pipeline([
+    base_pipe = Pipeline([
         ('imputer', SimpleImputer(strategy='median')),
         ('scaler', StandardScaler()),
-        ('model', model)
+        ('model', HuberRegressor(max_iter=1000))
     ])
     
     if for_stacking:
-        return pipeline
+        return base_pipe
         
     X_train, y_train = train_df[predictors], train_df[outcome]
     X_test, y_test = test_df[predictors], test_df[outcome]
     
-    pipeline.fit(X_train, y_train)
-    y_pred = pipeline.predict(X_test)
+    # English comment: Epsilon controls the sensitivity to outliers
+    param_grid = {
+        'model__epsilon': [1.1, 1.35, 1.5, 1.75, 2.0],
+        'model__alpha': [0.0001, 0.001, 0.01]
+    }
     
-    print(f"--- Robust Regression (Huber) Summary ---")
+    grid_search = GridSearchCV(base_pipe, param_grid, cv=cv, scoring='r2', n_jobs=-1)
+    grid_search.fit(X_train, y_train)
+    
+    best_model = grid_search.best_estimator_
+    y_pred = best_model.predict(X_test)
+    
+    print(f"--- Robust Regression (Huber) Optimized ---")
+    print(f"Best Params: {grid_search.best_params_}")
     print(f"R2 Score: {r2_score(y_test, y_pred):.4f}")
     print(f"MAE: {mean_absolute_error(y_test, y_pred):.4f}")
     print("-" * 35)
     
-    return pipeline
+    return best_model
