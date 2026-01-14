@@ -9,10 +9,10 @@ warnings.simplefilter(action='ignore', category=RuntimeWarning)
 from .style import UNIFORM_BLUE, PALE_PINK, BIVARIATE_PALETTE
 from visualization.style import SEQUENTIAL_CMAP
 
-#--- Function plot_box_grid ---
+#--- Function : plot_box_grid ---
 def plot_box_grid(df, value_cols, group_col='Economic_status', n_rows=2, n_cols=2, palette=BIVARIATE_PALETTE, hue_col=None):
     """
-    Plot a grid of boxplots for the specified value columns against one or more group columns.
+    Plot a grid of boxplots for multiple value columns against one or more group columns.
     Works whether hue is specified or not. Converts single hex palette to list if needed.
     
     Parameters:
@@ -25,40 +25,40 @@ def plot_box_grid(df, value_cols, group_col='Economic_status', n_rows=2, n_cols=
     """
     if isinstance(group_col, str):
         group_col = [group_col]
-    
-    y_col = value_cols[0]
+
     plots_per_fig = n_rows * n_cols
 
-    #Convert single hex to list for Seaborn
+    # Convert single hex to list for Seaborn
     if isinstance(palette, str) and not hue_col:
         palette = [palette]
 
-    for i in range(0, len(group_col), plots_per_fig):
-        batch = group_col[i:i+plots_per_fig]
-        if len(batch) == 1:
-            fig, ax = plt.subplots(figsize=(10,6))
-            sns.boxplot(data=df, x=batch[0], y=y_col, hue=hue_col, palette=palette, ax=ax)
-            ax.set_title(f'{y_col} by {batch[0]}')
-            ax.set_xlabel(batch[0])
-            ax.set_ylabel(y_col)
-            ax.grid(axis='y', linestyle='--', alpha=0.5)
-            ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha='right')
-            plt.tight_layout()
-            plt.show()
-        else:
-            fig, axes = plt.subplots(n_rows, n_cols, figsize=(6*n_cols,5*n_rows), sharey=True)
-            axes = axes.flatten()
-            for ax, grp in zip(axes, batch):
-                sns.boxplot(data=df, x=grp, y=y_col, hue=hue_col, palette=palette, ax=ax)
-                ax.set_title(f'{y_col} by {grp}')
-                ax.set_xlabel(grp)
+    for y_col in value_cols:  # Loop over all value columns
+        for i in range(0, len(group_col), plots_per_fig):
+            batch = group_col[i:i+plots_per_fig]
+            if len(batch) == 1:
+                fig, ax = plt.subplots(figsize=(10,6))
+                sns.boxplot(data=df, x=batch[0], y=y_col, hue=hue_col, palette=palette, ax=ax)
+                ax.set_title(f'{y_col} by {batch[0]}')
+                ax.set_xlabel(batch[0])
                 ax.set_ylabel(y_col)
                 ax.grid(axis='y', linestyle='--', alpha=0.5)
                 ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha='right')
-            for j in range(len(batch), len(axes)):
-                axes[j].set_visible(False)
-            plt.tight_layout()
-            plt.show()
+                plt.tight_layout()
+                plt.show()
+            else:
+                fig, axes = plt.subplots(n_rows, n_cols, figsize=(6*n_cols,5*n_rows), sharey=True)
+                axes = axes.flatten()
+                for ax, grp in zip(axes, batch):
+                    sns.boxplot(data=df, x=grp, y=y_col, hue=hue_col, palette=palette, ax=ax)
+                    ax.set_title(f'{y_col} by {grp}')
+                    ax.set_xlabel(grp)
+                    ax.set_ylabel(y_col)
+                    ax.grid(axis='y', linestyle='--', alpha=0.5)
+                    ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha='right')
+                for j in range(len(batch), len(axes)):
+                    axes[j].set_visible(False)
+                plt.tight_layout()
+                plt.show()
 
 #--- Function plot_box_plot ---
 def plot_box_plot(df, value_cols, category_col, hue_col=None,
