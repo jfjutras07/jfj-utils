@@ -35,8 +35,10 @@ def plot_box_grid(df, value_cols, group_col='Economic_status', n_rows=2, n_cols=
     plots_per_fig = n_rows * n_cols
 
     # Convert single hex palette to list for Seaborn
-    if isinstance(palette, str) and not hue_col:
-        palette = [palette]
+    if isinstance(palette, list):
+        palette = palette 
+    else:
+        palette = palette
 
     # Loop over all value columns
     for i in range(0, len(value_cols), plots_per_fig):
