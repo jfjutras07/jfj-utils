@@ -5,7 +5,7 @@ from lightgbm import LGBMClassifier
 from xgboost import XGBClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.metrics import accuracy_score, f1_score, classification_report
+from sklearn.metrics import accuracy_score, f1_score
 from sklearn.model_selection import GridSearchCV
 from sklearn.pipeline import Pipeline
 from sklearn.impute import SimpleImputer
@@ -15,7 +15,7 @@ from IPython.display import display
 def catboost_classification(train_df, test_df, outcome, predictors, cv=5, for_stacking=False):
     """
     CatBoost Classifier with GridSearchCV.
-    English comment: CatBoost handles categorical features efficiently using symmetric trees.
+    Handles categorical features efficiently using symmetric trees and gradient boosting.
     """
     base_pipe = Pipeline([
         ('imputer', SimpleImputer(strategy='median')),
@@ -26,44 +26,37 @@ def catboost_classification(train_df, test_df, outcome, predictors, cv=5, for_st
     X_train, y_train = train_df[predictors], train_df[outcome]
     X_test, y_test = test_df[predictors], test_df[outcome]
 
-    param_grid = {
-        'model__iterations': [100, 200],
-        'model__depth': [4, 6],
-        'model__learning_rate': [0.05, 0.1]
-    }
+    param_grid = {'model__iterations': [100, 200], 'model__depth': [4, 6]}
     grid_search = GridSearchCV(base_pipe, param_grid, cv=cv, scoring='f1_weighted', n_jobs=-1)
     grid_search.fit(X_train, y_train)
     
-    print(f"--- CatBoost Optimized (F1: {grid_search.best_score_:.4f}) ---")
-    return grid_search.best_estimator_
+    best_model = grid_search.best_estimator_
+    y_pred_train = best_model.predict(X_train)
+    y_pred_test = best_model.predict(X_test)
+
+    print(f"--- CatBoost Classification Summary ---")
+    print(f"Best Params: {grid_search.best_params_}")
+    print(f"F1 Score (Train): {f1_score(y_train, y_pred_train, average='weighted'):.4f}")
+    print(f"F1 Score (Test): {f1_score(y_test, y_pred_test, average='weighted'):.4f}")
+    print("-" * 35)
+    return best_model
 
 #---Function:compare_classification_tree_models---
 def compare_classification_tree_models(train_df, test_df, outcome, predictors, cv=5):
     """
-    Executes and compares tree-based models, sorted by alphabetical order of execution.
-    English comment: Final comparison based on weighted F1-score to handle potential class imbalance.
+    Executes and compares tree-based models, sorted by alphabetical order.
+    Final comparison based on weighted F1-score to evaluate performance.
     """
     print(f"Starting Tree Models Comparison | Predictors: {len(predictors)}")
     print("-" * 45)
 
-    # Dictionary to store results
-    results = {}
-    
-    # Executing in alphabetical order
-    print("\n[1/5] Running CatBoost...")
-    results['CatBoost'] = catboost_classification(train_df, test_df, outcome, predictors, cv)
-    
-    print("\n[2/5] Running Decision Tree...")
-    results['DecisionTree'] = decision_tree_classification(train_df, test_df, outcome, predictors, cv)
-    
-    print("\n[3/5] Running LightGBM...")
-    results['LightGBM'] = lightgbm_classification(train_df, test_df, outcome, predictors, cv)
-    
-    print("\n[4/5] Running Random Forest...")
-    results['RandomForest'] = random_forest_classification(train_df, test_df, outcome, predictors, cv)
-    
-    print("\n[5/5] Running XGBoost...")
-    results['XGBoost'] = xgboost_classification(train_df, test_df, outcome, predictors, cv)
+    results = {
+        'CatBoost': catboost_classification(train_df, test_df, outcome, predictors, cv),
+        'DecisionTree': decision_tree_classification(train_df, test_df, outcome, predictors, cv),
+        'LightGBM': lightgbm_classification(train_df, test_df, outcome, predictors, cv),
+        'RandomForest': random_forest_classification(train_df, test_df, outcome, predictors, cv),
+        'XGBoost': xgboost_classification(train_df, test_df, outcome, predictors, cv)
+    }
 
     X_test, y_test = test_df[predictors], test_df[outcome]
     perf_metrics = []
@@ -86,7 +79,6 @@ def compare_classification_tree_models(train_df, test_df, outcome, predictors, c
     
     print(f"\nCHAMPION: {winner_name}")
     
-    # English comment: Extracting feature importance from the winning tree model
     actual_model = winner_model.named_steps['model']
     feat_imp = pd.DataFrame({
         'Feature': predictors,
@@ -95,14 +87,13 @@ def compare_classification_tree_models(train_df, test_df, outcome, predictors, c
     
     print("\nTop 10 Feature Importances:")
     display(feat_imp)
-    
     return winner_model
 
 #---Function:decision_tree_classification---
 def decision_tree_classification(train_df, test_df, outcome, predictors, cv=5, for_stacking=False):
     """
     Decision Tree Classifier with depth optimization.
-    English comment: Simple partitioning model, prone to overfitting if depth is not tuned.
+    Simple partitioning model used as a baseline for more complex tree ensembles.
     """
     base_pipe = Pipeline([
         ('imputer', SimpleImputer(strategy='median')),
@@ -113,18 +104,26 @@ def decision_tree_classification(train_df, test_df, outcome, predictors, cv=5, f
     X_train, y_train = train_df[predictors], train_df[outcome]
     X_test, y_test = test_df[predictors], test_df[outcome]
 
-    param_grid = {'model__max_depth': [None, 5, 10, 20], 'model__min_samples_leaf': [1, 5, 10]}
+    param_grid = {'model__max_depth': [None, 5, 10], 'model__min_samples_leaf': [1, 5]}
     grid_search = GridSearchCV(base_pipe, param_grid, cv=cv, scoring='f1_weighted', n_jobs=-1)
     grid_search.fit(X_train, y_train)
     
-    print(f"--- Decision Tree Optimized (F1: {grid_search.best_score_:.4f}) ---")
-    return grid_search.best_estimator_
+    best_model = grid_search.best_estimator_
+    y_pred_train = best_model.predict(X_train)
+    y_pred_test = best_model.predict(X_test)
+
+    print(f"--- Decision Tree Classification Summary ---")
+    print(f"Best Params: {grid_search.best_params_}")
+    print(f"F1 Score (Train): {f1_score(y_train, y_pred_train, average='weighted'):.4f}")
+    print(f"F1 Score (Test): {f1_score(y_test, y_pred_test, average='weighted'):.4f}")
+    print("-" * 35)
+    return best_model
 
 #---Function:lightgbm_classification---
 def lightgbm_classification(train_df, test_df, outcome, predictors, cv=5, for_stacking=False):
     """
     LightGBM Classifier with leaf-wise growth optimization.
-    English comment: Efficient gradient boosting framework that uses tree-based learning algorithms.
+    High-performance gradient boosting framework designed for speed and efficiency.
     """
     base_pipe = Pipeline([
         ('imputer', SimpleImputer(strategy='median')),
@@ -135,18 +134,26 @@ def lightgbm_classification(train_df, test_df, outcome, predictors, cv=5, for_st
     X_train, y_train = train_df[predictors], train_df[outcome]
     X_test, y_test = test_df[predictors], test_df[outcome]
 
-    param_grid = {'model__n_estimators': [100, 300], 'model__learning_rate': [0.01, 0.1], 'model__num_leaves': [31, 50]}
+    param_grid = {'model__n_estimators': [100, 200], 'model__learning_rate': [0.05, 0.1]}
     grid_search = GridSearchCV(base_pipe, param_grid, cv=cv, scoring='f1_weighted', n_jobs=-1)
     grid_search.fit(X_train, y_train)
     
-    print(f"--- LightGBM Optimized (F1: {grid_search.best_score_:.4f}) ---")
-    return grid_search.best_estimator_
+    best_model = grid_search.best_estimator_
+    y_pred_train = best_model.predict(X_train)
+    y_pred_test = best_model.predict(X_test)
+
+    print(f"--- LightGBM Classification Summary ---")
+    print(f"Best Params: {grid_search.best_params_}")
+    print(f"F1 Score (Train): {f1_score(y_train, y_pred_train, average='weighted'):.4f}")
+    print(f"F1 Score (Test): {f1_score(y_test, y_pred_test, average='weighted'):.4f}")
+    print("-" * 35)
+    return best_model
 
 #---Function:random_forest_classification---
 def random_forest_classification(train_df, test_df, outcome, predictors, cv=5, for_stacking=False):
     """
     Random Forest Classifier using Bagging technique.
-    English comment: Ensemble of decision trees to reduce variance and improve robustness.
+    Ensemble of decision trees that reduces variance through bootstrap aggregating.
     """
     base_pipe = Pipeline([
         ('imputer', SimpleImputer(strategy='median')),
@@ -157,18 +164,26 @@ def random_forest_classification(train_df, test_df, outcome, predictors, cv=5, f
     X_train, y_train = train_df[predictors], train_df[outcome]
     X_test, y_test = test_df[predictors], test_df[outcome]
 
-    param_grid = {'model__n_estimators': [100, 200], 'model__max_depth': [None, 10, 20]}
+    param_grid = {'model__n_estimators': [100, 200], 'model__max_depth': [None, 10]}
     grid_search = GridSearchCV(base_pipe, param_grid, cv=cv, scoring='f1_weighted', n_jobs=-1)
     grid_search.fit(X_train, y_train)
     
-    print(f"--- Random Forest Optimized (F1: {grid_search.best_score_:.4f}) ---")
-    return grid_search.best_estimator_
+    best_model = grid_search.best_estimator_
+    y_pred_train = best_model.predict(X_train)
+    y_pred_test = best_model.predict(X_test)
+
+    print(f"--- Random Forest Classification Summary ---")
+    print(f"Best Params: {grid_search.best_params_}")
+    print(f"F1 Score (Train): {f1_score(y_train, y_pred_train, average='weighted'):.4f}")
+    print(f"F1 Score (Test): {f1_score(y_test, y_pred_test, average='weighted'):.4f}")
+    print("-" * 35)
+    return best_model
 
 #---Function:xgboost_classification---
 def xgboost_classification(train_df, test_df, outcome, predictors, cv=5, for_stacking=False):
     """
     XGBoost Classifier with Gradient Boosting optimization.
-    English comment: Advanced implementation of gradient boosting with built-in regularization.
+    Advanced implementation of gradient boosting with built-in regularization to prevent overfitting.
     """
     base_pipe = Pipeline([
         ('imputer', SimpleImputer(strategy='median')),
@@ -179,9 +194,17 @@ def xgboost_classification(train_df, test_df, outcome, predictors, cv=5, for_sta
     X_train, y_train = train_df[predictors], train_df[outcome]
     X_test, y_test = test_df[predictors], test_df[outcome]
 
-    param_grid = {'model__n_estimators': [100, 200], 'model__learning_rate': [0.05, 0.1], 'model__max_depth': [3, 6]}
+    param_grid = {'model__n_estimators': [100, 200], 'model__learning_rate': [0.05, 0.1]}
     grid_search = GridSearchCV(base_pipe, param_grid, cv=cv, scoring='f1_weighted', n_jobs=-1)
     grid_search.fit(X_train, y_train)
     
-    print(f"--- XGBoost Optimized (F1: {grid_search.best_score_:.4f}) ---")
-    return grid_search.best_estimator_
+    best_model = grid_search.best_estimator_
+    y_pred_train = best_model.predict(X_train)
+    y_pred_test = best_model.predict(X_test)
+
+    print(f"--- XGBoost Classification Summary ---")
+    print(f"Best Params: {grid_search.best_params_}")
+    print(f"F1 Score (Train): {f1_score(y_train, y_pred_train, average='weighted'):.4f}")
+    print(f"F1 Score (Test): {f1_score(y_test, y_pred_test, average='weighted'):.4f}")
+    print("-" * 35)
+    return best_model
