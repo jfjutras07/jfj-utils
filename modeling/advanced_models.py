@@ -1,17 +1,50 @@
 import numpy as np
 import pandas as pd
 from sklearn.pipeline import Pipeline
+from sklearn.neighbors import KNeighborsClassifier
 from sklearn.preprocessing import StandardScaler
 from sklearn.impute import SimpleImputer
 from sklearn.neural_network import MLPRegressor
+from sklearn.neural_network import MLPClassifier
+from sklearn.svm import SVC
+from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVR
 from sklearn.linear_model import BayesianRidge
 from sklearn.model_selection import GridSearchCV
+from sklearn.metrics import accuracy_score, f1_score, classification_report
 from sklearn.metrics import r2_score, mean_absolute_error, mean_squared_error
 from sklearn.inspection import permutation_importance
 from IPython.display import display
 from sklearn.gaussian_process import GaussianProcessRegressor
+from sklearn.gaussian_process import GaussianProcessClassifier
+from sklearn.gaussian_process.kernels import RBF
 from sklearn.gaussian_process.kernels import RBF, ConstantKernel as C, WhiteKernel
+
+#---Function:bayesian_classification---
+def bayesian_classification(train_df, test_df, outcome, predictors, cv=5, for_stacking=False):
+    """
+    Logistic Regression with L2 penalty as a Bayesian point estimate.
+    Regularized logistic regression mimics Bayesian Ridge behavior for classification tasks.
+    """
+    base_pipe = Pipeline([
+        ('imputer', SimpleImputer(strategy='median')),
+        ('scaler', StandardScaler()),
+        ('model', LogisticRegression(solver='saga', max_iter=1000))
+    ])
+
+    if for_stacking: return base_pipe
+
+    X_train, y_train = train_df[predictors], train_df[outcome]
+    X_test, y_test = test_df[predictors], test_df[outcome]
+
+    param_grid = {'model__C': [0.1, 1.0, 10.0], 'model__penalty': ['l2']}
+    
+    grid_search = GridSearchCV(base_pipe, param_grid, cv=cv, scoring='f1_weighted', n_jobs=-1)
+    grid_search.fit(X_train, y_train)
+
+    print(f"--- Bayesian Classification Optimized ---")
+    print(f"Best Params: {grid_search.best_params_}")
+    return grid_search.best_estimator_
 
 #---Function:bayesian_regression---
 def bayesian_regression(train_df, test_df, outcome, predictors, cv=5, for_stacking=False):
@@ -59,6 +92,32 @@ def bayesian_regression(train_df, test_df, outcome, predictors, cv=5, for_stacki
 
     return best_pipeline
 
+#---Function:gaussian_process_classification---
+def gaussian_process_classification(train_df, test_df, outcome, predictors, cv=3, for_stacking=False):
+    """
+    Gaussian Process Classifier (GPC).
+    Provides probabilistic classification based on Laplace approximation for non-parametric boundaries.
+    """
+    kernel = 1.0 * RBF(1.0)
+    base_pipe = Pipeline([
+        ('imputer', SimpleImputer(strategy='median')),
+        ('scaler', StandardScaler()),
+        ('model', GaussianProcessClassifier(kernel=kernel, random_state=42))
+    ])
+
+    if for_stacking: return base_pipe
+
+    X_train, y_train = train_df[predictors], train_df[outcome]
+    X_test, y_test = test_df[predictors], test_df[outcome]
+
+    param_grid = {'model__max_iter_predict': [100, 200]}
+    
+    grid_search = GridSearchCV(base_pipe, param_grid, cv=cv, scoring='f1_weighted', n_jobs=-1)
+    grid_search.fit(X_train, y_train)
+
+    print(f"--- Gaussian Process Classifier Optimized ---")
+    return grid_search.best_estimator_
+
 #---Function:gaussian_process_regression---
 def gaussian_process_regression(train_df, test_df, outcome, predictors, cv=3, for_stacking=False):
     """
@@ -103,6 +162,77 @@ def gaussian_process_regression(train_df, test_df, outcome, predictors, cv=3, fo
 
     return best_pipeline
 
+#---Function:knn_classification---
+def knn_classification(train_df, test_df, outcome, predictors, cv=5, for_stacking=False):
+    """
+    K-Nearest Neighbors Classifier with GridSearchCV.
+    English comment: Optimal 'k' is found by testing different neighbor counts. 
+    Permutation importance is used as KNN has no native feature importance.
+    """
+    base_pipe = Pipeline([
+        ('imputer', SimpleImputer(strategy='median')),
+        ('scaler', StandardScaler()),
+        ('model', KNeighborsClassifier())
+    ])
+
+    if for_stacking: return base_pipe
+
+    X_train, y_train = train_df[predictors], train_df[outcome]
+    X_test, y_test = test_df[predictors], test_df[outcome]
+
+    param_grid = {
+        'model__n_neighbors': [3, 5, 11, 21],
+        'model__weights': ['uniform', 'distance']
+    }
+    
+    grid_search = GridSearchCV(base_pipe, param_grid, cv=cv, scoring='f1_weighted', n_jobs=-1)
+    grid_search.fit(X_train, y_train)
+
+    best_pipeline = grid_search.best_estimator_
+
+    # Permutation Importance for KNN
+    perm_importance = permutation_importance(best_pipeline, X_test, y_test, n_repeats=5, random_state=42)
+    importance_df = pd.DataFrame({
+        'Feature': predictors,
+        'Importance': perm_importance.importances_mean
+    }).sort_values(by='Importance', ascending=False).head(5)
+
+    print(f"--- KNN Classifier Optimized ---")
+    print(f"Best Params: {grid_search.best_params_}")
+    display(importance_df)
+
+    return best_pipeline
+    
+#---Function:mlp_classification---
+def mlp_classification(train_df, test_df, outcome, predictors, cv=5, for_stacking=False):
+    """
+    Multi-layer Perceptron Classifier.
+    Neural network architecture optimized via grid search for hidden layer depth and activation functions.
+    """
+    base_pipe = Pipeline([
+        ('imputer', SimpleImputer(strategy='median')),
+        ('scaler', StandardScaler()),
+        ('model', MLPClassifier(max_iter=1000, random_state=42, early_stopping=True))
+    ])
+
+    if for_stacking: return base_pipe
+
+    X_train, y_train = train_df[predictors], train_df[outcome]
+    X_test, y_test = test_df[predictors], test_df[outcome]
+
+    param_grid = {
+        'model__hidden_layer_sizes': [(50,), (100, 50)],
+        'model__activation': ['relu', 'tanh'],
+        'model__alpha': [0.0001, 0.01]
+    }
+
+    grid_search = GridSearchCV(base_pipe, param_grid, cv=cv, scoring='f1_weighted', n_jobs=-1)
+    grid_search.fit(X_train, y_train)
+
+    print(f"--- Neural Network (MLP) Summary ---")
+    print(f"Best Params: {grid_search.best_params_}")
+    return grid_search.best_estimator_
+
 #---Function:mlp_regression---
 def mlp_regression(train_df, test_df, outcome, predictors, cv=5, for_stacking=False):
     """
@@ -143,6 +273,45 @@ def mlp_regression(train_df, test_df, outcome, predictors, cv=5, for_stacking=Fa
     print(f"Best Params: {grid_search.best_params_}")
     print(f"R2 Test: {r2_score(y_test, y_pred_test):.4f}")
     print("-" * 35)
+
+    return best_pipeline
+
+#---Function:svm_classification---
+def svm_classification(train_df, test_df, outcome, predictors, cv=5, for_stacking=False):
+    """
+    Support Vector Classification (SVC) with kernel tuning.
+    Maximizes the margin between classes using RBF or Polynomial kernels for non-linear separation.
+    """
+    base_pipe = Pipeline([
+        ('imputer', SimpleImputer(strategy='median')),
+        ('scaler', StandardScaler()),
+        ('model', SVC(probability=True))
+    ])
+
+    if for_stacking: return base_pipe
+
+    X_train, y_train = train_df[predictors], train_df[outcome]
+    X_test, y_test = test_df[predictors], test_df[outcome]
+
+    param_grid = {
+        'model__kernel': ['rbf', 'poly'],
+        'model__C': [0.1, 1, 10]
+    }
+
+    grid_search = GridSearchCV(base_pipe, param_grid, cv=cv, scoring='f1_weighted', n_jobs=-1)
+    grid_search.fit(X_train, y_train)
+
+    best_pipeline = grid_search.best_estimator_
+    perm_importance = permutation_importance(best_pipeline, X_test, y_test, n_repeats=5, random_state=42)
+    
+    importance_df = pd.DataFrame({
+        'Feature': predictors,
+        'Importance': perm_importance.importances_mean
+    }).sort_values(by='Importance', ascending=False).head(5)
+
+    print(f"--- SVM (SVC) Summary ---")
+    print(f"Best Params: {grid_search.best_params_}")
+    display(importance_df)
 
     return best_pipeline
 
