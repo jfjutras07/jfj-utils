@@ -270,7 +270,7 @@ Active development — modules will be progressively added and refined.
 - `plot_discrete_dot_distribution`
 - `plot_discrete_lollipop_distribution`
 
-*explore_discrete_bivariate.py*
+*explore_discrete_multivariate.py*
 - `plot_discrete_bivariate_grid`
 - `plot_discrete_dot_bivariate`
 - `plot_discrete_lollipop_bivariate`
@@ -279,7 +279,6 @@ Active development — modules will be progressively added and refined.
 - `plot_regression_diagnostics`
 
 *explore_time.py*
-- `plot_line_over_time`
 - `plot_line_grid_over_time`
 - `plot_temporal_data`
 
