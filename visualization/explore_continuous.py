@@ -340,7 +340,7 @@ def plot_swarm_grid(df, value_cols, group_col='Economic_status', hue_col=None,
                 color=color if hue_col is None else None,
                 ax=ax
             )
-            ax.set_title(f'{y_col} by {grp}')
+            ax.set_title(f'{y_col} by {grp}', fontweight='bold')
             ax.set_xlabel(grp)
             ax.set_ylabel(y_col)
             ax.grid(axis='y', linestyle='--', alpha=0.5)
@@ -352,11 +352,10 @@ def plot_swarm_grid(df, value_cols, group_col='Economic_status', hue_col=None,
         plt.tight_layout()
         plt.show()
 
-
 #---Function: plot_violin_grid---
 def plot_violin_grid(df, value_cols, group_col='Economic_status', hue_col=None,
-                     n_rows=2, n_cols=2, palette=BIVARIATE_PALETTE, dodge=True,
-                     figsize_single=(10,6), figsize_grid=(6,5)):
+                      n_rows=2, n_cols=2, palette=BIVARIATE_PALETTE, dodge=True,
+                      figsize_single=(10,6), figsize_grid=(6,5)):
     """
     Plots violin plots for one or multiple grouping variables, optionally with hue.
     """
@@ -393,10 +392,11 @@ def plot_violin_grid(df, value_cols, group_col='Economic_status', hue_col=None,
                 hue=hue_col,
                 dodge=dodge if hue_col else False,
                 palette=palette if hue_col else None,
+                color=UNIFORM_BLUE if hue_col is None else None,
                 inner='quartile',
                 ax=ax
             )
-            ax.set_title(f'{y_col} by {grp}')
+            ax.set_title(f'{y_col} by {grp}', fontweight='bold')
             ax.set_xlabel(grp)
             ax.set_ylabel(y_col)
             ax.grid(axis='y', linestyle='--', alpha=0.5)
