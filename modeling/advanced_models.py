@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 from sklearn.pipeline import Pipeline
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.neighbors import KNeighborsRegressor
 from sklearn.preprocessing import StandardScaler
 from sklearn.impute import SimpleImputer
 from sklearn.neural_network import MLPRegressor
