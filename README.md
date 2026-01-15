@@ -271,7 +271,6 @@ Active development — modules will be progressively added and refined.
 - `plot_discrete_lollipop_distribution`
 
 *explore_discrete_bivariate.py*
-- `plot_discrete_bivariate`
 - `plot_discrete_bivariate_grid`
 - `plot_discrete_dot_bivariate`
 - `plot_discrete_lollipop_bivariate`
