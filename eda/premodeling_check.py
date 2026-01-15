@@ -1,6 +1,144 @@
 import numpy as np
 import pandas as pd
 
+#--- Function : premodeling_classification_check ---
+def premodeling_classification_check(
+    df: pd.DataFrame,
+    target: str | None = None,
+    corr_threshold: float = 0.7,
+    imbalance_threshold: float = 0.1,
+    top_outliers: int = 5,
+    top_correlations: int = 10,
+    min_unique_for_continuous: int = 10,
+    iqr_multiplier: float = 1.5,
+    final_assessment: bool = True
+) -> str:
+    """
+    Expert-level pre-modeling validation for classification tasks.
+    Focuses on class balance, feature distributions, and label integrity.
+    """
+
+    sections = {}
+    issues = set()
+
+    # Missing values
+    block = ["#Missing values"]
+    missing = df.isnull().sum()
+    missing = missing[missing > 0]
+    if missing.empty:
+        block.append("No missing values detected.")
+    else:
+        issues.add("missing")
+        block.append("Missing values detected:")
+        for col, cnt in missing.items():
+            block.append(f"- {col}: {cnt}")
+    sections["missing"] = block
+
+    # Feature types
+    block = ["#Feature types"]
+    numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+    if len(numeric_cols) == df.shape[1]:
+        block.append("All features are numeric.")
+    else:
+        issues.add("types")
+        non_numeric = sorted(set(df.columns) - set(numeric_cols))
+        block.append("Non-numeric columns detected (require encoding):")
+        for col in non_numeric:
+            block.append(f"- {col}")
+    sections["types"] = block
+
+    # Class Imbalance (Specific to Classification)
+    block = ["#Class balance"]
+    if target and target in df.columns:
+        counts = df[target].value_counts(normalize=True)
+        min_class_perc = counts.min()
+        
+        block.append("Target distribution:")
+        for val, perc in counts.items():
+            block.append(f"- Class '{val}': {perc:.2%}")
+        
+        if min_class_perc < imbalance_threshold:
+            issues.add("imbalance")
+            block.append(f"Warning: Significant class imbalance detected (minimum: {min_class_perc:.2%}).")
+            block.append("Recommendation: Use stratified splitting or resampling (SMOTE).")
+        else:
+            block.append("Class distribution appears stable.")
+    else:
+        block.append("Target not specified or not found for balance check.")
+    sections["imbalance"] = block
+
+    # Outliers
+    continuous_cols = [c for c in numeric_cols if df[c].nunique() >= min_unique_for_continuous]
+    def detect_outliers(cols):
+        counts = {}
+        total = 0
+        for col in cols:
+            q1, q3 = df[col].quantile(0.25), df[col].quantile(0.75)
+            iqr = q3 - q1
+            if iqr == 0: continue
+            low, high = q1 - iqr_multiplier * iqr, q3 + iqr_multiplier * iqr
+            count = ((df[col] < low) | (df[col] > high)).sum()
+            if count > 0:
+                counts[col] = int(count)
+                total += int(count)
+        return total, counts
+
+    out_total, out_counts = detect_outliers(continuous_cols)
+    block = ["#Outliers"]
+    if not out_counts:
+        block.append("No significant outliers detected.")
+    else:
+        issues.add("outliers")
+        sorted_out = sorted(out_counts.items(), key=lambda x: x[1], reverse=True)
+        block.append(f"Outliers detected (Total: {out_total}):")
+        for i, (col, cnt) in enumerate(sorted_out[:top_outliers], 1):
+            block.append(f"  {i}. {col}: {cnt}")
+    sections["outliers"] = block
+
+    # Feature Redundancy
+    block = [f"#Feature Redundancy (|r| ≥ {corr_threshold:.2f})"]
+    corr_pairs = []
+    if len(numeric_cols) >= 2:
+        corr_matrix = df[numeric_cols].corr().abs()
+        for i in range(len(corr_matrix.columns)):
+            for j in range(i):
+                if corr_matrix.iloc[i, j] >= corr_threshold:
+                    corr_pairs.append((corr_matrix.columns[j], corr_matrix.columns[i], float(corr_matrix.iloc[i, j])))
+
+    if not corr_pairs:
+        block.append("No highly redundant features detected.")
+    else:
+        issues.add("redundancy")
+        corr_pairs = sorted(corr_pairs, key=lambda x: x[2], reverse=True)
+        for i, (c1, c2, val) in enumerate(corr_pairs[:top_correlations], 1):
+            block.append(f"  {i}. {c1} ↔ {c2}: {val:.3f}")
+    sections["redundancy"] = block
+
+    # Final Assessment
+    final_block = ["#Final assessment"]
+    if not issues:
+        final_block.append("No major issues detected. Ready for classification modeling.")
+    else:
+        final_block.append(
+            "Ready for modeling, but review the highlighted issues (especially Class Imbalance)."
+        )
+
+    # Rendering
+    output = []
+    if final_assessment:
+        for key in sections:
+            output.extend(sections[key])
+            output.append("")
+        output.extend(final_block)
+    else:
+        relevant_keys = [k for k in sections if k in issues or k == "outliers" or k == "imbalance"]
+        for key in relevant_keys:
+            output.extend(sections[key])
+            output.append("")
+        output.extend(final_block)
+
+    return "\n".join(output).strip()
+
 #--- Function : premodeling_clustering_check ---
 def premodeling_clustering_check(
     df: pd.DataFrame,
