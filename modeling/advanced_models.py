@@ -23,10 +23,11 @@ def bayesian_classification(train_df, test_df, outcome, predictors, cv=5, for_st
     """
     Logistic Regression with L2 penalty as a Bayesian point estimate.
     """
+    # Added class_weight='balanced'
     base_pipe = Pipeline([
         ('imputer', SimpleImputer(strategy='median')),
         ('scaler', StandardScaler()),
-        ('model', LogisticRegression(solver='saga', max_iter=1000))
+        ('model', LogisticRegression(solver='saga', max_iter=1000, class_weight='balanced'))
     ])
     if for_stacking: return base_pipe
 
@@ -83,6 +84,8 @@ def gaussian_process_classification(train_df, test_df, outcome, predictors, cv=3
     """
     Gaussian Process Classifier (GPC) with RBF kernel.
     """
+    # Note: GPC doesn't have a direct 'class_weight' parameter. 
+    # It handles multi-class via one-vs-rest which inherently helps a bit.
     kernel = 1.0 * RBF(1.0)
     base_pipe = Pipeline([
         ('imputer', SimpleImputer(strategy='median')),
@@ -141,7 +144,7 @@ def gaussian_process_regression(train_df, test_df, outcome, predictors, cv=3, fo
 #---Function:knn_classification---
 def knn_classification(train_df, test_df, outcome, predictors, cv=5, for_stacking=False):
     """
-    K-Nearest Neighbors Classifier with permutation importance.
+    K-Nearest Neighbors Classifier with weight='distance' to help with imbalance.
     """
     base_pipe = Pipeline([
         ('imputer', SimpleImputer(strategy='median')),
@@ -153,7 +156,8 @@ def knn_classification(train_df, test_df, outcome, predictors, cv=5, for_stackin
     X_train, y_train = train_df[predictors], train_df[outcome]
     X_test, y_test = test_df[predictors], test_df[outcome]
 
-    param_grid = {'model__n_neighbors': [3, 5, 11], 'model__weights': ['uniform', 'distance']}
+    # Use 'distance' instead of 'uniform' as it's more robust to class imbalance
+    param_grid = {'model__n_neighbors': [3, 5, 11], 'model__weights': ['distance']}
     grid_search = GridSearchCV(base_pipe, param_grid, cv=cv, scoring='f1_weighted', n_jobs=-1)
     grid_search.fit(X_train, y_train)
 
@@ -204,6 +208,8 @@ def mlp_classification(train_df, test_df, outcome, predictors, cv=5, for_stackin
     """
     Multi-layer Perceptron Classifier.
     """
+    # Note: MLP in sklearn doesn't support class_weight. 
+    # The best way to handle imbalance here is through the scoring 'f1_weighted'.
     base_pipe = Pipeline([
         ('imputer', SimpleImputer(strategy='median')),
         ('scaler', StandardScaler()),
@@ -260,12 +266,13 @@ def mlp_regression(train_df, test_df, outcome, predictors, cv=5, for_stacking=Fa
 #---Function:svm_classification---
 def svm_classification(train_df, test_df, outcome, predictors, cv=5, for_stacking=False):
     """
-    Support Vector Classification (SVC) with permutation importance.
+    Support Vector Classification (SVC) with class_weight='balanced'.
     """
+    # Added class_weight='balanced'
     base_pipe = Pipeline([
         ('imputer', SimpleImputer(strategy='median')),
         ('scaler', StandardScaler()),
-        ('model', SVC(probability=True))
+        ('model', SVC(probability=True, class_weight='balanced'))
     ])
     if for_stacking: return base_pipe
 
