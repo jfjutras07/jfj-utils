@@ -1,6 +1,6 @@
 ## jfj-utils
 
-A lightweight and evolving collection of Python utilities designed to support analytics workflows. This library will gradually expand to include tools for data ingestion, cleaning, preprocessing, exploratory data analysis (EDA), visualization, feature engineering, modeling helpers, optimization, and general-purpose utilities.
+An evolving collection of Python utilities designed to support analytics workflows. This library will gradually expand to include tools for data ingestion, cleaning, preprocessing, exploratory data analysis (EDA), visualization, feature engineering, modeling helpers, optimization, and general-purpose utilities.
 
 ## Features and Goals
 
