@@ -17,9 +17,10 @@ def catboost_classification(train_df, test_df, outcome, predictors, cv=5, for_st
     CatBoost Classifier with GridSearchCV.
     Handles categorical features efficiently using symmetric trees and gradient boosting.
     """
+    # Auto_class_weights='Balanced' adjusts weights for class imbalance
     base_pipe = Pipeline([
         ('imputer', SimpleImputer(strategy='median')),
-        ('model', CatBoostClassifier(random_state=42, verbose=0))
+        ('model', CatBoostClassifier(random_state=42, verbose=0, auto_class_weights='Balanced'))
     ])
     if for_stacking: return base_pipe
 
@@ -95,9 +96,10 @@ def decision_tree_classification(train_df, test_df, outcome, predictors, cv=5, f
     Decision Tree Classifier with depth optimization.
     Simple partitioning model used as a baseline for more complex tree ensembles.
     """
+    # class_weight='balanced' handles imbalance
     base_pipe = Pipeline([
         ('imputer', SimpleImputer(strategy='median')),
-        ('model', DecisionTreeClassifier(random_state=42))
+        ('model', DecisionTreeClassifier(random_state=42, class_weight='balanced'))
     ])
     if for_stacking: return base_pipe
 
@@ -125,9 +127,10 @@ def lightgbm_classification(train_df, test_df, outcome, predictors, cv=5, for_st
     LightGBM Classifier with leaf-wise growth optimization.
     High-performance gradient boosting framework designed for speed and efficiency.
     """
+    # class_weight='balanced' handles imbalance
     base_pipe = Pipeline([
         ('imputer', SimpleImputer(strategy='median')),
-        ('model', LGBMClassifier(random_state=42, verbosity=-1))
+        ('model', LGBMClassifier(random_state=42, verbosity=-1, class_weight='balanced'))
     ])
     if for_stacking: return base_pipe
 
@@ -155,9 +158,10 @@ def random_forest_classification(train_df, test_df, outcome, predictors, cv=5, f
     Random Forest Classifier using Bagging technique.
     Ensemble of decision trees that reduces variance through bootstrap aggregating.
     """
+    # class_weight='balanced' handles imbalance
     base_pipe = Pipeline([
         ('imputer', SimpleImputer(strategy='median')),
-        ('model', RandomForestClassifier(random_state=42))
+        ('model', RandomForestClassifier(random_state=42, class_weight='balanced'))
     ])
     if for_stacking: return base_pipe
 
@@ -185,14 +189,19 @@ def xgboost_classification(train_df, test_df, outcome, predictors, cv=5, for_sta
     XGBoost Classifier with Gradient Boosting optimization.
     Advanced implementation of gradient boosting with built-in regularization to prevent overfitting.
     """
-    base_pipe = Pipeline([
-        ('imputer', SimpleImputer(strategy='median')),
-        ('model', XGBClassifier(random_state=42, eval_metric='logloss'))
-    ])
-    if for_stacking: return base_pipe
-
     X_train, y_train = train_df[predictors], train_df[outcome]
     X_test, y_test = test_df[predictors], test_df[outcome]
+
+    # Calculate scale_pos_weight for binary classification
+    # For multi-class, XGBoost requires different handling, but this is the standard for imbalance
+    counts = y_train.value_counts()
+    ratio = counts.iloc[0] / counts.iloc[1] if len(counts) == 2 else 1
+
+    base_pipe = Pipeline([
+        ('imputer', SimpleImputer(strategy='median')),
+        ('model', XGBClassifier(random_state=42, eval_metric='logloss', scale_pos_weight=ratio))
+    ])
+    if for_stacking: return base_pipe
 
     param_grid = {'model__n_estimators': [100, 200], 'model__learning_rate': [0.05, 0.1]}
     grid_search = GridSearchCV(base_pipe, param_grid, cv=cv, scoring='f1_weighted', n_jobs=-1)
