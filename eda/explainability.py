@@ -44,9 +44,8 @@ def feature_importance(model, train_df, predictors):
     }).sort_values(by='Importance', ascending=False)
 
     print(f"--- Global Feature Importance Summary ({method}) ---")
-    display(importance_df.head(10))
-    
-    return importance_df
+   
+    return importance_df.head(15)
     
 #---Function:interaction_effects---
 def interaction_effects(model, test_df, predictors, top_n=5):
