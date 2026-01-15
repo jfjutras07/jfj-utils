@@ -4,63 +4,42 @@ import math
 import matplotlib.pyplot as plt
 import numpy as np
 import warnings
-warnings.filterwarnings("ignore")
-from .style import UNIFORM_BLUE, PALE_PINK
+from .style import UNIFORM_BLUE, PALE_PINK, GREY_DARK
 
-# --- Helper function ---
+warnings.filterwarnings("ignore")
+
 def get_counts(series, ascending_numeric=True):
-    """Return counts for a series. Numeric: sorted ascending; categorical: sorted by frequency."""
+    """
+    Return counts for a series. 
+    Numeric: sorted ascending; categorical: sorted by frequency.
+    """
     if pd.api.types.is_numeric_dtype(series):
         return series.value_counts().sort_index(ascending=ascending_numeric)
     else:
         return series.value_counts().sort_values(ascending=True)
 
-#---Function: plot_discrete_bivariate---
-def plot_discrete_bivariate(df, col, hue_col, figsize=(8,4), colors=None):
-    """Bar plot of a discrete variable grouped by hue_col."""
-    if colors is None:
-        colors = [UNIFORM_BLUE, PALE_PINK]  # uniform colors
-    if col not in df.columns or hue_col not in df.columns:
-        print(f"Warning: {col} or {hue_col} not found. Skipping.")
-        return
-
-    categories = sorted(df[col].dropna().unique())
-    hue_values = sorted(df[hue_col].dropna().unique())
-    x = np.arange(len(categories))
-    width = 0.8 / len(hue_values)
-
-    fig, ax = plt.subplots(figsize=figsize)
-    for i, val in enumerate(hue_values):
-        counts = df[df[hue_col]==val][col].value_counts().reindex(categories, fill_value=0)
-        ax.bar(x + i*width, counts.values, width=width, label=str(val),
-               color=colors[i % len(colors)], edgecolor="black")
-        for xi, c in zip(x + i*width, counts.values):
-            ax.text(xi, c/2, str(c), ha="center", va="center", fontsize=9, color="black")
-
-    ax.set_xticks(x + width*(len(hue_values)-1)/2)
-    ax.set_xticklabels(categories, rotation=45)
-    ax.set_ylabel("Count")
-    ax.set_title(f"{col} by {hue_col}")
-    ax.legend(title=hue_col, bbox_to_anchor=(1.05, 1), loc='upper left')
-    plt.tight_layout(); plt.show(); plt.close()
-
-#--- Function : plot_discrete_bivariate_grid ---
-def plot_discrete_bivariate_grid(df, discrete_cols, hue_col, n_cols=2, figsize=(12,8),
-                                 colors=None, show_proportion=True):
-    """Grid of bivariate bar plots for multiple discrete variables.
-    Automatically switches to horizontal bars when a variable has 8 or more categories.
+def plot_bar_bivariate_grid(df, discrete_cols, hue_col, n_cols=2, figsize=(12,8), 
+                             colors=None, show_proportion=True):
+    """
+    Grid of bivariate bar plots. Supports single or multiple columns.
+    Switches to horizontal bars if a variable has 8 or more categories.
     """
     if colors is None:
         colors = [UNIFORM_BLUE, PALE_PINK]
+    
+    if isinstance(discrete_cols, str):
+        discrete_cols = [discrete_cols]
 
     cols = [c for c in discrete_cols if c in df.columns]
     if not cols:
-        print("No valid columns found.")
         return
 
-    n_rows = math.ceil(len(cols) / n_cols)
-    fig, axes = plt.subplots(n_rows, n_cols, figsize=figsize)
-    axes = axes.flatten() if len(cols) > 1 else [axes]
+    n_plots = len(cols)
+    actual_n_cols = min(n_cols, n_plots)
+    n_rows = math.ceil(n_plots / actual_n_cols)
+    
+    fig, axes = plt.subplots(n_rows, actual_n_cols, figsize=figsize)
+    axes = np.array([axes]).flatten() if n_plots > 1 else [axes]
 
     for ax, col in zip(axes, cols):
         ct = pd.crosstab(df[col], df[hue_col])
@@ -71,68 +50,29 @@ def plot_discrete_bivariate_grid(df, discrete_cols, hue_col, n_cols=2, figsize=(
         hue_values = ct.columns.tolist()
         n_cat = len(categories)
 
-        # --- Horizontal bars if 8 categories or more ---
         if n_cat >= 8:
             y = np.arange(n_cat)
             height = 0.8 / len(hue_values)
-
             for i, val in enumerate(hue_values):
                 widths = ct[val].values
-                color = colors[i % len(colors)]
-                bars = ax.barh(
-                    y + i * height,
-                    widths,
-                    height=height,
-                    label=str(val),
-                    edgecolor="black",
-                    color=color
-                )
-
+                ax.barh(y + i * height, widths, height=height, label=str(val),
+                        color=colors[i % len(colors)], edgecolor="black")
                 for yi, w in zip(y + i * height, widths):
                     text_val = f"{w:.2f}" if show_proportion else str(int(w))
-                    ax.text(
-                        w + 0.01 * w,
-                        yi,
-                        text_val,
-                        va="center",
-                        ha="left",
-                        fontsize=9,
-                        color="black"
-                    )
-
+                    ax.text(w + 0.005, yi, text_val, va="center", ha="left", fontsize=9)
             ax.set_yticks(y + height * (len(hue_values) - 1) / 2)
             ax.set_yticklabels(categories)
             ax.set_xlabel("Proportion" if show_proportion else "Count")
-
-        # --- Vertical bars otherwise ---
         else:
             x = np.arange(n_cat)
             width = 0.8 / len(hue_values)
-
             for i, val in enumerate(hue_values):
                 heights = ct[val].values
-                color = colors[i % len(colors)]
-                bars = ax.bar(
-                    x + i * width,
-                    heights,
-                    width=width,
-                    label=str(val),
-                    edgecolor="black",
-                    color=color
-                )
-
+                ax.bar(x + i * width, heights, width=width, label=str(val),
+                       color=colors[i % len(colors)], edgecolor="black")
                 for xi, h in zip(x + i * width, heights):
                     text_val = f"{h:.2f}" if show_proportion else str(int(h))
-                    ax.text(
-                        xi,
-                        h / 2,
-                        text_val,
-                        ha="center",
-                        va="center",
-                        fontsize=9,
-                        color="black"
-                    )
-
+                    ax.text(xi, h / 2, text_val, ha="center", va="center", fontsize=9, color="black")
             ax.set_xticks(x + width * (len(hue_values) - 1) / 2)
             ax.set_xticklabels(categories, rotation=45)
             ax.set_ylabel("Proportion" if show_proportion else "Count")
@@ -140,19 +80,16 @@ def plot_discrete_bivariate_grid(df, discrete_cols, hue_col, n_cols=2, figsize=(
         ax.set_title(f"{col} by {hue_col}")
         ax.legend(title=hue_col, bbox_to_anchor=(1.05, 1), loc="upper left")
 
-    for i in range(len(cols), len(axes)):
+    for i in range(n_plots, len(axes)):
         fig.delaxes(axes[i])
 
     plt.tight_layout()
     plt.show()
-    plt.close()
 
-#---Function: plot_discrete_dot_bivariate---
 def plot_discrete_dot_bivariate(df, col, hue_col, normalize=True, figsize=(8,4), colors=None):
     """Dot plot for discrete variable grouped by hue_col."""
     if colors is None: colors = [UNIFORM_BLUE, PALE_PINK]
-    if col not in df.columns or hue_col not in df.columns:
-        print(f"Warning: {col} or {hue_col} not found. Skipping."); return
+    if col not in df.columns or hue_col not in df.columns: return
 
     categories = sorted(df[col].dropna().unique())
     hue_values = sorted(df[hue_col].dropna().unique())
@@ -162,25 +99,27 @@ def plot_discrete_dot_bivariate(df, col, hue_col, normalize=True, figsize=(8,4),
         series = df[df[hue_col]==val][col].dropna()
         counts = get_counts(series)
         if normalize:
-            counts = counts / counts.sum(); xlabel = "Proportion"; fmt = "{:.2f}"
+            counts = counts / counts.sum()
+            xlabel, fmt = "Proportion", "{:.2f}"
         else:
-            xlabel = "Count"; fmt = "{:.0f}"
+            xlabel, fmt = "Count", "{:.0f}"
 
         x_vals = [counts.get(cat,0) for cat in categories]
         ax.plot(x_vals, categories, 'o', color=colors[i % len(colors)], label=str(val))
         for x, cat in zip(x_vals, categories):
             ax.text(x, cat, f" {fmt.format(x)}", va="center", fontsize=9)
 
-    ax.set_title(f"Dot plot of {col} by {hue_col}"); ax.set_xlabel(xlabel); ax.set_ylabel(col)
+    ax.set_title(f"Dot plot of {col} by {hue_col}")
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(col)
     ax.legend(title=hue_col, bbox_to_anchor=(1.05, 1), loc='upper left')
-    plt.tight_layout(); plt.show(); plt.close()
+    plt.tight_layout()
+    plt.show()
 
-#---Function: plot_discrete_lollipop_bivariate---
 def plot_discrete_lollipop_bivariate(df, col, hue_col, normalize=True, figsize=(8,4), colors=None):
     """Lollipop plot for discrete variable grouped by hue_col."""
     if colors is None: colors = [UNIFORM_BLUE, PALE_PINK]
-    if col not in df.columns or hue_col not in df.columns:
-        print(f"Warning: {col} or {hue_col} not found. Skipping."); return
+    if col not in df.columns or hue_col not in df.columns: return
 
     categories = sorted(df[col].dropna().unique())
     hue_values = sorted(df[hue_col].dropna().unique())
@@ -190,9 +129,10 @@ def plot_discrete_lollipop_bivariate(df, col, hue_col, normalize=True, figsize=(
         series = df[df[hue_col]==val][col].dropna()
         counts = get_counts(series)
         if normalize:
-            counts = counts / counts.sum(); xlabel = "Proportion"; fmt = "{:.2f}"
+            counts = counts / counts.sum()
+            xlabel, fmt = "Proportion", "{:.2f}"
         else:
-            xlabel = "Count"; fmt = "{:.0f}"
+            xlabel, fmt = "Count", "{:.0f}"
 
         y_pos = np.arange(len(categories)) + (i*0.2)
         x_vals = [counts.get(cat,0) for cat in categories]
@@ -202,49 +142,50 @@ def plot_discrete_lollipop_bivariate(df, col, hue_col, normalize=True, figsize=(
         for x, y in zip(x_vals, y_pos):
             ax.text(x, y, f" {fmt.format(x)}", va="center", fontsize=9)
 
-    ax.set_yticks(np.arange(len(categories)) + 0.1); ax.set_yticklabels(categories)
-    ax.set_xlabel(xlabel); ax.set_ylabel(col)
+    ax.set_yticks(np.arange(len(categories)) + 0.1)
+    ax.set_yticklabels(categories)
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(col)
     ax.set_title(f"Lollipop plot of {col} by {hue_col}")
+    ax.legend(title=hue_col, bbox_to_anchor=(1.05, 1), loc='upper left')
+    plt.tight_layout()
+    plt.show()
 
-#---Function: plot_stacked_grid---
-def plot_stacked_grid(df, dependent_var, group_vars, n_rows=2, n_cols=2, palette='pastel'):
-    """Plots stacked bar charts of a dependent variable grouped by multiple independent variables."""
+def plot_stacked_grid(df, dependent_var, group_vars, n_rows=2, n_cols=2):
+    """Stacked bar charts grid for multi-level analysis."""
     if isinstance(group_vars, str): group_vars = [group_vars]
-    main_var = group_vars[0]; sub_vars = group_vars[1:]
+    main_var = group_vars[0]
+    sub_vars = group_vars[1:]
     unique_main = sorted(df[main_var].dropna().unique())
-    n_graphs = len(unique_main)
-    colors = sns.color_palette(palette, df[dependent_var].nunique())
+    
+    colors = [UNIFORM_BLUE, PALE_PINK] + sns.color_palette("Blues_d", df[dependent_var].nunique())
 
-    if n_graphs == 1:
-        fig, ax = plt.subplots(figsize=(10,6))
-        df_subset = df[df[main_var]==unique_main[0]]
-        counts = df_subset.groupby(sub_vars + [dependent_var]).size().unstack(fill_value=0)
-        bottoms = np.zeros(len(counts))
-        for i, val in enumerate(counts.columns):
-            ax.bar(counts.index, counts[val], bottom=bottoms, color=colors[i % len(colors)], label=str(val))
-            for xi, c, bottom in zip(range(len(counts)), counts[val].values, bottoms):
-                if c > 0: ax.text(xi, bottom + c/2, str(c), ha="center", va="center", color="black", fontsize=10)
-            bottoms += counts[val].values
-        ax.set_title(f'{dependent_var} Distribution - {unique_main[0]}'); ax.set_ylabel('Count'); ax.set_xlabel(' / '.join(sub_vars))
-        ax.legend(title=dependent_var, bbox_to_anchor=(1.05,1), loc='upper left'); plt.xticks(rotation=45, ha='right')
-        plt.tight_layout(); plt.show()
-
-    else:
-        plots_per_fig = n_rows*n_cols
-        for i in range(0, n_graphs, plots_per_fig):
-            batch = unique_main[i:i+plots_per_fig]
-            fig, axes = plt.subplots(n_rows, n_cols, figsize=(6*n_cols,5*n_rows)); axes = axes.flatten()
-            for ax, main_val in zip(axes, batch):
-                df_subset = df[df[main_var]==main_val]
-                counts = df_subset.groupby(sub_vars + [dependent_var]).size().unstack(fill_value=0)
-                bottoms = np.zeros(len(counts))
-                for j, val in enumerate(counts.columns):
-                    ax.bar(counts.index, counts[val], bottom=bottoms, color=colors[j % len(colors)], label=str(val))
-                    for xi, c, bottom in zip(range(len(counts)), counts[val].values, bottoms):
-                        if c > 0: ax.text(xi, bottom + c/2, str(c), ha="center", va="center", color="black", fontsize=9)
-                    bottoms += counts[val].values
-                ax.set_title(f'{main_var}: {main_val}'); ax.set_ylabel('Count'); ax.set_xlabel(' / '.join(sub_vars))
-                ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha='right')
-            for j in range(len(batch), len(axes)): axes[j].set_visible(False)
-            handles, labels = axes[0].get_legend_handles_labels(); fig.legend(handles, labels, title=dependent_var, bbox_to_anchor=(1.05,1), loc='upper left')
-            plt.tight_layout(); plt.show()
+    plots_per_fig = n_rows*n_cols
+    for i in range(0, len(unique_main), plots_per_fig):
+        batch = unique_main[i:i+plots_per_fig]
+        fig, axes = plt.subplots(n_rows, n_cols, figsize=(6*n_cols,5*n_rows))
+        axes = np.array([axes]).flatten()
+        
+        for ax, main_val in zip(axes, batch):
+            df_subset = df[df[main_var]==main_val]
+            counts = df_subset.groupby(sub_vars + [dependent_var]).size().unstack(fill_value=0)
+            bottoms = np.zeros(len(counts))
+            for j, val in enumerate(counts.columns):
+                ax.bar(counts.index, counts[val], bottom=bottoms, 
+                       color=colors[j % len(colors)], label=str(val))
+                for xi, c, bottom in zip(range(len(counts)), counts[val].values, bottoms):
+                    if c > 0: 
+                        ax.text(xi, bottom + c/2, str(int(c)), ha="center", 
+                                va="center", color="black", fontsize=9)
+                bottoms += counts[val].values
+            ax.set_title(f'{main_var}: {main_val}')
+            ax.set_ylabel('Count')
+            ax.tick_params(axis='x', rotation=45)
+            
+        for j in range(len(batch), len(axes)): 
+            fig.delaxes(axes[j])
+        
+        handles, labels = axes[0].get_legend_handles_labels()
+        fig.legend(handles, labels, title=dependent_var, bbox_to_anchor=(1.01, 0.9), loc='upper left')
+        plt.tight_layout()
+        plt.show()
