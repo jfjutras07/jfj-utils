@@ -202,6 +202,43 @@ def knn_classification(train_df, test_df, outcome, predictors, cv=5, for_stackin
     display(importance_df)
 
     return best_pipeline
+
+#---Function:knn_regression---
+def knn_regression(train_df, test_df, outcome, predictors, cv=5, for_stacking=False):
+    """
+    K-Nearest Neighbors Regressor with GridSearchCV. Compares Train and Test R2.
+    """
+    base_pipe = Pipeline([
+        ('imputer', SimpleImputer(strategy='median')),
+        ('scaler', StandardScaler()),
+        ('model', KNeighborsRegressor())
+    ])
+
+    if for_stacking:
+        return base_pipe
+
+    X_train, y_train = train_df[predictors], train_df[outcome]
+    X_test, y_test = test_df[predictors], test_df[outcome]
+
+    param_grid = {
+        'model__n_neighbors': [3, 5, 11],
+        'model__weights': ['uniform', 'distance']
+    }
+
+    grid_search = GridSearchCV(estimator=base_pipe, param_grid=param_grid, cv=cv, scoring='r2', n_jobs=-1)
+    grid_search.fit(X_train, y_train)
+
+    best_model = grid_search.best_estimator_
+    y_pred_train = best_model.predict(X_train)
+    y_pred_test = best_model.predict(X_test)
+
+    print(f"--- KNN Regression Summary ---")
+    print(f"Best Params: {grid_search.best_params_}")
+    print(f"R2 Score (Train): {r2_score(y_train, y_pred_train):.4f}")
+    print(f"R2 Score (Test): {r2_score(y_test, y_pred_test):.4f}")
+    print("-" * 35)
+
+    return best_model
     
 #---Function:mlp_classification---
 def mlp_classification(train_df, test_df, outcome, predictors, cv=5, for_stacking=False):
