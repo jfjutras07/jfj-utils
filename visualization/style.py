@@ -1,31 +1,66 @@
+import matplotlib.pyplot as plt
+import seaborn as sns
+
 """
 Centralized visualization style definitions.
-Graphical roles only – no semantic assumptions.
+Professional BI standards for high data-ink ratio.
 """
 
 # ======================
-# Core colors (categorical plots)
+# Core colors (HEX)
 # ======================
-UNIFORM_BLUE = "#1f77b4"       # professional balanced blue
-PALE_PINK = "#FF6F61"          # soft contrast for bivariate/categorical
-BLACK = "#000000"              # text/edge labels
+# A professional, corporate blue
+UNIFORM_BLUE = "#1f77b4"  
+# A soft, non-aggressive coral for contrast
+PALE_PINK = "#FF6F61"     
+# Dark grey for text instead of pure black (reduces eye strain)
+GREY_DARK = "#2C3E50"     
+# Light grey for grids and secondary elements
+GREY_LIGHT = "#BDC3C7"    
+WHITE = "#FFFFFF"
 
 # ======================
-# Categorical palettes
+# Palettes & Colormaps
 # ======================
+# Qualitative: for distinct categories
 BIVARIATE_PALETTE = [UNIFORM_BLUE, PALE_PINK]
-UNIVARIATE_COLOR = UNIFORM_BLUE
-MULTIVARIATE_COLOR = UNIFORM_BLUE
+# Sequential: for magnitudes (heatmaps, density)
+SEQUENTIAL_CMAP = sns.light_palette(UNIFORM_BLUE, as_cmap=True)
+# Diverging: for correlations or growth/decline
+DIVERGING_CMAP = "RdBu_r" 
 
 # ======================
-# Colormaps (continuous plots)
+# BI Standards & Defaults
 # ======================
-SEQUENTIAL_CMAP = "Blues"      # for numeric data
-DIVERGING_CMAP = "RdBu_r"      # for correlation/diverging data
+DEFAULT_FIGSIZE = (10, 6)
+DEFAULT_ALPHA = 0.85
 
-# ======================
-# Defaults
-# ======================
-DEFAULT_ALPHA = 0.8
-DEFAULT_EDGE_COLOR = "white"
-DEFAULT_FIGSIZE = (10,6)
+# Configuration dictionary for Matplotlib/Seaborn
+# This ensures consistency even if Seaborn defaults change
+BI_RC_PARAMS = {
+    "axes.facecolor": WHITE,
+    "axes.edgecolor": GREY_LIGHT,
+    "axes.labelcolor": GREY_DARK,
+    "axes.labelsize": 11,
+    "axes.titlesize": 14,
+    "axes.titleweight": "bold",
+    "axes.grid": True,
+    "grid.color": "#F0F0F0",
+    "grid.linestyle": "--",
+    "font.family": "sans-serif",
+    "legend.frameon": False,
+    "legend.fontsize": 10,
+    "xtick.color": GREY_DARK,
+    "ytick.color": GREY_DARK,
+    "figure.titlesize": 16,
+    "figure.dpi": 100
+}
+
+def apply_bi_style():
+    """
+    Apply the BI expert style to the global matplotlib environment.
+    Run this once at the start of your notebook or script.
+    """
+    plt.rcParams.update(BI_RC_PARAMS)
+    sns.set_palette(BIVARIATE_PALETTE)
+    print("BI visualization style applied successfully.")
