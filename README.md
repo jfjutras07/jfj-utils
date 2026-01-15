@@ -175,6 +175,7 @@ Active development — modules will be progressively added and refined.
 - `gaussian_process_classification`
 - `gaussian_process_regression`
 - `knn_classification`
+- `knn_regression`
 - `mlp_regression`
 - `mlp_classification`
 - `svm_classification`
@@ -213,7 +214,6 @@ Active development — modules will be progressively added and refined.
 - `catboost_regression`
 - `compare_regression_tree_models`
 - `decision_tree_regression`
-- `knn_regression`
 - `lightgbm_regression`
 - `random_forest_regression`
 - `xgboost_regression`
