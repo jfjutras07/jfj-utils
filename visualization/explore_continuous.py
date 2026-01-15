@@ -121,29 +121,14 @@ def plot_heatmap_grid(df, value_col, index_col, columns_col=None, aggfunc='media
 def plot_mi_vs_correlation(X, y, target_type='classification', method='spearman', figsize=(10, 12)):
     """
     Diagnostic plot comparing Mutual Information and Absolute Correlation scores.
-    Uses UNIFORM_BLUE for MI and PALE_PINK for Correlation to identify non-linearities.
-
-    Parameters:
-    -----------
-    X : pd.DataFrame
-        Feature matrix.
-    y : pd.Series
-        Target variable.
-    target_type : str
-        'classification' or 'regression'.
-    method : str
-        Correlation method: 'pearson', 'spearman', or 'kendall'.
-    figsize : tuple
-        Size of the figure.
     """
-    #Compute MI Scores (calls your existing mi_classification or mi_regression)
+    # Compute MI Scores using your specific functions
     if target_type == 'classification':
         mi_scores = mi_classification(X, y)
     else:
         mi_scores = mi_regression(X, y)
 
-    #Compute Correlation with target
-    #Ensure y is encoded if categorical
+    # Compute Correlation with target
     y_encoded = y.copy()
     if not pd.api.types.is_numeric_dtype(y_encoded):
         y_encoded, _ = y_encoded.factorize()
@@ -153,36 +138,29 @@ def plot_mi_vs_correlation(X, y, target_type='classification', method='spearman'
         x_col = X[col].copy()
         if not pd.api.types.is_numeric_dtype(x_col):
             x_col, _ = x_col.factorize()
-        # Take absolute value to compare strength/magnitude
         correlations[col] = abs(x_col.corr(y_encoded, method=method))
 
-    #Align correlations with the sorted MI index
     corr_series = pd.Series(correlations).reindex(mi_scores.index)
 
-    #Create Plotting DataFrame
     plot_df = pd.DataFrame({
         'Mutual Information': mi_scores,
         'Absolute Correlation': corr_series
-    }).sort_values('Mutual Information', ascending=True) # Ascending for horizontal bar orientation
+    }).sort_values('Mutual Information', ascending=True)
 
-    #Plotting
     fig, ax = plt.subplots(figsize=figsize)
     y_pos = np.arange(len(plot_df))
     bar_height = 0.4
 
-    #MI Bars (Top of pair)
     ax.barh(y_pos + bar_height/2, plot_df['Mutual Information'], height=bar_height, 
             label='Mutual Information', color=UNIFORM_BLUE, edgecolor="black")
 
-    #Correlation Bars (Bottom of pair)
     ax.barh(y_pos - bar_height/2, plot_df['Absolute Correlation'], height=bar_height, 
             label=f'Abs {method.capitalize()} Corr', color=PALE_PINK, edgecolor="black")
 
-    #Formatting
     ax.set_yticks(y_pos)
     ax.set_yticklabels(plot_df.index)
     ax.set_xlabel("Relationship Strength")
-    ax.set_title(f"Diagnostic: MI vs {method.capitalize()} Correlation")
+    ax.set_title(f"Diagnostic: MI vs {method.capitalize()} Correlation", fontweight='bold')
     ax.legend(loc='lower right', frameon=True)
     ax.grid(axis='x', linestyle='--', alpha=0.5)
 
@@ -195,17 +173,6 @@ def plot_mi_vs_correlation(X, y, target_type='classification', method='spearman'
 def plot_numeric_bivariate(df, numeric_cols, hue='Gender', bins=40):
     """
     Plots distributions and boxplots for numeric columns split by a binary group.
-
-    Parameters:
-    -----------
-    df : pd.DataFrame
-        DataFrame containing the data.
-    numeric_cols : list
-        List of numeric columns to plot.
-    hue : str, optional
-        Binary grouping variable. Default is 'Gender'.
-    bins : int, optional
-        Number of bins for histograms. Default is 40.
     """
     groups = df[hue].unique()
     if len(groups) != 2:
@@ -217,25 +184,21 @@ def plot_numeric_bivariate(df, numeric_cols, hue='Gender', bins=40):
     for col in numeric_cols:
         fig, axes = plt.subplots(1, 3, figsize=(18, 4))
 
-        #Histogram for first group
+        # Histogram Group 1
         sns.histplot(df[df[hue] == groups[0]], x=col, kde=True, bins=bins,
                      color=palette[groups[0]], alpha=0.6, ax=axes[0])
-        axes[0].set_title(f"{col} distribution - {groups[0]}")
-        axes[0].set_xlabel(col)
+        axes[0].set_title(f"{col} - {groups[0]}", fontweight='bold')
         axes[0].set_ylabel("Count")
 
-        #Histogram for second group
+        # Histogram Group 2
         sns.histplot(df[df[hue] == groups[1]], x=col, kde=True, bins=bins,
                      color=palette[groups[1]], alpha=0.6, ax=axes[1])
-        axes[1].set_title(f"{col} distribution - {groups[1]}")
-        axes[1].set_xlabel(col)
+        axes[1].set_title(f"{col} - {groups[1]}", fontweight='bold')
         axes[1].set_ylabel("Count")
 
-        #Boxplot comparing both groups
-        sns.boxplot(x=hue, y=col, data=df, palette=palette, ax=axes[2])
-        axes[2].set_title(f"{col} by {hue}")
-        axes[2].set_xlabel(hue)
-        axes[2].set_ylabel(col)
+        # Boxplot Comparison
+        sns.boxplot(x=hue, y=col, data=df, palette=palette, ax=axes[2], linewidth=1.5)
+        axes[2].set_title(f"{col} by {hue}", fontweight='bold')
 
         plt.tight_layout()
         plt.show()
@@ -244,34 +207,20 @@ def plot_numeric_bivariate(df, numeric_cols, hue='Gender', bins=40):
 #---Function: plot_numeric_distribution---
 def plot_numeric_distribution(df, numeric_cols, bins=40):
     """
-    Plots histogram and boxplot for each numeric column to visualize distribution and outliers.
-
-    Parameters:
-    -----------
-    df : pd.DataFrame
-        DataFrame containing the data.
-    numeric_cols : list
-        List of numeric columns to plot.
-    bins : int, optional
-        Number of bins for histograms. Default is 40.
+    Plots histogram and boxplot for each numeric column.
     """
     for col in numeric_cols:
         if col not in df.columns:
-            print(f"Warning: {col} not found.")
             continue
 
         fig, axes = plt.subplots(1, 2, figsize=(14, 4))
 
-        #Histogram
-        sns.histplot(df[col].dropna(), kde=True, bins=bins, color=UNIFORM_BLUE, ax=axes[0])
-        axes[0].set_title(f"Distribution of {col}")
-        axes[0].set_xlabel(col)
+        sns.histplot(df[col].dropna(), kde=True, bins=bins, color=UNIFORM_BLUE, ax=axes[0], alpha=0.7)
+        axes[0].set_title(f"Distribution: {col}", fontweight='bold')
         axes[0].set_ylabel("Count")
 
-        #Boxplot
-        sns.boxplot(x=df[col].dropna(), color=UNIFORM_BLUE, ax=axes[1])
-        axes[1].set_title(f"Outliers in {col}")
-        axes[1].set_xlabel(col)
+        sns.boxplot(x=df[col].dropna(), color=UNIFORM_BLUE, ax=axes[1], linewidth=1.5)
+        axes[1].set_title(f"Outliers: {col}", fontweight='bold')
 
         plt.tight_layout()
         plt.show()
@@ -281,32 +230,23 @@ def plot_numeric_distribution(df, numeric_cols, bins=40):
 def plot_pairplot(df, features, hue=None, diag_kind='kde', corner=True, alpha=0.5, figsize=(10,10)):
     """
     Plots pairwise relationships between selected features using seaborn's pairplot.
-
-    Parameters:
-    -----------
-    df : pd.DataFrame
-        DataFrame containing the data.
-    features : list
-        List of columns to include in the pairplot.
-    hue : str, optional
-        Column name for color grouping. Default is None.
-    diag_kind : str, optional
-        Kind of plot on the diagonal: 'kde' or 'hist'. Default is 'kde'.
-    corner : bool, optional
-        If True, shows only the lower triangle of plots. Default is True.
-    alpha : float, optional
-        Transparency of scatter points. Default is 0.5.
-    figsize : tuple, optional
-        Figure size. Default is (10,10).
     """
     sns.set(style="ticks")
     
-    #If hue is defined, add it to features to avoid KeyError
+    # Ensure hue is defined in columns to avoid KeyError
     plot_cols = features + [hue] if hue is not None and hue not in features else features
 
-    pairplot = sns.pairplot(df[plot_cols], hue=hue, diag_kind=diag_kind, corner=corner, plot_kws={'alpha': alpha})
+    # FIX: Use BIVARIATE_PALETTE if hue is present to get blue/pink colors
+    pairplot = sns.pairplot(
+        df[plot_cols], 
+        hue=hue, 
+        diag_kind=diag_kind, 
+        corner=corner, 
+        palette=BIVARIATE_PALETTE if hue else None,
+        plot_kws={'alpha': alpha, 's': 30, 'edgecolor': 'white', 'linewidth': 0.5}
+    )
     pairplot.fig.set_size_inches(figsize)
-    pairplot.fig.suptitle("Pairplot of Selected Features", y=1.02)
+    pairplot.fig.suptitle("Pairplot of Selected Features", fontweight='bold', y=1.02)
     plt.show()
 
 #---Function: plot_scatter_grid---
@@ -314,102 +254,47 @@ def plot_scatter_grid(df: pd.DataFrame, x_cols: list, y_cols: list, group_col: s
                       group_labels: dict = None, n_cols_per_row: int = 2, figsize=(14,6)):
     """
     Plots scatter plots of x vs y columns in a grid, optionally grouped by a categorical variable.
-
-    Parameters:
-    -----------
-    df : pd.DataFrame
-        DataFrame containing the data.
-    x_cols : list
-        List of column names to use as x-axis variables.
-    y_cols : list
-        List of column names to use as y-axis variables.
-    group_col : str, optional
-        Column name for grouping and coloring points. Default is None.
-    group_labels : dict, optional
-        Dictionary to map group values to labels. Default is None.
-    n_cols_per_row : int, optional
-        Number of columns per row in the grid. Default is 2.
-    figsize : tuple, optional
-        Figure size (width, height). Default is (14,6).
     """
     num_plots = len(x_cols)
-    if num_plots == 1:
-        fig, ax = plt.subplots(figsize=(10,6))
-        x, y = x_cols[0], y_cols[0]
-        if group_col:
-            plot_data = df.copy()
-            plot_data['Group'] = plot_data[group_col].map(group_labels) if group_labels else plot_data[group_col]
-            sns.scatterplot(
-                data=plot_data, x=x, y=y, hue='Group',
-                palette={k: UNIFORM_BLUE for k in plot_data['Group'].unique()},
-                s=60
-            )
-        else:
-            sns.scatterplot(data=df, x=x, y=y, color=UNIFORM_BLUE, s=60)
-        ax.set_title(f'{y} vs {x}')
+    
+    # Grid logic
+    n_rows = (num_plots + n_cols_per_row - 1) // n_cols_per_row
+    fig, axes = plt.subplots(
+        n_rows, 
+        n_cols_per_row if num_plots > 1 else 1, 
+        figsize=(figsize[0], n_rows * figsize[1]) if num_plots > 1 else (10, 6)
+    )
+    axes_flat = np.atleast_1d(axes).flatten()
+
+    for i, (x, y) in enumerate(zip(x_cols, y_cols)):
+        ax = axes_flat[i]
+        
+        # Prepare data with group labels if provided
+        plot_data = df.copy()
+        if group_col and group_labels:
+            plot_data[group_col] = plot_data[group_col].map(group_labels)
+
+        # FIX: Use BIVARIATE_PALETTE for hue or UNIFORM_BLUE for single color
+        sns.scatterplot(
+            data=plot_data, 
+            x=x, 
+            y=y, 
+            hue=group_col,
+            palette=BIVARIATE_PALETTE if group_col else None,
+            color=UNIFORM_BLUE if group_col is None else None,
+            s=60, 
+            ax=ax,
+            alpha=0.7
+        )
+        
+        ax.set_title(f'{y} vs {x}', fontweight='bold')
         ax.set_xlabel(x)
         ax.set_ylabel(y)
-        ax.grid(True)
-        plt.tight_layout()
-        plt.show()
-    else:
-        n_rows = (num_plots + n_cols_per_row - 1) // n_cols_per_row
-        fig, axes = plt.subplots(n_rows, n_cols_per_row, figsize=(figsize[0], n_rows*figsize[1]))
-        axes = axes.flatten()
-        for i, (x, y) in enumerate(zip(x_cols, y_cols)):
-            ax = axes[i]
-            if group_col:
-                plot_data = df.copy()
-                plot_data['Group'] = plot_data[group_col].map(group_labels) if group_labels else plot_data[group_col]
-                sns.scatterplot(
-                    data=plot_data, x=x, y=y, hue='Group',
-                    palette={k: UNIFORM_BLUE for k in plot_data['Group'].unique()},
-                    s=40, ax=ax
-                )
-            else:
-                sns.scatterplot(data=df, x=x, y=y, color=UNIFORM_BLUE, s=40, ax=ax)
-            ax.set_title(f'{y} vs {x}')
-            ax.set_xlabel(x)
-            ax.set_ylabel(y)
-            ax.grid(True)
-        for j in range(len(x_cols), len(axes)):
-            axes[j].set_visible(False)
-        plt.tight_layout()
-        plt.show()
+        ax.grid(True, linestyle='--', alpha=0.5)
 
-#---Function: plot_scatter_plot---
-def plot_scatter_plot(df, target_col, numeric_cols=None):
-    """
-    Plots scatter plots of numeric columns against a target column.
-
-    Parameters:
-    -----------
-    df : pd.DataFrame
-        DataFrame containing the data.
-    target_col : str
-        Column to plot on the y-axis.
-    numeric_cols : list, optional
-        List of numeric columns to plot on the x-axis. 
-        If None, all numeric columns except target_col are used.
-    """
-    if numeric_cols is None:
-        numeric_cols = df.select_dtypes(include='number').columns.tolist()
-        numeric_cols = [c for c in numeric_cols if c != target_col]
-
-    n_cols = 2
-    n_rows = math.ceil(len(numeric_cols) / n_cols)
-    fig, axes = plt.subplots(n_rows, n_cols, figsize=(12, 5 * n_rows))
-    axes = axes.flatten()
-
-    for i, col in enumerate(numeric_cols):
-        axes[i].scatter(df[col], df[target_col], alpha=0.6, color=UNIFORM_BLUE)
-        axes[i].set_xlabel(col)
-        axes[i].set_ylabel(target_col)
-        axes[i].set_title(f"{col} vs {target_col}")
-
-    #Remove unused axes
-    for j in range(i + 1, len(axes)):
-        fig.delaxes(axes[j])
+    # Hide unused subplots
+    for j in range(num_plots, len(axes_flat)):
+        axes_flat[j].set_visible(False)
 
     plt.tight_layout()
     plt.show()
