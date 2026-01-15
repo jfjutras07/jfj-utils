@@ -5,234 +5,228 @@ from sklearn.mixture import GaussianMixture
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import RobustScaler
 from sklearn.metrics import silhouette_score, calinski_harabasz_score, davies_bouldin_score
+from IPython.display import display
 
 #---Function:agglomerative_clustering---
 def agglomerative_clustering(df, predictors, k=4, optimize=False, k_range=range(2,8), for_compare=False):
+    """
+    Agglomerative Hierarchical Clustering with Ward linkage.
+    Optimizes the number of clusters based on a combined validation metric.
+    """
     X = df[predictors]
+    best_k = k
+    
     if optimize:
         best_score = -np.inf
-        best_pipe = None
         for k_test in k_range:
-            pipe = Pipeline([('scaler', RobustScaler()), ('model', AgglomerativeClustering(n_clusters=k_test, linkage='ward'))])
+            pipe = Pipeline([('scaler', RobustScaler()), ('model', AgglomerativeClustering(n_clusters=k_test))])
             labels = pipe.fit_predict(X)
             if len(np.unique(labels)) < 2: continue
+            
             sil = silhouette_score(X, labels)
             ch = calinski_harabasz_score(X, labels)
             db = davies_bouldin_score(X, labels)
-            score = sil + ch/1000 - db
+            score = sil + (ch/1000) - db
+            
             if score > best_score:
-                best_score = score
-                best_pipe = pipe
-                k = k_test
-        base_pipe = best_pipe
-    else:
-        base_pipe = Pipeline([('scaler', RobustScaler()), ('model', AgglomerativeClustering(n_clusters=k, linkage='ward'))])
-        base_pipe.fit(X)
-    if for_compare: return base_pipe
-    print(f"--- Agglomerative Execution ---")
-    print(f"Clusters: {k} | Optimized: {optimize}")
+                best_score, best_k = score, k_test
+    
+    best_pipe = Pipeline([('scaler', RobustScaler()), ('model', AgglomerativeClustering(n_clusters=best_k))])
+    best_pipe.fit(X)
+    
+    if for_compare: return best_pipe
+
+    print(f"--- Agglomerative Clustering Summary ---")
+    print(f"Optimal Clusters: {best_k} | Optimized: {optimize}")
     print("-" * 35)
-    return base_pipe
+    return best_pipe
 
 #---Function:birch_clustering---
 def birch_clustering(df, predictors, k=4, optimize=False, k_range=range(2,8), for_compare=False):
+    """
+    BIRCH Clustering (Balanced Iterative Reducing and Clustering using Hierarchies).
+    Efficient for large datasets by building a Clustering Feature Tree.
+    """
     X = df[predictors]
+    best_k = k
+    
     if optimize:
         best_score = -np.inf
-        best_pipe = None
         for k_test in k_range:
             pipe = Pipeline([('scaler', RobustScaler()), ('model', Birch(n_clusters=k_test))])
             labels = pipe.fit_predict(X)
             if len(np.unique(labels)) < 2: continue
+            
             sil = silhouette_score(X, labels)
-            ch = calinski_harabasz_score(X, labels)
-            db = davies_bouldin_score(X, labels)
-            score = sil + ch/1000 - db
+            score = sil
             if score > best_score:
-                best_score = score
-                best_pipe = pipe
-                k = k_test
-        base_pipe = best_pipe
-    else:
-        base_pipe = Pipeline([('scaler', RobustScaler()), ('model', Birch(n_clusters=k))])
-        base_pipe.fit(X)
-    if for_compare: return base_pipe
-    print(f"--- BIRCH Execution ---")
-    print(f"Clusters: {k} | Optimized: {optimize}")
+                best_score, best_k = score, k_test
+                
+    best_pipe = Pipeline([('scaler', RobustScaler()), ('model', Birch(n_clusters=best_k))])
+    best_pipe.fit(X)
+    
+    if for_compare: return best_pipe
+
+    print(f"--- BIRCH Clustering Summary ---")
+    print(f"Clusters: {best_k} | Optimized: {optimize}")
     print("-" * 35)
-    return base_pipe
+    return best_pipe
 
 #---Function:compare_clustering_models---
 def compare_clustering_models(df, predictors, k=4, optimize=False):
     """
-    Executes and compares all clustering models.
+    Executes and compares all clustering models, storing labels in the dataframe.
+    Sorted by Silhouette score to identify the best partitioning.
     """
-    print("Starting Clustering Models Comparison...")
-    print(f"Predictors: {len(predictors)} | Initial K: {k} | Optimization: {optimize}")
+    print(f"Starting Clustering Comparison | Predictors: {len(predictors)}")
     print("-" * 45)
 
     X = df[predictors]
-    results = {}
+    # Execution in alphabetical order
+    models = {
+        'Agglomerative': agglomerative_clustering(df, predictors, k=k, optimize=optimize, for_compare=True),
+        'BIRCH': birch_clustering(df, predictors, k=k, optimize=optimize, for_compare=True),
+        'DBSCAN': dbscan_clustering(df, predictors, optimize=optimize, for_compare=True),
+        'GMM': gaussian_mixture_clustering(df, predictors, k=k, optimize=optimize, for_compare=True),
+        'KMeans': kmeans_clustering(df, predictors, k=k, optimize=optimize, for_compare=True),
+        'KMedoids': kmedoids_clustering(df, predictors, k=k, optimize=optimize, for_compare=True)
+    }
 
-    results['Agglomerative'] = agglomerative_clustering(
-        df, predictors, k=k, optimize=optimize
-    )
-
-    results['BIRCH'] = birch_clustering(
-        df, predictors, k=k, optimize=optimize
-    )
-
-    results['DBSCAN'] = dbscan_clustering(
-        df, predictors, optimize=optimize
-    )
-
-    results['GMM'] = gaussian_mixture_clustering(
-        df, predictors, k=k, optimize=optimize
-    )
-
-    results['KMeans'] = kmeans_clustering(
-        df, predictors, k=k, optimize=optimize
-    )
-
-    km_model = kmedoids_clustering(
-        df, predictors, k=k, optimize=optimize
-    )
-    if km_model is not None:
-        results['KMedoids'] = km_model
-
-    print("\n--- Summary of Clustering Assignments ---")
     summary_data = []
-
-    for name, model in results.items():
-        labels = model.fit_predict(X)
-        n_clusters = len(np.unique(labels[labels != -1]))
+    for name, pipe in models.items():
+        if pipe is None: continue
+        labels = pipe.fit_predict(X)
         df[f'Cluster_{name}'] = labels
+        n_clusters = len(np.unique(labels[labels != -1]))
+        score = silhouette_score(X, labels) if n_clusters > 1 else 0
+        
         summary_data.append({
             "Model": name,
-            "Clusters_Detected": n_clusters
+            "Clusters": n_clusters,
+            "Silhouette": round(score, 4)
         })
 
-    print(pd.DataFrame(summary_data).to_string(index=False))
-    return results
+    print("\n--- Final Clustering Comparison (Sorted by Silhouette) ---")
+    display(pd.DataFrame(summary_data).sort_values(by="Silhouette", ascending=False))
+    return models
 
 #---Function:dbscan_clustering---
-def dbscan_clustering(df, predictors, eps=0.5, min_samples=5, optimize=False,
-                      eps_grid=[0.3,0.5,0.7], min_samples_grid=[5,10], for_compare=False):
+def dbscan_clustering(df, predictors, eps=0.5, min_samples=5, optimize=False, for_compare=False):
+    """
+    DBSCAN Clustering. Identifies clusters of any shape and detects noise (-1).
+    """
     X = df[predictors]
+    best_eps, best_ms = eps, min_samples
+    
     if optimize:
         best_score = -np.inf
-        best_pipe = None
-        for e in eps_grid:
-            for ms in min_samples_grid:
-                pipe = Pipeline([('scaler', RobustScaler()), ('model', DBSCAN(eps=e,min_samples=ms))])
+        for e in [0.3, 0.5, 0.7]:
+            for ms in [5, 10]:
+                pipe = Pipeline([('scaler', RobustScaler()), ('model', DBSCAN(eps=e, min_samples=ms))])
                 labels = pipe.fit_predict(X)
                 mask = labels != -1
                 if len(np.unique(labels[mask])) < 2: continue
                 sil = silhouette_score(X[mask], labels[mask])
-                ch = calinski_harabasz_score(X[mask], labels[mask])
-                db = davies_bouldin_score(X[mask], labels[mask])
-                score = sil + ch/1000 - db
-                if score > best_score:
-                    best_score = score
-                    best_pipe = pipe
-                    eps, min_samples = e, ms
-        base_pipe = best_pipe
-    else:
-        base_pipe = Pipeline([('scaler', RobustScaler()), ('model', DBSCAN(eps=eps,min_samples=min_samples))])
-        base_pipe.fit(X)
-    if for_compare: return base_pipe
-    print(f"--- DBSCAN Execution ---")
-    print(f"Eps: {eps} | Min Samples: {min_samples} | Optimized: {optimize}")
+                if sil > best_score:
+                    best_score, best_eps, best_ms = sil, e, ms
+                    
+    best_pipe = Pipeline([('scaler', RobustScaler()), ('model', DBSCAN(eps=best_eps, min_samples=best_ms))])
+    best_pipe.fit(X)
+    
+    if for_compare: return best_pipe
+
+    print(f"--- DBSCAN Clustering Summary ---")
+    print(f"Eps: {best_eps} | Min Samples: {best_ms} | Optimized: {optimize}")
     print("-" * 35)
-    return base_pipe
+    return best_pipe
 
 #---Function:gaussian_mixture_clustering---
 def gaussian_mixture_clustering(df, predictors, k=4, optimize=False, k_range=range(2,8), for_compare=False):
+    """
+    Gaussian Mixture Model (GMM). Uses Expectation-Maximization for probabilistic assignments.
+    """
     X = df[predictors]
+    best_k = k
+    
     if optimize:
         best_score = -np.inf
-        best_pipe = None
         scaler = RobustScaler()
         X_scaled = scaler.fit_transform(X)
         for k_test in k_range:
-            gmm = GaussianMixture(n_components=k_test, covariance_type='full', random_state=42)
-            gmm.fit(X_scaled)
-            labels = gmm.predict(X_scaled)
-            if len(np.unique(labels)) < 2: continue
+            gmm = GaussianMixture(n_components=k_test, random_state=42)
+            labels = gmm.fit_predict(X_scaled)
             sil = silhouette_score(X_scaled, labels)
-            ch = calinski_harabasz_score(X_scaled, labels)
-            db = davies_bouldin_score(X_scaled, labels)
-            score = -gmm.bic(X_scaled) + sil*100 + ch/1000 - db
+            score = -gmm.bic(X_scaled) + (sil * 100) # Balancing BIC and Silhouette
             if score > best_score:
-                best_score = score
-                best_pipe = Pipeline([('scaler', scaler), ('model', gmm)])
-                k = k_test
-        base_pipe = best_pipe
-    else:
-        base_pipe = Pipeline([('scaler', RobustScaler()), ('model', GaussianMixture(n_components=k, random_state=42))])
-        base_pipe.fit(X)
-    if for_compare: return base_pipe
-    print(f"--- GMM Execution ---")
-    print(f"Components: {k} | Optimized: {optimize}")
+                best_score, best_k = score, k_test
+                
+    best_pipe = Pipeline([('scaler', RobustScaler()), ('model', GaussianMixture(n_components=best_k, random_state=42))])
+    best_pipe.fit(X)
+    
+    if for_compare: return best_pipe
+
+    print(f"--- GMM Clustering Summary ---")
+    print(f"Components: {best_k} | Optimized: {optimize}")
     print("-" * 35)
-    return base_pipe
+    return best_pipe
 
 #---Function:kmeans_clustering---
 def kmeans_clustering(df, predictors, k=4, optimize=False, k_range=range(2,8), for_compare=False):
+    """
+    K-Means Clustering. Minimizes within-cluster sum-of-squares (inertia).
+    """
     X = df[predictors]
+    best_k = k
+    
     if optimize:
         best_score = -np.inf
-        best_pipe = None
         for k_test in k_range:
-            pipe = Pipeline([('scaler', RobustScaler()), ('model', KMeans(n_clusters=k_test, random_state=42, n_init=20))])
+            pipe = Pipeline([('scaler', RobustScaler()), ('model', KMeans(n_clusters=k_test, n_init=10, random_state=42))])
             labels = pipe.fit_predict(X)
-            if len(np.unique(labels)) < 2: continue
             sil = silhouette_score(X, labels)
-            ch = calinski_harabasz_score(X, labels)
             db = davies_bouldin_score(X, labels)
-            score = sil + ch/1000 - db
+            score = sil - db
             if score > best_score:
-                best_score = score
-                best_pipe = pipe
-                k = k_test
-        base_pipe = best_pipe
-    else:
-        base_pipe = Pipeline([('scaler', RobustScaler()), ('model', KMeans(n_clusters=k, random_state=42, n_init=10))])
-        base_pipe.fit(X)
-    if for_compare: return base_pipe
-    print(f"--- KMeans Execution ---")
-    print(f"Clusters: {k} | Optimized: {optimize}")
+                best_score, best_k = score, k_test
+                
+    best_pipe = Pipeline([('scaler', RobustScaler()), ('model', KMeans(n_clusters=best_k, n_init=10, random_state=42))])
+    best_pipe.fit(X)
+    
+    if for_compare: return best_pipe
+
+    print(f"--- KMeans Clustering Summary ---")
+    print(f"Clusters: {best_k} | Optimized: {optimize}")
     print("-" * 35)
-    return base_pipe
+    return best_pipe
 
 #---Function:kmedoids_clustering---
 def kmedoids_clustering(df, predictors, k=4, optimize=False, k_range=range(2,8), for_compare=False):
+    """
+    K-Medoids Clustering. More robust to outliers than K-Means by using actual data points as centers.
+    """
     try:
         from sklearn_extra.cluster import KMedoids
-    except (ImportError, Exception):
+    except ImportError:
         return None
+
     X = df[predictors]
+    best_k = k
+    
     if optimize:
         best_score = -np.inf
-        best_pipe = None
         for k_test in k_range:
             pipe = Pipeline([('scaler', RobustScaler()), ('model', KMedoids(n_clusters=k_test, random_state=42, method='pam'))])
             labels = pipe.fit_predict(X)
-            if len(np.unique(labels)) < 2: continue
             sil = silhouette_score(X, labels)
-            ch = calinski_harabasz_score(X, labels)
-            db = davies_bouldin_score(X, labels)
-            score = sil + ch/1000 - db
-            if score > best_score:
-                best_score = score
-                best_pipe = pipe
-                k = k_test
-        base_pipe = best_pipe
-    else:
-        base_pipe = Pipeline([('scaler', RobustScaler()), ('model', KMedoids(n_clusters=k, random_state=42, method='pam'))])
-        base_pipe.fit(X)
-    if for_compare: return base_pipe
-    print(f"--- K-Medoids Execution ---")
-    print(f"Clusters: {k} | Optimized: {optimize}")
+            if sil > best_score:
+                best_score, best_k = sil, k_test
+                
+    best_pipe = Pipeline([('scaler', RobustScaler()), ('model', KMedoids(n_clusters=best_k, random_state=42, method='pam'))])
+    best_pipe.fit(X)
+    
+    if for_compare: return best_pipe
+
+    print(f"--- K-Medoids Clustering Summary ---")
+    print(f"Clusters: {best_k} | Optimized: {optimize}")
     print("-" * 35)
-    return base_pipe
+    return best_pipe
