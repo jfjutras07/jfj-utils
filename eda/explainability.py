@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import shap
+from sklearn.pipeline import Pipeline
 from lime import lime_tabular
 from sklearn.inspection import permutation_importance, PartialDependenceDisplay, partial_dependence
 
