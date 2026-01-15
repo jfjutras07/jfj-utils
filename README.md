@@ -211,9 +211,6 @@ Active development — modules will be progressively added and refined.
 - `quantile_regression`
 - `robust_regression`
 
-*regression_stacking.py*
-- `stacking_ensemble`
-
 *regression_trees.py*
 - `catboost_regression`
 - `compare_regression_tree_models`
@@ -227,7 +224,11 @@ Active development — modules will be progressively added and refined.
 - `elasticnet_regression`
 - `lasso_regression`
 - `ridge_regression`
- 
+
+*stacking.py*
+- `stacking_classification_ensemble`
+- `stacking_regression_ensemble`
+  
 ### Optimization : Prescriptive analytics tools for simulation, decision support, and optimization.
 
 ### Visualization: High-level plotting utilities for exploring data and communicating analytical results.
