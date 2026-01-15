@@ -187,7 +187,11 @@ Active development — modules will be progressively added and refined.
 *classification_trees.py*
 - `catboost_classification`
 - `compare_classification_tree_models`
-
+- `decision_tree_classification`
+- `lightgbm_classification`
+- `random_forest_classification`
+- `xgboost_classification`
+  
 *clustering_models.py*
 - `agglomerative_clustering`
 - `birch_clustering`
