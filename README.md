@@ -101,6 +101,7 @@ Active development — modules will be progressively added and refined.
 - `describe_structure`
 
 *explainability.py*
+- `feature_importance`
 - `interaction_effects`
 - `lime_analysis`
 - `pdp_analysis`
