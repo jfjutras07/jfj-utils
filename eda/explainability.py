@@ -5,6 +5,48 @@ import shap
 from lime import lime_tabular
 from sklearn.inspection import permutation_importance, PartialDependenceDisplay, partial_dependence
 
+#---Function:feature_importance---
+def feature_importance(model, train_df, predictors):
+    """
+    Generic function to extract feature importance or coefficients.
+    Supports Tree-based models (native importance) and Linear models (coefficients).
+    """
+    # Extract the model from the pipeline if necessary
+    if isinstance(model, Pipeline):
+        actual_model = model.named_steps['model']
+    else:
+        actual_model = model
+
+    # Tree-based models (Random Forest, XGBoost, CatBoost, LightGBM, DecisionTree)
+    if hasattr(actual_model, 'feature_importances_'):
+        importances = actual_model.feature_importances_
+        method = "Native Feature Importance"
+    
+    # Linear models (Logistic Regression, Bayesian Ridge, etc.)
+    elif hasattr(actual_model, 'coef_'):
+        # Take absolute value of coefficients to represent global importance
+        if len(actual_model.coef_.shape) > 1:
+            importances = np.mean(np.abs(actual_model.coef_), axis=0)
+        else:
+            importances = np.abs(actual_model.coef_)
+        method = "Absolute Coefficients"
+    
+    else:
+        print("No native importance or coefficients found for this model type.")
+        print("Please use permutation_importance_calc for this specific model.")
+        return None
+
+    # Create and display the importance DataFrame
+    importance_df = pd.DataFrame({
+        'Feature': predictors,
+        'Importance': importances
+    }).sort_values(by='Importance', ascending=False)
+
+    print(f"--- Global Feature Importance Summary ({method}) ---")
+    display(importance_df.head(10))
+    
+    return importance_df
+    
 #---Function:interaction_effects---
 def interaction_effects(model, test_df, predictors, top_n=5):
     """
