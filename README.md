@@ -170,12 +170,22 @@ Active development — modules will be progressively added and refined.
 ### Modeling: Helpers for fitting, evaluating, and comparing statistical and machine learning models.
 
 *advanced_models.py*
-- `bayesian_mlp_regression`
+- `bayesian_classification`
+- `bayesian_regression`
+- `gaussian_process_classification`
 - `gaussian_process_regression`
+- `knn_classification`
 - `mlp_regression`
+- `mlp_classification`
+- `svm_classification`
 - `svm_regression`
   
 *classification_models.py*
+- `logistic_regression`
+
+*classification_trees.py*
+- `catboost_classification`
+- `compare_classification_tree_models`
 
 *clustering_models.py*
 - `agglomerative_clustering`
@@ -201,7 +211,7 @@ Active development — modules will be progressively added and refined.
 
 *regression_trees.py*
 - `catboost_regression`
-- `compare_tree_models`
+- `compare_regression_tree_models`
 - `decision_tree_regression`
 - `knn_regression`
 - `lightgbm_regression`
