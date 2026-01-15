@@ -28,6 +28,8 @@ BIVARIATE_PALETTE = [UNIFORM_BLUE, PALE_PINK]
 SEQUENTIAL_CMAP = sns.light_palette(UNIFORM_BLUE, as_cmap=True)
 # Diverging: for correlations or growth/decline
 DIVERGING_CMAP = "RdBu_r" 
+# Choropleth Map
+SEQUENTIAL_PLOTLY_SCALE = [[0, "#e3f2fd"], [1, "#1f77b4"]] # Light to Uniform Blue
 
 # ======================
 # BI Standards & Defaults
