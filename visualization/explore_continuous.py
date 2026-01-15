@@ -4,124 +4,83 @@ import numpy as np
 import pandas as pd
 import math
 import warnings
+
 warnings.filterwarnings("ignore")
 warnings.simplefilter(action='ignore', category=RuntimeWarning)
+
 from .style import UNIFORM_BLUE, PALE_PINK, BIVARIATE_PALETTE
 from visualization.style import SEQUENTIAL_CMAP
 
-#--- Function plot_box_grid ---
-def plot_box_grid(df, value_cols, group_col='Economic_status', n_rows=2, n_cols=2, hue_col=None):
+#--- Function: plot_box_grid ---
+def plot_box_grid(df, value_cols, group_col='Economic_status', n_rows=2, n_cols=2, hue_col=None, figsize=None):
     """
-    Plot a grid of boxplots for multiple columns in a 2x2 layout by default.
+    Plot a grid of boxplots for multiple columns. Handles single plots or grids automatically.
     """
-    # Ensure inputs are lists
     if isinstance(value_cols, str):
         value_cols = [value_cols]
     
     x_axis = group_col[0] if isinstance(group_col, list) else group_col
+    n_plots = len(value_cols)
     plots_per_fig = n_rows * n_cols
 
-    # Iterate through columns in batches of 4 (for 2x2)
-    for i in range(0, len(value_cols), plots_per_fig):
+    for i in range(0, n_plots, plots_per_fig):
         batch = value_cols[i : i + plots_per_fig]
-        fig, axes = plt.subplots(n_rows, n_cols, figsize=(6 * n_cols, 5 * n_rows))
         
-        # Flatten axes to easily map the batch
-        axes_flat = axes.flatten()
+        # Adaptive layout: if only one plot in batch, use 1x1
+        current_rows = n_rows if len(batch) > 1 else 1
+        current_cols = n_cols if len(batch) > 1 else 1
+        
+        if figsize is None:
+            current_figsize = (16, 6) if len(batch) == 1 else (6 * n_cols, 5 * n_rows)
+        else:
+            current_figsize = figsize
+
+        fig, axes = plt.subplots(current_rows, current_cols, figsize=current_figsize)
+        axes_flat = np.atleast_1d(axes).flatten()
 
         for idx, y_col in enumerate(batch):
             ax = axes_flat[idx]
             
-            # Use color for single group or palette for hue
             sns.boxplot(
                 data=df, 
                 x=x_axis, 
                 y=y_col, 
                 hue=hue_col, 
                 color=UNIFORM_BLUE if hue_col is None else None,
-                palette=[UNIFORM_BLUE] if hue_col is not None else None,
-                ax=ax
+                palette=BIVARIATE_PALETTE if hue_col is not None else None,
+                ax=ax,
+                linewidth=1.5
             )
             
-            # Setup labels and title
-            ax.set_title(f'{y_col} by {x_axis}')
+            ax.set_title(f'{y_col} by {x_axis}', fontweight='bold')
             ax.set_xlabel(x_axis)
             ax.set_ylabel(y_col)
             ax.grid(axis='y', linestyle='--', alpha=0.5)
             
-            # Adjust labels for readability
             for label in ax.get_xticklabels():
                 label.set_rotation(45)
                 label.set_horizontalalignment('right')
 
-        # Hide unused subplots if the batch is smaller than n_rows * n_cols
         for j in range(len(batch), len(axes_flat)):
             axes_flat[j].set_visible(False)
 
         plt.tight_layout()
         plt.show()
 
-#--- Function : plot_box_plot ---
-def plot_box_plot(df, value_cols, category_col, hue_col=None,
-                  palette=None, figsize=(16, 6)):
-    import matplotlib.pyplot as plt
-    import seaborn as sns
-
-    y_col = value_cols[0]
-
-    # Default palette
-    if hue_col is None:
-        # Use a single color if no hue
-        if palette is None:
-            palette = ["#1f77b4"]  # wrap in a list
-    else:
-        if palette is None:
-            # Create a simple palette for two categories
-            unique_hue = df[hue_col].unique()
-            default_colors = ["#1f77b4", "#ff69b4"]
-            palette = {k: default_colors[i % len(default_colors)] for i, k in enumerate(unique_hue)}
-
-    plt.figure(figsize=figsize)
-    sns.boxplot(data=df, x=category_col, y=y_col, hue=hue_col, palette=palette, dodge=True)
-    plt.title(f'{y_col} by {category_col}' + (f' and {hue_col}' if hue_col else ''))
-    plt.xlabel(category_col)
-    plt.ylabel(y_col)
-    plt.grid(axis='y', linestyle='--', alpha=0.5)
-    plt.xticks(rotation=30, ha='right')
-    if hue_col:
-        plt.legend(title=hue_col)
-    plt.tight_layout()
-    plt.show()
-
-#---Function: plot_correlation_heatmap---
+#--- Function: plot_correlation_heatmap ---
 def plot_correlation_heatmap(df, numeric_cols=None, method='spearman', figsize=(12,8),
                              cmap=SEQUENTIAL_CMAP, annot=True, fmt=".2f"):
     """
     Plots a heatmap of correlations for selected numeric columns.
-
-    Parameters:
-    -----------
-    df : pd.DataFrame
-        The DataFrame containing the data.
-    numeric_cols : list, optional
-        Columns to include. Defaults to all numeric columns.
-    method : str, optional
-        Correlation method: 'pearson', 'spearman', or 'kendall'. Default is 'spearman'.
-    figsize : tuple, optional
-        Size of the figure. Default is (12,8).
-    cmap : str or Colormap, optional
-        Color map for heatmap. Default is SEQUENTIAL_CMAP.
-    annot : bool, optional
-        Whether to annotate cells with correlation values. Default is True.
-    fmt : str, optional
-        String format for annotation. Default is ".2f".
     """
     if numeric_cols is None:
         numeric_cols = df.select_dtypes(include='number').columns.tolist()
+        
     corr_matrix = df[numeric_cols].corr(method=method)
+    
     plt.figure(figsize=figsize)
-    sns.heatmap(corr_matrix, annot=annot, fmt=fmt, cmap=cmap)
-    plt.title(f"{method.capitalize()} Correlation Heatmap")
+    sns.heatmap(corr_matrix, annot=annot, fmt=fmt, cmap=cmap, linewidths=0.5, linecolor='white')
+    plt.title(f"{method.capitalize()} Correlation Heatmap", fontweight='bold', pad=20)
     plt.tight_layout()
     plt.show()
     plt.close()
@@ -131,25 +90,6 @@ def plot_heatmap_grid(df, value_col, index_col, columns_col=None, aggfunc='media
                       cmap=SEQUENTIAL_CMAP, fmt=".0f", figsize=(10,6)):
     """
     Plots a heatmap of aggregated values for one or two grouping variables.
-
-    Parameters:
-    -----------
-    df : pd.DataFrame
-        DataFrame containing the data.
-    value_col : str
-        Column to aggregate.
-    index_col : str
-        Column to use for the rows of the heatmap.
-    columns_col : str, optional
-        Column to use for the columns of the heatmap. Default is None.
-    aggfunc : str or function, optional
-        Aggregation function to apply. Examples: 'median', 'mean'. Default is 'median'.
-    cmap : str or Colormap, optional
-        Colormap for the heatmap. Default is SEQUENTIAL_CMAP.
-    fmt : str, optional
-        Format string for annotations. Default is ".0f".
-    figsize : tuple, optional
-        Size of the figure. Default is (10,6).
     """
     if columns_col is not None:
         pivot = df.pivot_table(index=index_col, columns=columns_col, values=value_col, aggfunc=aggfunc)
@@ -157,10 +97,20 @@ def plot_heatmap_grid(df, value_col, index_col, columns_col=None, aggfunc='media
         pivot = df.groupby(index_col)[value_col].agg(aggfunc).to_frame()
 
     plt.figure(figsize=figsize)
-    sns.heatmap(pivot, annot=True, fmt=fmt, cmap=cmap, linewidths=0.5)
-    plt.title(f"{aggfunc.capitalize()} {value_col} by {index_col}" + (f" and {columns_col}" if columns_col else ""))
+    sns.heatmap(
+        pivot, 
+        annot=True, 
+        fmt=fmt, 
+        cmap=cmap, 
+        linewidths=0.5, 
+        linecolor='white'
+    )
+    
+    title = f"{aggfunc.capitalize()} {value_col} by {index_col}" + (f" and {columns_col}" if columns_col else "")
+    plt.title(title, fontweight='bold', pad=15)
     plt.ylabel(index_col)
     plt.xlabel(columns_col if columns_col else value_col)
+    
     plt.tight_layout()
     plt.show()
 
