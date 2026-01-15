@@ -37,8 +37,8 @@ def catboost_classification(train_df, test_df, outcome, predictors, cv=5, for_st
     print(f"--- CatBoost Optimized (F1: {grid_search.best_score_:.4f}) ---")
     return grid_search.best_estimator_
 
-#---Function:compare_tree_classification---
-def compare_tree_classification(train_df, test_df, outcome, predictors, cv=5):
+#---Function:compare_classification_tree_models---
+def compare_classification_tree_models(train_df, test_df, outcome, predictors, cv=5):
     """
     Executes and compares tree-based models, sorted by alphabetical order of execution.
     English comment: Final comparison based on weighted F1-score to handle potential class imbalance.
