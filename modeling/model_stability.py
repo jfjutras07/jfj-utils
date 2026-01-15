@@ -5,6 +5,70 @@ from sklearn.metrics import silhouette_score, calinski_harabasz_score, davies_bo
 from sklearn.metrics import adjusted_rand_score
 from sklearn.base import clone
 
+#--- Function : check_classification_model_stability ---
+def check_classification_model_stability(model, X, y, cv=5, scoring='f1_macro'):
+    """
+    Algorithmic Stability Check for Classification.
+    Measures performance consistency across folds and sensitivity to data perturbations.
+    """
+    
+    # Performance Stability (Cross-Validation)
+    scores = cross_val_score(model, X, y, cv=cv, scoring=scoring, n_jobs=-1)
+    
+    mean_score = np.mean(scores)
+    std_score = np.std(scores)
+    
+    # Coefficient of Variation (Stability Ratio)
+    stability_ratio = (std_score / mean_score) if mean_score != 0 else 0
+
+    # Prediction Label Stability (Perturbation Check)
+    try:
+        idx = np.arange(len(X))
+        np.random.seed(42)
+        
+        # Subsample A
+        s1 = np.random.choice(idx, size=int(0.8 * len(X)), replace=False)
+        m1 = clone(model).fit(X.iloc[s1], y.iloc[s1])
+        
+        # Subsample B
+        s2 = np.random.choice(idx, size=int(0.8 * len(X)), replace=False)
+        m2 = clone(model).fit(X.iloc[s2], y.iloc[s2])
+        
+        # Compare predictions on the full dataset
+        p1 = m1.predict(X)
+        p2 = m2.predict(X)
+        label_stability = adjusted_rand_score(p1, p2)
+    except Exception:
+        label_stability = None
+
+    # Reporting
+    print(f"--- Algorithmic Stability Check ({scoring.upper()}) ---")
+    print(f"Number of Folds    : {cv}")
+    print(f"Mean Score         : {mean_score:.4f}")
+    print(f"Std Deviation      : {std_score:.4f}")
+    print(f"Stability Ratio    : {stability_ratio:.2%}")
+    
+    if label_stability is not None:
+        print(f"Label Stability    : {label_stability:.4f} (ARI between subsamples)")
+    print("-" * 45)
+
+    # Formal Diagnostic
+    if stability_ratio > 0.15 or (label_stability is not None and label_stability < 0.70):
+        print("Status: UNSTABLE. High variance or inconsistent labels.")
+    elif stability_ratio > 0.05:
+        print("Status: CAUTION. Moderate variance observed.")
+    else:
+        print("Status: STABLE. Model performance is consistent.")
+    
+    print("-" * 45)
+    
+    return {
+        "mean": mean_score,
+        "std": std_score,
+        "stability_ratio": stability_ratio,
+        "label_stability": label_stability
+    }
+    
 #---Function : check_clustering_model_stability ---
 def check_clustering_model_stability(model, df, predictors, seeds=[0, 21, 42, 84], subsample_frac=0.8):
     """
