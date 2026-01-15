@@ -112,6 +112,7 @@ Active development — modules will be progressively added and refined.
 - `VIF_check`
 
 *premodeling_check.py*
+- `premodeling_classification_check`
 - `premodeling_clustering_check`
 - `premodeling_regresion_check`
 
