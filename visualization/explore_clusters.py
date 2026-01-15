@@ -126,7 +126,7 @@ def plot_cluster_diagnostics(df_scaled, labels, model_name="Clustering Model"):
         x=counts.index.astype(str),
         y=counts.values,
         ax=ax2,
-        palette=custom_colors,
+        palette=custom_colors[:len(counts)],
         hue=counts.index.astype(str),
         legend=False
     )
