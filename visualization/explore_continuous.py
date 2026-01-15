@@ -14,7 +14,8 @@ from visualization.style import SEQUENTIAL_CMAP
 #--- Function: plot_box_grid ---
 def plot_box_grid(df, value_cols, group_col='Economic_status', n_rows=2, n_cols=2, hue_col=None, figsize=None):
     """
-    Plot a grid of boxplots for multiple columns. Handles single plots or grids automatically.
+    Plot a grid of boxplots. 
+    Correctly handles multiple colors when hue_col is provided.
     """
     if isinstance(value_cols, str):
         value_cols = [value_cols]
@@ -26,7 +27,6 @@ def plot_box_grid(df, value_cols, group_col='Economic_status', n_rows=2, n_cols=
     for i in range(0, n_plots, plots_per_fig):
         batch = value_cols[i : i + plots_per_fig]
         
-        # Adaptive layout: if only one plot in batch, use 1x1
         current_rows = n_rows if len(batch) > 1 else 1
         current_cols = n_cols if len(batch) > 1 else 1
         
@@ -41,13 +41,15 @@ def plot_box_grid(df, value_cols, group_col='Economic_status', n_rows=2, n_cols=
         for idx, y_col in enumerate(batch):
             ax = axes_flat[idx]
             
+            # If hue_col is present, Seaborn uses BIVARIATE_PALETTE to map colors to categories.
+            # If no hue, it falls back to a single UNIFORM_BLUE color.
             sns.boxplot(
                 data=df, 
                 x=x_axis, 
                 y=y_col, 
                 hue=hue_col, 
+                palette=BIVARIATE_PALETTE if hue_col else None,
                 color=UNIFORM_BLUE if hue_col is None else None,
-                palette=BIVARIATE_PALETTE if hue_col is not None else None,
                 ax=ax,
                 linewidth=1.5
             )
@@ -61,12 +63,13 @@ def plot_box_grid(df, value_cols, group_col='Economic_status', n_rows=2, n_cols=
                 label.set_rotation(45)
                 label.set_horizontalalignment('right')
 
+        # Hide unused subplots in the grid
         for j in range(len(batch), len(axes_flat)):
             axes_flat[j].set_visible(False)
 
         plt.tight_layout()
         plt.show()
-
+        
 #--- Function: plot_correlation_heatmap ---
 def plot_correlation_heatmap(df, numeric_cols=None, method='spearman', figsize=(12,8),
                              cmap=SEQUENTIAL_CMAP, annot=True, fmt=".2f"):
