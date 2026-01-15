@@ -203,8 +203,9 @@ Active development — modules will be progressively added and refined.
 - `kmedoids_clustering`
 
 *model_stability.py*
-- `check_regression_model_stability`
+- `check_classification_model_stability`
 - `check_clustering_model_stability`
+- `check_regression_model_stability`
   
 *regression_models.py*
 - `linear_regression`
