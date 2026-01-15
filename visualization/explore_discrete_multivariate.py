@@ -18,7 +18,8 @@ def get_counts(series, ascending_numeric=True):
     else:
         return series.value_counts().sort_values(ascending=True)
 
-def plot_bar_bivariate_grid(df, discrete_cols, hue_col, n_cols=2, figsize=(12,8), 
+#--- Function : plot_discrete_bivariate_grid ---
+def plot_discrete_bivariate_grid(df, discrete_cols, hue_col, n_cols=2, figsize=(12,8), 
                              colors=None, show_proportion=True):
     """
     Grid of bivariate bar plots. Supports single or multiple columns.
@@ -86,6 +87,7 @@ def plot_bar_bivariate_grid(df, discrete_cols, hue_col, n_cols=2, figsize=(12,8)
     plt.tight_layout()
     plt.show()
 
+#--- Function : plot_discrete_dot_bivariate ---
 def plot_discrete_dot_bivariate(df, col, hue_col, normalize=True, figsize=(8,4), colors=None):
     """Dot plot for discrete variable grouped by hue_col."""
     if colors is None: colors = [UNIFORM_BLUE, PALE_PINK]
@@ -116,6 +118,7 @@ def plot_discrete_dot_bivariate(df, col, hue_col, normalize=True, figsize=(8,4),
     plt.tight_layout()
     plt.show()
 
+#--- Function : plot_discrete_lollipop_bivariate ---
 def plot_discrete_lollipop_bivariate(df, col, hue_col, normalize=True, figsize=(8,4), colors=None):
     """Lollipop plot for discrete variable grouped by hue_col."""
     if colors is None: colors = [UNIFORM_BLUE, PALE_PINK]
@@ -151,6 +154,7 @@ def plot_discrete_lollipop_bivariate(df, col, hue_col, normalize=True, figsize=(
     plt.tight_layout()
     plt.show()
 
+#--- Function : plot_stacked_grid ---
 def plot_stacked_grid(df, dependent_var, group_vars, n_rows=2, n_cols=2):
     """Stacked bar charts grid for multi-level analysis."""
     if isinstance(group_vars, str): group_vars = [group_vars]
