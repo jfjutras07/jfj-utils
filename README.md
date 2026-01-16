@@ -38,6 +38,9 @@ Active development — modules will be progressively added and refined.
 
 ### Data_preprocessing: Functions for cleaning, transforming, and preparing datasets for analysis and modeling.
 
+*class_imbalance.py*
+- `class_imbalance_correction`
+
 *dimensionality_reduction.py*
 - `perform_famd`
 - `perform_mca`
