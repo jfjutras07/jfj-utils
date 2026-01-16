@@ -47,40 +47,59 @@ def correlation_check(df: pd.DataFrame, columns: list | None = None, method: str
     print("\n=== Correlation Matrix ===")
     print(corr_matrix.to_string())
 
-#--- Function : VIF_check ---
+import pandas as pd
+import numpy as np
+from statsmodels.stats.outliers_influence import variance_inflation_factor
+from statsmodels.tools.tools import add_constant
+
+#--- Function: VIF_check ---
 def VIF_check(df: pd.DataFrame, columns: list | None = None):
     """
     Calculate and display the Variance Inflation Factor (VIF) for selected columns.
-    Automatically encodes categorical variables, removes constant columns, and handles numeric conversion.
+    Follows best practices:
+    1. Handles categorical variables (One-Hot Encoding with drop_first=True).
+    2. Adds a constant (intercept) for valid R-squared calculation.
+    3. Ensures numeric conversion (float64) for stability.
+    4. Removes constant columns.
     """
 
-    #Copy selected columns to avoid modifying original DataFrame
+    # Selection and copy
     df_copy = df[columns].copy() if columns is not None else df.copy()
     
-    #Drop rows with missing values
+    # Drop rows with missing values (VIF requirement)
     df_copy = df_copy.dropna()
 
-    #Encode categorical variables
-    df_encoded = pd.get_dummies(df_copy, drop_first=True)
+    # Encode categorical variables with drop_first=True 
+    # to avoid the Dummy Variable Trap
+    df_encoded = pd.get_dummies(df_copy, drop_first=True, dtype=float)
 
-    #Convert all columns to float
-    df_encoded = df_encoded.astype(float)
+    # Remove constant columns (zero variance) as they break VIF
+    df_encoded = df_encoded.loc[:, df_encoded.nunique() > 1]
 
-    #Remove constant columns
-    df_encoded = df_encoded.loc[:, df_encoded.var() > 0]
+    # Add a constant term (intercept) - CRITICAL for statsmodels VIF
+    # This ensures the model has an intercept, making R-squared calculations valid
+    df_with_const = add_constant(df_encoded)
 
-    if df_encoded.shape[1] < 2:
+    if df_with_const.shape[1] < 2:
         raise ValueError("Not enough valid predictors to compute VIF.")
 
-    #Compute VIF
-    vif_data = pd.DataFrame({
-        'Feature': df_encoded.columns,
-        'VIF': [variance_inflation_factor(df_encoded.values, i) for i in range(df_encoded.shape[1])]
-    }).sort_values('VIF', ascending=False).reset_index(drop=True)
+    # Compute VIF
+    # We use df_with_const to calculate but exclude 'const' from final display
+    vif_series = []
+    for i in range(df_with_const.shape[1]):
+        vif_series.append(variance_inflation_factor(df_with_const.values, i))
 
-    #Round for readability
+    vif_data = pd.DataFrame({
+        'Feature': df_with_const.columns,
+        'VIF': vif_series
+    })
+
+    # Final filtering and formatting
+    # We remove the 'const' row as it's not a feature
+    vif_data = vif_data[vif_data['Feature'] != 'const']
+    vif_data = vif_data.sort_values('VIF', ascending=False).reset_index(drop=True)
     vif_data['VIF'] = vif_data['VIF'].round(3)
 
-    #Display VIF table
-    print("\n=== Variance Inflation Factors ===")
+    # Display VIF table
+    print("\n=== Variance Inflation Factors (Optimized) ===")
     print(vif_data.to_string(index=False))
