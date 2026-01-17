@@ -10,15 +10,17 @@ from sklearn.compose import ColumnTransformer
 class column_selector(BaseEstimator, TransformerMixin):
     """
     Final feature router that automatically detects constants and IDs,
-    drops them, and routes numerical/categorical features.
-    Returns a DataFrame with readable column names.
+    drops them, routes numerical/categorical features, and
+    returns a DataFrame with readable column names including ratio features.
     """
     def __init__(self, 
                  num_transformer: BaseEstimator, 
                  cat_transformer: BaseEstimator, 
-                 cols_to_drop: Optional[List[str]] = None):
+                 cols_to_drop: Optional[List[str]] = None,
+                 ratio_transformer: Optional[BaseEstimator] = None):
         self.num_transformer = num_transformer
         self.cat_transformer = cat_transformer
+        self.ratio_transformer = ratio_transformer
         self.cols_to_drop = cols_to_drop or []
 
     def fit(self, X: pd.DataFrame, y=None):
@@ -60,16 +62,21 @@ class column_selector(BaseEstimator, TransformerMixin):
         # Colonnes numériques
         num_cols = self.numeric_cols_
         
-        # Colonnes One-Hot si disponibles
+        # Colonnes One-Hot
         cat_cols = []
         if hasattr(self.cat_transformer, 'one_hot_features_') and self.cat_transformer.one_hot_features_ is not None:
             cat_cols = list(self.cat_transformer.one_hot_features_)
-        
+
+        # Colonnes ratio explicites si ratio_generator est fourni
+        ratio_cols = []
+        if self.ratio_transformer is not None and hasattr(self.ratio_transformer, 'feature_names_'):
+            ratio_cols = list(self.ratio_transformer.feature_names_)
+
         # Générer des noms génériques pour le reste
-        n_extra = X_transformed.shape[1] - len(num_cols) - len(cat_cols)
+        n_extra = X_transformed.shape[1] - len(num_cols) - len(cat_cols) - len(ratio_cols)
         extra_cols = [f"feat_{i}" for i in range(n_extra)] if n_extra > 0 else []
 
-        all_cols = num_cols + cat_cols + extra_cols
+        all_cols = num_cols + cat_cols + ratio_cols + extra_cols
 
         return pd.DataFrame(X_transformed, columns=all_cols, index=X.index)
 
