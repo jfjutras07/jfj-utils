@@ -7,27 +7,29 @@ from sklearn.base import BaseEstimator, TransformerMixin
 # --- Class : skewness_corrector ---
 class skewness_corrector(BaseEstimator, TransformerMixin):
     """
-    Automatically detects skewed numeric columns and applies log1p transformation.
-    Handles numeric columns with zeros or negative values by shifting them to positive.
+    Applies log1p transformation to numeric columns.
+    You can either provide a manual list of columns, or let it detect skewed columns automatically.
     """
-    def __init__(self, threshold=0.75, epsilon=1e-6):
+    def __init__(self, threshold=0.75, manual_cols=None, epsilon=1e-6):
         self.threshold = threshold
         self.cols_to_transform_ = []
+        self.manual_cols = manual_cols
         self.epsilon = epsilon  # small value to avoid log(0)
 
     def fit(self, X, y=None):
-        # Select only numeric columns
         numeric_df = X.select_dtypes(include=[np.number])
-        # Compute skewness
-        skewness = numeric_df.skew()
-        # Keep columns exceeding the threshold
-        self.cols_to_transform_ = skewness[abs(skewness) > self.threshold].index.tolist()
+        if self.manual_cols is not None:
+            # Use only manual columns
+            self.cols_to_transform_ = [col for col in self.manual_cols if col in numeric_df.columns]
+        else:
+            # Auto-detect skewed columns
+            skewness = numeric_df.skew()
+            self.cols_to_transform_ = skewness[abs(skewness) > self.threshold].index.tolist()
         return self
 
     def transform(self, X):
         X = X.copy()
         numeric_cols = X.select_dtypes(include=[np.number]).columns
-        # Apply log1p with shift if necessary
         for col in self.cols_to_transform_:
             if col in numeric_cols:
                 min_val = X[col].min()
