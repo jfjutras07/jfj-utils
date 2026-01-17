@@ -10,6 +10,7 @@ class generic_transformer(BaseEstimator, TransformerMixin):
     """
     Adapter to use any custom function inside a Scikit-Learn Pipeline.
     Supports passing extra arguments and handles the fit/transform logic.
+    Preserves column names.
     """
     def __init__(self, func: Callable, **kwargs):
         self.func = func
@@ -23,8 +24,13 @@ class generic_transformer(BaseEstimator, TransformerMixin):
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
         X = X.copy()
-        # Execute the custom function with provided keyword arguments
-        return self.func(X, **self.kwargs)
+        result = self.func(X, **self.kwargs)
+        
+        # Ensure output is a DataFrame with correct column names
+        if isinstance(result, pd.DataFrame):
+            return result
+        else:
+            return pd.DataFrame(result, columns=self.feature_names_in_)
 
 # --- Function : log_message ---
 def log_message(message: str, level: str = "INFO") -> None:
