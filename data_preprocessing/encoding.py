@@ -6,9 +6,9 @@ import numpy as np
 #--- Class : categorical_encoder ---
 class categorical_encoder(BaseEstimator, TransformerMixin):
     """
-    All-in-one encoder for Binary, Ordinal, and One-Hot encoding.
-    Automatically casts encoded columns to int where relevant.
-    Preserves proper feature names after transformation.
+    Encodeur ultra-robuste : Garantit une structure de sortie identique
+    entre le fit et le transform, gère les colonnes manquantes et 
+    assure l'alignement strict des noms de colonnes.
     """
     def __init__(self, 
                  mapping_rules: Optional[Dict[str, Dict]] = None, 
@@ -20,73 +20,77 @@ class categorical_encoder(BaseEstimator, TransformerMixin):
         self.drop_first = drop_first
         self.strict_mapping = strict_mapping
         self.one_hot_features_ = None
+        self.feature_names_out_ = None
 
     def fit(self, X: pd.DataFrame, y=None):
-        # Store One-Hot column names after a dummy run
+        # 1. Identifier les colonnes de mapping (Ordinal)
+        self.ordinal_cols_ = list(self.mapping_rules.keys())
+
+        # 2. Simuler le One-Hot pour capturer les noms de colonnes futurs
         if self.one_hot_cols:
+            # On s'assure que les colonnes existent avant get_dummies
+            existing_oh = [c for c in self.one_hot_cols if c in X.columns]
             X_oh = pd.get_dummies(
-                X[self.one_hot_cols],
-                columns=self.one_hot_cols,
+                X[existing_oh],
+                columns=existing_oh,
                 drop_first=self.drop_first
             )
             self.one_hot_features_ = X_oh.columns.tolist()
+        else:
+            self.one_hot_features_ = []
+
+        # 3. Définir la "Source de Vérité" pour les noms de colonnes
+        self.feature_names_out_ = np.array(self.ordinal_cols_ + self.one_hot_features_)
+        
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
         X = X.copy()
 
-        # 1. Process Binary and Ordinal Mappings
+        # 1. Application des Mappings (Ordinal/Binary)
         for col, mapping in self.mapping_rules.items():
-            if col in X.columns and mapping:
+            if col in X.columns:
                 initial_na = X[col].isna()
                 X[col] = X[col].map(mapping)
 
                 if self.strict_mapping:
-                    # Detect values present in data but missing from mapping rules
+                    # Détection de valeurs inconnues (non présentes dans le mapping)
                     invalid_mask = X[col].isna() & ~initial_na
                     if invalid_mask.any():
                         invalid_vals = X.loc[invalid_mask, col].unique()
-                        raise ValueError(
-                            f"Mapping error in '{col}': {invalid_vals} not found in rules."
-                        )
-
-                # Use float to support potential NaNs, cast to Int64 if needed later
+                        raise ValueError(f"Mapping error in '{col}': {invalid_vals} non définis.")
+                
                 X[col] = X[col].astype(float)
+            else:
+                # Si une colonne de mapping manque, on la crée remplie de NaN
+                X[col] = np.nan
 
-        # 2. Process One-Hot Encoding
+        # 2. Application du One-Hot Encoding
         if self.one_hot_cols:
+            existing_oh = [c for c in self.one_hot_cols if c in X.columns]
             X_transformed = pd.get_dummies(
                 X,
-                columns=self.one_hot_cols,
+                columns=existing_oh,
                 drop_first=self.drop_first
             )
-
-            # Ensure consistency with features seen during FIT
-            if self.one_hot_features_ is not None:
-                # Add missing columns (categories seen in train but not in test)
-                for c in self.one_hot_features_:
-                    if c not in X_transformed.columns:
-                        X_transformed[c] = 0
-                
-                # Reorder and filter columns to match training schema
-                # We keep ordinal/binary columns + the one-hot features
-                ordinal_cols = list(self.mapping_rules.keys())
-                final_cols = [c for c in X_transformed.columns if c in self.one_hot_features_ or c in ordinal_cols]
-                X_transformed = X_transformed[final_cols]
-
-            # Convert boolean dummies to 1/0
+            
+            # Conversion immédiate des booléens en int (0/1)
             bool_cols = X_transformed.select_dtypes(include='bool').columns
             X_transformed[bool_cols] = X_transformed[bool_cols].astype(int)
+        else:
+            X_transformed = X
 
-            return X_transformed
+        # 3. ALIGNEMENT CRITIQUE (L'assurance vie du pipeline)
+        # On s'assure que TOUTES les colonnes promises au FIT sont présentes
+        for col in self.feature_names_out_:
+            if col not in X_transformed.columns:
+                X_transformed[col] = 0
 
-        return X
+        # On retourne uniquement ce qui a été promis, dans l'ordre exact
+        return X_transformed[self.feature_names_out_]
 
     def get_feature_names_out(self, input_features=None):
-        """Returns the list of all processed feature names (Ordinal + One-Hot)."""
-        ordinal_cols = list(self.mapping_rules.keys())
-        oh_cols = self.one_hot_features_ if self.one_hot_features_ else []
-        return np.array(ordinal_cols + oh_cols)
+        return self.feature_names_out_
 
 #--- Function : binary_encode_columns ---
 def binary_encode_columns(
