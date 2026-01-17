@@ -9,49 +9,51 @@ from sklearn.compose import ColumnTransformer
 #--- Class : column_selector ---
 class column_selector(BaseEstimator, TransformerMixin):
     """
-    Final generic processor that automatically detects constants and IDs 
-    to drop them, then routes numeric and categorical features.
+    Final feature router that automatically detects constants and IDs,
+    drops them, and routes numerical/categorical features.
     """
-    def __init__(self, num_transformer: BaseEstimator, cat_transformer: BaseEstimator):
+    def __init__(self, 
+                 num_transformer: BaseEstimator, 
+                 cat_transformer: BaseEstimator, 
+                 cols_to_drop: Optional[List[str]] = None):
         self.num_transformer = num_transformer
         self.cat_transformer = cat_transformer
+        self.cols_to_drop = cols_to_drop or []
 
     def fit(self, X: pd.DataFrame, y=None):
-        # Identify constant columns (only one unique value)
+        # Identify constants
         self.constant_cols_ = [c for c in X.columns if X[c].nunique() <= 1]
         
-        # Identify ID-like columns (containing 'ID' or 'IDENTIFIER')
+        # Identify IDs
         self.id_cols_ = [c for c in X.columns if 'ID' in c.upper() or 'IDENTIFIER' in c.upper()]
         
-        # Merge all columns to be dropped automatically
-        self.auto_drop_ = list(set(self.constant_cols_ + self.id_cols_))
+        # Merge all columns to be dropped
+        self.auto_drop_ = list(set(self.constant_cols_ + self.id_cols_ + self.cols_to_drop))
 
-        # Select valid numeric columns (excluding those to drop)
+        # Filter numeric and categorical columns
         self.numeric_cols_ = [
             c for c in X.select_dtypes(include=np.number).columns 
             if c not in self.auto_drop_
         ]
         
-        # Select valid categorical columns (excluding those to drop)
         self.categorical_cols_ = [
             c for c in X.select_dtypes(include=['object', 'category']).columns 
             if c not in self.auto_drop_
         ]
 
-        # Configure the internal ColumnTransformer engine
+        # Setup internal engine
         self.preprocessor_ = ColumnTransformer(
             transformers=[
                 ('num', self.num_transformer, self.numeric_cols_),
                 ('cat', self.cat_transformer, self.categorical_cols_)
             ],
-            remainder='drop' # Ensures anything else is physically removed
+            remainder='drop'
         )
         
         self.preprocessor_.fit(X, y)
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
-        # The result is a clean, transformed DataFrame or Array
         return self.preprocessor_.transform(X)
 
 #--- Function: clean_names ---
