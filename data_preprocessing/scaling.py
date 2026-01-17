@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
 from sklearn.base import BaseEstimator, TransformerMixin
-from typing import List, Union
+from typing import List, Union, Optional
 
 #--- Class : feature_scaler ---
 class feature_scaler(BaseEstimator, TransformerMixin):
