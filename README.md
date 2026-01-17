@@ -304,7 +304,6 @@ Active development — modules will be progressively added and refined.
 
 *utils.py*
 - Class: `generic_transformer`
-- Class: `type_cast_transformer`
 - `log_message`
 - `timeit`
 
