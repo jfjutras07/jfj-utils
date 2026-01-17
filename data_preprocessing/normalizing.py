@@ -6,43 +6,40 @@ from sklearn.base import BaseEstimator, TransformerMixin
 
 # --- Class : skewness_corrector ---
 class skewness_corrector(BaseEstimator, TransformerMixin):
-    """
-    Applies log1p transformation to numeric columns.
-    You can either provide a manual list of columns, or let it detect skewed columns automatically.
-    Handles columns with zeros or negative values safely.
-    """
     def __init__(self, threshold=0.75, manual_cols=None, epsilon=1e-6):
         self.threshold = threshold
         self.manual_cols = manual_cols
         self.epsilon = epsilon
         self.cols_to_transform_ = []
+        self.shifts_ = {} # Store shifts learned during fit
 
     def fit(self, X, y=None):
         numeric_df = X.select_dtypes(include=[np.number])
         
         if self.manual_cols is not None:
-            # Only keep manual columns that exist in X
-            self.cols_to_transform_ = [col for col in self.manual_cols if col in numeric_df.columns]
+            self.cols_to_transform_ = [c for c in self.manual_cols if c in numeric_df.columns]
         else:
-            # Auto-detect skewed columns
             skewness = numeric_df.skew()
             self.cols_to_transform_ = skewness[abs(skewness) > self.threshold].index.tolist()
+        
+        # Learn the shift for each column to be transformed
+        for col in self.cols_to_transform_:
+            min_val = X[col].min()
+            if min_val <= 0:
+                self.shifts_[col] = -min_val + self.epsilon
+            else:
+                self.shifts_[col] = 0
         
         return self
 
     def transform(self, X):
         X = X.copy()
-        numeric_cols = X.select_dtypes(include=[np.number]).columns
-
         for col in self.cols_to_transform_:
-            if col in numeric_cols:
-                # Shift if there are zeros or negative values
-                min_val = X[col].min()
-                if min_val <= 0:
-                    X[col] = X[col] - min_val + self.epsilon
+            if col in X.columns:
+                # Apply the shift learned during FIT
+                X[col] = X[col] + self.shifts_[col]
                 # Apply log1p
                 X[col] = np.log1p(X[col])
-        
         return X
 
 #--- Function : normalize_columns ---
