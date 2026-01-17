@@ -7,9 +7,9 @@ from typing import List, Union, Optional
 #--- Class : feature_scaler ---
 class feature_scaler(BaseEstimator, TransformerMixin):
     """
-    Scaler numérique robuste supportant plusieurs méthodes.
-    Garantit que les noms de colonnes sortants correspondent exactement 
-    aux colonnes entraînées (fit), évitant les erreurs de dimension.
+    Robust numerical scaler supporting multiple methods.
+    Ensures that outgoing column names exactly match those seen during fit,
+    preventing dimensionality errors in complex pipelines.
     """
     def __init__(self, columns: Optional[List[str]] = None, method: str = 'robust'):
         self.columns = columns
@@ -23,19 +23,19 @@ class feature_scaler(BaseEstimator, TransformerMixin):
         }
         
         if self.method not in self._method_map:
-            raise ValueError(f"Méthode '{self.method}' non supportée.")
+            raise ValueError(f"Method '{self.method}' not supported.")
 
     def fit(self, X: pd.DataFrame, y=None):
-        # On définit les colonnes à scaler (soit spécifiées, soit toutes les colonnes reçues)
+        # Define columns to scale (either specified or all received columns)
         self.target_cols_ = self.columns if self.columns else X.columns.tolist()
         
         if self.target_cols_:
-            # Sécurité : On ne fit que sur ce qui existe réellement dans le DataFrame
+            # Safety check: fit only on columns that actually exist in the DataFrame
             existing_cols = [c for c in self.target_cols_ if c in X.columns]
             if existing_cols:
                 self.scaler_ = self._method_map[self.method]()
                 self.scaler_.fit(X[existing_cols])
-                # On met à jour target_cols_ pour refléter la réalité du fit
+                # Update target_cols_ to reflect the actual fitted columns
                 self.target_cols_ = existing_cols
         
         return self
@@ -43,11 +43,8 @@ class feature_scaler(BaseEstimator, TransformerMixin):
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
         X = X.copy()
         if self.scaler_ and self.target_cols_:
-            # On applique la transformation uniquement sur les colonnes validées au fit
+            # Apply transformation only to columns validated during fit
             existing_cols = [c for c in self.target_cols_ if c in X.columns]
-            if len(existing_cols) != len(self.target_cols_):
-                # Optionnel : avertir si des colonnes manquent au transform
-                pass
             
             if existing_cols:
                 X[existing_cols] = self.scaler_.transform(X[existing_cols])
@@ -55,8 +52,8 @@ class feature_scaler(BaseEstimator, TransformerMixin):
 
     def get_feature_names_out(self, input_features=None):
         """
-        Priorité aux colonnes cibles identifiées lors du fit.
-        C'est la garantie de stabilité pour le ColumnTransformer.
+        Prioritize target columns identified during fit.
+        Ensures stability when used within a ColumnTransformer.
         """
         if hasattr(self, 'target_cols_') and self.target_cols_:
             return np.array(self.target_cols_)
