@@ -7,32 +7,29 @@ from sklearn.base import BaseEstimator, TransformerMixin
 # --- Class : skewness_corrector ---
 class skewness_corrector(BaseEstimator, TransformerMixin):
     """
-    Détecte automatiquement les colonnes numériques asymétriques 
-    et applique une transformation log1p.
+    Automatically detects skewed numeric columns and applies log1p transformation.
+    Only positive numeric columns are transformed.
     """
     def __init__(self, threshold=0.75):
         self.threshold = threshold
         self.cols_to_transform_ = []
 
     def fit(self, X, y=None):
-        # On ne travaille que sur les colonnes numériques
+        # Select only numeric columns
         numeric_df = X.select_dtypes(include=[np.number])
-        
-        # On calcule la skewness pour chaque colonne
+        # Compute skewness
         skewness = numeric_df.skew()
-        
-        # On mémorise les colonnes qui dépassent le seuil
+        # Keep columns exceeding the threshold
         self.cols_to_transform_ = skewness[abs(skewness) > self.threshold].index.tolist()
-        
         return self
 
     def transform(self, X):
         X = X.copy()
+        numeric_cols = X.select_dtypes(include=[np.number]).columns
+        # Apply log1p only to numeric columns that were selected and are non-negative
         for col in self.cols_to_transform_:
-            if col in X.columns:
-                # On s'assure que les valeurs sont positives pour le log
-                if (X[col] >= 0).all():
-                    X[col] = np.log1p(X[col])
+            if col in numeric_cols and (X[col] >= 0).all():
+                X[col] = np.log1p(X[col])
         return X
 
 #--- Function : normalize_columns ---
