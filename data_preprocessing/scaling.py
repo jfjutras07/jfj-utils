@@ -23,10 +23,12 @@ class feature_scaler(BaseEstimator, TransformerMixin):
         }
         
         if self.method not in self._method_map:
-            raise ValueError(f"Method '{self.method}' not supported. Choose from: {list(self._method_map.keys())}")
+            raise ValueError(
+                f"Method '{self.method}' not supported. "
+                f"Choose from: {list(self._method_map.keys())}"
+            )
 
     def fit(self, X: pd.DataFrame, y=None):
-        # Use provided columns or fallback to all columns in the received DataFrame
         self.target_cols_ = self.columns if self.columns else X.columns.tolist()
         
         if self.target_cols_:
@@ -34,6 +36,7 @@ class feature_scaler(BaseEstimator, TransformerMixin):
             if existing_cols:
                 self.scaler_ = self._method_map[self.method]()
                 self.scaler_.fit(X[existing_cols])
+
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
@@ -43,6 +46,11 @@ class feature_scaler(BaseEstimator, TransformerMixin):
             if existing_cols:
                 X[existing_cols] = self.scaler_.transform(X[existing_cols])
         return X
+
+    def get_feature_names_out(self, input_features=None):
+        if input_features is None:
+            return np.array(self.target_cols_)
+        return np.array(input_features)
 
 #---Function:minmax_scaler---
 def minmax_scaler(train_df, test_df=None, columns=None):
