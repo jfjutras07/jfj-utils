@@ -4,8 +4,8 @@ from typing import List, Union, Tuple
 import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
 
-# --- Class : SkewnessCorrector ---
-class SkewnessCorrector(BaseEstimator, TransformerMixin):
+# --- Class : skewness_corrector ---
+class skewness_corrector(BaseEstimator, TransformerMixin):
     """
     Détecte automatiquement les colonnes numériques asymétriques 
     et applique une transformation log1p.
