@@ -7,24 +7,31 @@ from typing import Dict, List
 #--- Class : ratio_generator ---
 class ratio_generator(BaseEstimator, TransformerMixin):
     """
-    Generates ratio features between pairs of columns.
-    Input format: {'NewFeatureName': ['NumeratorCol', 'DenominatorCol']}
+    Generates ratio features between pairs of columns with explicit names.
+    Input format: {'NewFeaturePrefix': ['NumeratorCol', 'DenominatorCol']}
+    Example output column: 'Tenure_Ratio_YearsAtCompany_TotalWorkingYears'
     """
     def __init__(self, ratio_mappings: Dict[str, List[str]], fill_na_value: float = 0.0):
         self.ratio_mappings = ratio_mappings
         self.fill_na_value = fill_na_value
+        self.feature_names_ = []
 
     def fit(self, X: pd.DataFrame, y=None):
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
         X = X.copy()
-        for new_col, (num, den) in self.ratio_mappings.items():
-            # Replace 0 with NaN to ensure division results in NaN instead of Inf
-            den_safe = X[den].replace(0, np.nan)
-            X[new_col] = X[num] / den_safe
+        self.feature_names_ = []
+        
+        for prefix, (num_col, den_col) in self.ratio_mappings.items():
+            ratio_name = f"{prefix}_Ratio_{num_col}_{den_col}"
+            # Safe division
+            den_safe = X[den_col].replace(0, np.nan)
+            X[ratio_name] = X[num_col] / den_safe
             if self.fill_na_value is not None:
-                X[new_col] = X[new_col].fillna(self.fill_na_value)
+                X[ratio_name] = X[ratio_name].fillna(self.fill_na_value)
+            self.feature_names_.append(ratio_name)
+        
         return X
 
 # --- Function : mi_classification ---
