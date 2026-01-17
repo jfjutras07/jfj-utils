@@ -47,6 +47,7 @@ Active development — modules will be progressively added and refined.
 - `perform_pca`
   
 *encoding.py*
+- Class : `categorical_encoder`-
 - `binary_encode_columns`
 - `label_encode_columns`
 - `one_hot_encode_columns`
@@ -77,6 +78,7 @@ Active development — modules will be progressively added and refined.
 - `winsorize_columns`
 
 *scaling.py*
+- Class : `feature_scaler`-
 - `minmax_scaler`
 - `robust_scaler`
 - `standard_scaler`
