@@ -1,5 +1,5 @@
 import pandas as pd
-from jfj_utils.data_preprocessing.name_cleaning import clean_names_multiple
+from jfj_utils.data_preprocessing.cleaning import clean_names_multiple
 
 #--- Test: clean_names_multiple ---
 def test_clean_names_multiple():
