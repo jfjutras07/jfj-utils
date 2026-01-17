@@ -7,9 +7,9 @@ from typing import Dict, List
 #--- Class : ratio_generator ---
 class ratio_generator(BaseEstimator, TransformerMixin):
     """
-    Generates ratio features between pairs of columns with explicit names.
-    Input format: {'NewFeaturePrefix': ['NumeratorCol', 'DenominatorCol']}
-    Example output column: 'Tenure_Ratio_YearsAtCompany_TotalWorkingYears'
+    Generates ratio features using only the given prefix as column name.
+    Input format: {'Prefix': ['NumeratorCol', 'DenominatorCol']}
+    Example output column: 'Tenure', 'ManagerStability', ...
     """
     def __init__(self, ratio_mappings: Dict[str, List[str]], fill_na_value: float = 0.0):
         self.ratio_mappings = ratio_mappings
@@ -22,16 +22,17 @@ class ratio_generator(BaseEstimator, TransformerMixin):
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
         X = X.copy()
         self.feature_names_ = []
-        
+
         for prefix, (num_col, den_col) in self.ratio_mappings.items():
-            ratio_name = f"{prefix}_Ratio_{num_col}_{den_col}"
+            # Nom simplifié : juste le prefix
+            ratio_name = prefix
             # Safe division
             den_safe = X[den_col].replace(0, np.nan)
             X[ratio_name] = X[num_col] / den_safe
             if self.fill_na_value is not None:
                 X[ratio_name] = X[ratio_name].fillna(self.fill_na_value)
             self.feature_names_.append(ratio_name)
-        
+
         return X
 
 # --- Function : mi_classification ---
