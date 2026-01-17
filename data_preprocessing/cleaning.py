@@ -54,31 +54,21 @@ class column_selector(BaseEstimator, TransformerMixin):
         )
         
         self.preprocessor_.fit(X, y)
+
+        # --- STORE FINAL FEATURE NAMES (THE IMPORTANT FIX) ---
+        self.feature_names_out_ = self.preprocessor_.get_feature_names_out().tolist()
+
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
         X_transformed = self.preprocessor_.transform(X)
-        
-        # Colonnes numériques
-        num_cols = self.numeric_cols_
-        
-        # Colonnes One-Hot
-        cat_cols = []
-        if hasattr(self.cat_transformer, 'one_hot_features_') and self.cat_transformer.one_hot_features_ is not None:
-            cat_cols = list(self.cat_transformer.one_hot_features_)
 
-        # Colonnes ratio explicites si ratio_generator est fourni
-        ratio_cols = []
-        if self.ratio_transformer is not None and hasattr(self.ratio_transformer, 'feature_names_'):
-            ratio_cols = list(self.ratio_transformer.feature_names_)
-
-        # Générer des noms génériques pour le reste
-        n_extra = X_transformed.shape[1] - len(num_cols) - len(cat_cols) - len(ratio_cols)
-        extra_cols = [f"feat_{i}" for i in range(n_extra)] if n_extra > 0 else []
-
-        all_cols = num_cols + cat_cols + ratio_cols + extra_cols
-
-        return pd.DataFrame(X_transformed, columns=all_cols, index=X.index)
+        # --- USE COLUMNTRANSFORMER NAMES, NO MANUAL RECONSTRUCTION ---
+        return pd.DataFrame(
+            X_transformed,
+            columns=self.feature_names_out_,
+            index=X.index
+        )
 
 #--- Function: clean_names ---
 def clean_names(df: pd.DataFrame, first_col: str='first_name', last_col: str='last_name') -> pd.DataFrame:
