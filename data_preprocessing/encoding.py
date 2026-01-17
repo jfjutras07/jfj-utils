@@ -22,6 +22,7 @@ class categorical_encoder(BaseEstimator, TransformerMixin):
         self.one_hot_features_ = None
 
     def fit(self, X: pd.DataFrame, y=None):
+        # Store One-Hot column names after a dummy run
         if self.one_hot_cols:
             X_oh = pd.get_dummies(
                 X[self.one_hot_cols],
@@ -34,12 +35,14 @@ class categorical_encoder(BaseEstimator, TransformerMixin):
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
         X = X.copy()
 
+        # 1. Process Binary and Ordinal Mappings
         for col, mapping in self.mapping_rules.items():
             if col in X.columns and mapping:
                 initial_na = X[col].isna()
                 X[col] = X[col].map(mapping)
 
                 if self.strict_mapping:
+                    # Detect values present in data but missing from mapping rules
                     invalid_mask = X[col].isna() & ~initial_na
                     if invalid_mask.any():
                         invalid_vals = X.loc[invalid_mask, col].unique()
@@ -47,34 +50,43 @@ class categorical_encoder(BaseEstimator, TransformerMixin):
                             f"Mapping error in '{col}': {invalid_vals} not found in rules."
                         )
 
-                X[col] = X[col].astype(pd.Int64Dtype())
+                # Use float to support potential NaNs, cast to Int64 if needed later
+                X[col] = X[col].astype(float)
 
+        # 2. Process One-Hot Encoding
         if self.one_hot_cols:
-            X_oh = pd.get_dummies(
+            X_transformed = pd.get_dummies(
                 X,
                 columns=self.one_hot_cols,
                 drop_first=self.drop_first
             )
 
+            # Ensure consistency with features seen during FIT
             if self.one_hot_features_ is not None:
+                # Add missing columns (categories seen in train but not in test)
                 for c in self.one_hot_features_:
-                    if c not in X_oh.columns:
-                        X_oh[c] = 0
-                X_oh = X_oh[self.one_hot_features_]
+                    if c not in X_transformed.columns:
+                        X_transformed[c] = 0
+                
+                # Reorder and filter columns to match training schema
+                # We keep ordinal/binary columns + the one-hot features
+                ordinal_cols = list(self.mapping_rules.keys())
+                final_cols = [c for c in X_transformed.columns if c in self.one_hot_features_ or c in ordinal_cols]
+                X_transformed = X_transformed[final_cols]
 
-            bool_cols = X_oh.select_dtypes(include='bool').columns
-            X_oh[bool_cols] = X_oh[bool_cols].astype(int)
+            # Convert boolean dummies to 1/0
+            bool_cols = X_transformed.select_dtypes(include='bool').columns
+            X_transformed[bool_cols] = X_transformed[bool_cols].astype(int)
 
-            return X_oh.reset_index(drop=True)
+            return X_transformed
 
-        return X.reset_index(drop=True)
+        return X
 
     def get_feature_names_out(self, input_features=None):
-        if self.one_hot_features_ is not None:
-            return np.array(self.one_hot_features_)
-        if input_features is not None:
-            return np.array(input_features)
-        return np.array([])
+        """Returns the list of all processed feature names (Ordinal + One-Hot)."""
+        ordinal_cols = list(self.mapping_rules.keys())
+        oh_cols = self.one_hot_features_ if self.one_hot_features_ else []
+        return np.array(ordinal_cols + oh_cols)
 
 #--- Function : binary_encode_columns ---
 def binary_encode_columns(
