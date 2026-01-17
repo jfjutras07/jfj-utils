@@ -31,7 +31,7 @@ class categorical_encoder(BaseEstimator, TransformerMixin):
 
         # Apply Manual Mappings (Binary & Ordinal)
         for col, mapping in self.mapping_rules.items():
-            if col in X.columns:
+            if col in X.columns and mapping:
                 initial_na = X[col].isna()
                 X[col] = X[col].map(mapping)
 
@@ -41,24 +41,25 @@ class categorical_encoder(BaseEstimator, TransformerMixin):
                         invalid_vals = X.loc[invalid_mask, col].unique()
                         raise ValueError(f"Mapping error in '{col}': {invalid_vals} not found in rules.")
 
-                # Type cast to int after mapping
-                X[col] = X[col].astype(int)
+                # Type cast to int only if mapping exists
+                X[col] = X[col].astype(pd.Int64Dtype())
 
         # Apply One-Hot Encoding
         if self.one_hot_cols:
             X_oh = pd.get_dummies(X, columns=self.one_hot_cols, drop_first=self.drop_first)
 
-            # Identify columns not part of the new One-Hot features
-            other_cols = [c for c in X_oh.columns if c not in self.one_hot_features_]
+            # Reindex to match training features
+            if self.one_hot_features_ is not None:
+                for c in self.one_hot_features_:
+                    if c not in X_oh.columns:
+                        X_oh[c] = 0
+                X_oh = X_oh.reindex(columns=list(set(X_oh.columns)), fill_value=0)
 
-            # Reindex One-Hot part and combine
-            X_oh_part = X_oh.reindex(columns=list(other_cols) + list(self.one_hot_features_), fill_value=0)
+            # Cast bools to int
+            bool_cols = X_oh.select_dtypes(include='bool').columns
+            X_oh[bool_cols] = X_oh[bool_cols].astype(int)
 
-            # Type cast boolean columns to int
-            bool_cols = X_oh_part.select_dtypes(include='bool').columns
-            X_oh_part[bool_cols] = X_oh_part[bool_cols].astype(int)
-
-            return X_oh_part
+            return X_oh
 
         return X
 
