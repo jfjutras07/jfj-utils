@@ -26,11 +26,12 @@ class generic_transformer(BaseEstimator, TransformerMixin):
         X = X.copy()
         result = self.func(X, **self.kwargs)
         
-        # Ensure output is a DataFrame with correct column names
+        # --- MODIFICATION ICI ---
+        # Always return a DataFrame with proper column names
         if isinstance(result, pd.DataFrame):
-            return result
+            return result.reset_index(drop=True)
         else:
-            return pd.DataFrame(result, columns=self.feature_names_in_)
+            return pd.DataFrame(result, columns=self.feature_names_in_).reset_index(drop=True)
 
 # --- Function : log_message ---
 def log_message(message: str, level: str = "INFO") -> None:
