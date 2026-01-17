@@ -16,24 +16,35 @@ class group_imputer(BaseEstimator, TransformerMixin):
         self.global_fallback = None
 
     def fit(self, X, y=None):
+        # Ensure we are working with a DataFrame
+        if not hasattr(X, 'groupby'):
+            X = pd.DataFrame(X)
+
         if self.strategy == 'median':
             self.fill_values = X.groupby(self.group_col)[self.target_col].median()
             self.global_fallback = X[self.target_col].median()
-        else:  # mode
+        elif self.strategy == 'mean':
+            self.fill_values = X.groupby(self.group_col)[self.target_col].mean()
+            self.global_fallback = X[self.target_col].mean()
+        elif self.strategy == 'mode':
             self.fill_values = X.groupby(self.group_col)[self.target_col].apply(
                 lambda x: x.mode()[0] if not x.mode().empty else np.nan
             )
             self.global_fallback = X[self.target_col].mode()[0]
+        else:
+            raise ValueError(f"Strategy '{self.strategy}' not recognized. Use 'mean', 'median' or 'mode'.")
+            
         return self
 
     def transform(self, X):
         X = X.copy()
-        if self.fill_values is not None:
-            X[self.target_col] = X[self.target_col].fillna(X[self.group_col].map(self.fill_values))
-        if self.global_fallback is not None:
-            X[self.target_col] = X[self.target_col].fillna(self.global_fallback)
+        # Group-level fill
+        X[self.target_col] = X[self.target_col].fillna(X[self.group_col].map(self.fill_values))
+        # Global-level fallback for unseen categories or empty groups
+        X[self.target_col] = X[self.target_col].fillna(self.global_fallback)
         return X
 
+# --- Class : logical_imputer ---
 class logical_imputer(BaseEstimator, TransformerMixin):
     """
     Generic transformer to apply deductive logic. 
