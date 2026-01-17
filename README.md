@@ -41,6 +41,12 @@ Active development — modules will be progressively added and refined.
 *class_imbalance.py*
 - `class_imbalance_correction`
 
+*cleaning.py*
+- Class : `column_dropper`
+- `clean_names`
+- `clean_names_multiple`
+- `clean_text`
+
 *dimensionality_reduction.py*
 - `perform_famd`
 - `perform_mca`
@@ -63,10 +69,6 @@ Active development — modules will be progressively added and refined.
 - Class: `logical_imputer`
 - `missing_stats`
 - `missing_summary`
-  
-*name_cleaning.py*
-- `clean_names`
-- `clean_names_multiple`
 
 *normalizing.py*
 - Class : `skewness_corrector`-
@@ -82,9 +84,6 @@ Active development — modules will be progressively added and refined.
 - `minmax_scaler`
 - `robust_scaler`
 - `standard_scaler`
-
-*text_cleaning.py*
-- `clean_text`
 
 ### EDA: Exploratory data analysis tools for understanding distributions, relationships, and data structure.
 
@@ -305,6 +304,7 @@ Active development — modules will be progressively added and refined.
 
 *utils.py*
 - Class: `generic_transformer`
+- Class: `type_cast_transformer`
 - `log_message`
 - `timeit`
 
