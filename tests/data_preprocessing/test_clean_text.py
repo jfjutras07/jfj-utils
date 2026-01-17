@@ -1,5 +1,5 @@
 import pandas as pd
-from data_preprocessing.text_cleaning import clean_text
+from data_preprocessing.cleaning import clean_text
 
 #--- Function : test_clean_text_basic ---
 def test_clean_text_basic():
