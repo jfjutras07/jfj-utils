@@ -6,6 +6,7 @@ from sklearn.base import BaseEstimator, TransformerMixin
 class categorical_encoder(BaseEstimator, TransformerMixin):
     """
     All-in-one encoder for Binary, Ordinal, and One-Hot encoding.
+    Automatically casts encoded columns to int where relevant.
     """
     def __init__(self, 
                  mapping_rules: Optional[Dict[str, Dict]] = None, 
@@ -28,28 +29,35 @@ class categorical_encoder(BaseEstimator, TransformerMixin):
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
         X = X.copy()
 
-        #Apply Manual Mappings (Binary & Ordinal)
+        # Apply Manual Mappings (Binary & Ordinal)
         for col, mapping in self.mapping_rules.items():
             if col in X.columns:
                 initial_na = X[col].isna()
                 X[col] = X[col].map(mapping)
-                
+
                 if self.strict_mapping:
                     invalid_mask = X[col].isna() & ~initial_na
                     if invalid_mask.any():
                         invalid_vals = X.loc[invalid_mask, col].unique()
                         raise ValueError(f"Mapping error in '{col}': {invalid_vals} not found in rules.")
 
-        #Apply One-Hot Encoding
+                # Type cast to int after mapping
+                X[col] = X[col].astype(int)
+
+        # Apply One-Hot Encoding
         if self.one_hot_cols:
             X_oh = pd.get_dummies(X, columns=self.one_hot_cols, drop_first=self.drop_first)
-            
-            # Identify columns that are NOT part of the new One-Hot features
-            # (Essentially everything that wasn't encoded)
+
+            # Identify columns not part of the new One-Hot features
             other_cols = [c for c in X_oh.columns if c not in self.one_hot_features_]
-            
+
             # Reindex One-Hot part and combine
             X_oh_part = X_oh.reindex(columns=list(other_cols) + list(self.one_hot_features_), fill_value=0)
+
+            # Type cast boolean columns to int
+            bool_cols = X_oh_part.select_dtypes(include='bool').columns
+            X_oh_part[bool_cols] = X_oh_part[bool_cols].astype(int)
+
             return X_oh_part
 
         return X
@@ -61,16 +69,11 @@ def binary_encode_columns(
     strict: bool = True,
     train_reference: pd.DataFrame | None = None
 ) -> Union[pd.DataFrame, List[pd.DataFrame]]:
-    """
-    Apply explicit binary encoding to selected columns for one or multiple datasets
-    and optionally use a train reference to avoid data leakage.
-    """
     single_df = False
     if isinstance(dfs, pd.DataFrame):
         dfs = [dfs]
         single_df = True
 
-    # If train_reference is provided, we map using its values
     ref_mapping = {}
     if train_reference is not None:
         for col, mapping in binary_mappings.items():
@@ -84,16 +87,13 @@ def binary_encode_columns(
         for col, mapping in (ref_mapping if ref_mapping else binary_mappings).items():
             if col not in df.columns:
                 raise KeyError(f"Column '{col}' not found in dataset {df_idx}")
-            
-            # Record where NAs were BEFORE mapping to detect invalid categories
+
             initial_na = df[col].isna()
             df[col] = df[col].map(mapping)
-            
-            # Check for values that were not NA but became NA (meaning they weren't in the map)
+
             invalid_mask = df[col].isna() & ~initial_na
-            
             if invalid_mask.any():
-                invalid_values = df.loc[invalid_mask, col].unique() if 'initial_na' in locals() else "unknown"
+                invalid_values = df.loc[invalid_mask, col].unique()
                 message = (
                     f"Invalid values found after binary encoding in column '{col}' "
                     f"(dataset {df_idx}): {invalid_values}"
@@ -102,6 +102,10 @@ def binary_encode_columns(
                     raise ValueError(message)
                 else:
                     print(f"WARNING: {message}")
+
+            # Type cast to int
+            df[col] = df[col].astype(int)
+
         encoded_dfs.append(df)
 
     print(
@@ -116,11 +120,6 @@ def label_encode_columns(
     categorical_cols: List[str],
     train_reference: pd.DataFrame | None = None
 ) -> Union[pd.DataFrame, List[pd.DataFrame]]:
-    """
-    Apply label encoding to selected categorical columns for one or multiple datasets.
-    If train_reference is provided, use the factorization from train_reference.
-    Unknown values in test sets will be mapped to -1.
-    """
     single_df = False
     if isinstance(dfs, pd.DataFrame):
         dfs = [dfs]
@@ -131,7 +130,6 @@ def label_encode_columns(
         for col in categorical_cols:
             if col not in train_reference.columns:
                 raise KeyError(f"Column '{col}' not found in train_reference")
-            # Create a fixed mapping based on train
             codes, uniques = pd.factorize(train_reference[col], sort=True)
             ref_mappings[col] = {cat: i for i, cat in enumerate(uniques)}
 
@@ -141,13 +139,13 @@ def label_encode_columns(
         for col in categorical_cols:
             if col not in df.columns:
                 raise KeyError(f"Column '{col}' not found in dataset {df_idx}")
-            
+
             if ref_mappings:
-                # Map categories, unknown categories become NaN, then filled with -1
                 df[col] = df[col].map(ref_mappings[col]).fillna(-1).astype(int)
             else:
                 df[col], _ = pd.factorize(df[col], sort=True)
                 df[col] = df[col].astype(int)
+
         encoded_dfs.append(df)
 
     print(
@@ -163,17 +161,11 @@ def one_hot_encode_columns(
     drop_first: bool = False,
     train_reference: pd.DataFrame | None = None
 ) -> Union[pd.DataFrame, List[pd.DataFrame]]:
-    """
-    Apply one-hot encoding to selected categorical columns.
-    If train_reference is provided, new columns will match train columns exactly
-    (unseen categories are dropped, missing categories are added as 0s).
-    """
     single_df = False
     if isinstance(dfs, pd.DataFrame):
         dfs = [dfs]
         single_df = True
 
-    # Identify exact target columns from train_reference
     final_column_structure = None
     if train_reference is not None:
         ref_dummy = pd.get_dummies(train_reference, columns=categorical_cols, drop_first=drop_first)
@@ -181,17 +173,15 @@ def one_hot_encode_columns(
 
     encoded_dfs = []
     for df_idx, df in enumerate(dfs):
-        # Apply standard dummies
         df_encoded = pd.get_dummies(df, columns=categorical_cols, drop_first=drop_first)
-        
+
         if final_column_structure is not None:
-            # Reindex ensures columns match ref exactly: adds missing (as 0) and drops extra (unseen)
             df_encoded = df_encoded.reindex(columns=final_column_structure, fill_value=0)
-        
-        # Convert bool to float for PCA compatibility
+
+        # Type cast boolean columns to int
         bool_cols = df_encoded.select_dtypes(include='bool').columns
-        df_encoded[bool_cols] = df_encoded[bool_cols].astype(float)
-        
+        df_encoded[bool_cols] = df_encoded[bool_cols].astype(int)
+
         encoded_dfs.append(df_encoded)
 
     print(
@@ -206,10 +196,6 @@ def ordinal_encode_columns(
     ordinal_mappings: dict,
     train_reference: pd.DataFrame | None = None
 ) -> Union[pd.DataFrame, List[pd.DataFrame]]:
-    """
-    Apply ordinal encoding to selected columns.
-    If train_reference is provided, validates that categories exist in the reference mapping.
-    """
     single_df = False
     if isinstance(dfs, pd.DataFrame):
         dfs = [dfs]
@@ -225,13 +211,14 @@ def ordinal_encode_columns(
         for col, mapping in ref_mappings.items():
             if col not in df.columns:
                 raise KeyError(f"Column '{col}' not found in dataset {df_idx}")
-            
+
             invalid_mask = ~df[col].isin(mapping.keys()) & df[col].notna()
             if invalid_mask.any():
                 invalid_values = df.loc[invalid_mask, col].unique()
                 raise ValueError(f"Invalid values in column '{col}' (dataset {df_idx}): {invalid_values}")
-            
+
             df[col] = df[col].map(mapping).astype(int)
+
         encoded_dfs.append(df)
 
     print(
