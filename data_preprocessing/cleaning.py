@@ -4,12 +4,6 @@ from typing import List, Optional
 import re
 from typing import Dict
 import string
-import nltk
-from nltk.corpus import stopwords
-from nltk.stem import WordNetLemmatizer
-
-nltk.download('stopwords')
-nltk.download('wordnet')
 
 #--- Class : column_dropper ---
 class column_dropper(BaseEstimator, TransformerMixin):
@@ -112,6 +106,12 @@ def clean_text(df, text_col='comments', new_col='comments_clean',
     df : pd.DataFrame
         DataFrame with the new cleaned text column.
     """
+    import nltk
+    from nltk.corpus import stopwords
+    from nltk.stem import WordNetLemmatizer
+
+    nltk.download('stopwords')
+    nltk.download('wordnet')
     
     #Drop missing or empty comments
     df = df.dropna(subset=[text_col]).copy()
