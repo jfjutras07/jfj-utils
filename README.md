@@ -53,10 +53,13 @@ Active development — modules will be progressively added and refined.
 - `ordinal_encode_columns`
   
 *feature_engineering.py*
+- Class : `ratio_generator`-
 - `mi_classification`
 - `mi_regression`
   
 *missing.py*
+- Class : `group_imputer`-
+- Class: `logical_imputer`
 - `missing_stats`
 - `missing_summary`
   
@@ -65,6 +68,7 @@ Active development — modules will be progressively added and refined.
 - `clean_names_multiple`
 
 *normalizing.py*
+- Class : `skewness_corrector`-
 - `normalize_columns`
   
 *outliers.py*
