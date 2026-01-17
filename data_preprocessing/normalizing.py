@@ -1,6 +1,27 @@
 import pandas as pd
 from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
 from typing import List, Union, Tuple
+import numpy as np
+from sklearn.base import BaseEstimator, TransformerMixin
+
+#--- Class : skewness_corrector ---
+class skewness_corrector(BaseEstimator, TransformerMixin):
+    """
+    Applies log1p transformation to reduce skewness of numerical features.
+    """
+    def __init__(self, columns: List[str], method: str = 'log1p'):
+        self.columns = columns
+        self.method = method
+
+    def fit(self, X: pd.DataFrame, y=None):
+        return self
+
+    def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        X = X.copy()
+        for col in self.columns:
+            if col in X.columns and self.method == 'log1p':
+                X[col] = np.log1p(X[col])
+        return X
 
 #--- Function : normalize_columns ---
 def normalize_columns(
