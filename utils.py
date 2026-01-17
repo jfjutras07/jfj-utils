@@ -1,6 +1,30 @@
 import time
 import datetime
 from functools import wraps
+import pandas as pd
+from sklearn.base import BaseEstimator, TransformerMixin
+from typing import Callable, Dict, Any, Optional
+
+#--- Class : generic_transformer ---
+class generic_transformer(BaseEstimator, TransformerMixin):
+    """
+    Adapter to use any custom function inside a Scikit-Learn Pipeline.
+    Supports passing extra arguments and handles the fit/transform logic.
+    """
+    def __init__(self, func: Callable, **kwargs):
+        self.func = func
+        self.kwargs = kwargs
+        self.feature_names_in_ = None
+
+    def fit(self, X: pd.DataFrame, y=None):
+        # Store column names to ensure consistency
+        self.feature_names_in_ = X.columns.tolist()
+        return self
+
+    def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        X = X.copy()
+        # Execute the custom function with provided keyword arguments
+        return self.func(X, **self.kwargs)
 
 # --- Function : log_message ---
 def log_message(message: str, level: str = "INFO") -> None:
