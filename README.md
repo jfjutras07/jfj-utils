@@ -304,6 +304,7 @@ Active development — modules will be progressively added and refined.
 ### Utils: Shared low-level utilities used across the library.
 
 *utils.py*
+- Class: `generic_transformer`
 - `log_message`
 - `timeit`
 
