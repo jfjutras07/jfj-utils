@@ -22,16 +22,20 @@ class ratio_generator(BaseEstimator, TransformerMixin):
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
         X = X.copy()
         self.feature_names_ = []
+        used_cols = set()
 
         for prefix, (num_col, den_col) in self.ratio_mappings.items():
-            # Nom simplifié : juste le prefix
-            ratio_name = prefix
-            # Safe division
             den_safe = X[den_col].replace(0, np.nan)
-            X[ratio_name] = X[num_col] / den_safe
+            X[prefix] = X[num_col] / den_safe
+
             if self.fill_na_value is not None:
-                X[ratio_name] = X[ratio_name].fillna(self.fill_na_value)
-            self.feature_names_.append(ratio_name)
+                X[prefix] = X[prefix].fillna(self.fill_na_value)
+
+            self.feature_names_.append(prefix)
+            used_cols.update([num_col, den_col])
+
+        # Drop source columns AFTER all ratios are created
+        X = X.drop(columns=list(used_cols), errors='ignore')
 
         return X
 
