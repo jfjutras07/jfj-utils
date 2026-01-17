@@ -11,6 +11,7 @@ class column_selector(BaseEstimator, TransformerMixin):
     """
     Final feature router that automatically detects constants and IDs,
     drops them, and routes numerical/categorical features.
+    Returns a DataFrame with readable column names.
     """
     def __init__(self, 
                  num_transformer: BaseEstimator, 
@@ -56,13 +57,21 @@ class column_selector(BaseEstimator, TransformerMixin):
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
         X_transformed = self.preprocessor_.transform(X)
         
-        # Récupérer les noms générés par le ColumnTransformer
-        try:
-            cols = self.preprocessor_.get_feature_names_out()
-        except AttributeError:
-            cols = [f"feat_{i}" for i in range(X_transformed.shape[1])]
+        # Colonnes numériques
+        num_cols = self.numeric_cols_
         
-        return pd.DataFrame(X_transformed, columns=cols, index=X.index)
+        # Colonnes One-Hot si disponibles
+        cat_cols = []
+        if hasattr(self.cat_transformer, 'one_hot_features_') and self.cat_transformer.one_hot_features_ is not None:
+            cat_cols = list(self.cat_transformer.one_hot_features_)
+        
+        # Générer des noms génériques pour le reste
+        n_extra = X_transformed.shape[1] - len(num_cols) - len(cat_cols)
+        extra_cols = [f"feat_{i}" for i in range(n_extra)] if n_extra > 0 else []
+
+        all_cols = num_cols + cat_cols + extra_cols
+
+        return pd.DataFrame(X_transformed, columns=all_cols, index=X.index)
 
 #--- Function: clean_names ---
 def clean_names(df: pd.DataFrame, first_col: str='first_name', last_col: str='last_name') -> pd.DataFrame:
