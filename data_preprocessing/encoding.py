@@ -7,6 +7,7 @@ class categorical_encoder(BaseEstimator, TransformerMixin):
     """
     All-in-one encoder for Binary, Ordinal, and One-Hot encoding.
     Automatically casts encoded columns to int where relevant.
+    Preserves proper feature names after transformation.
     """
     def __init__(self, 
                  mapping_rules: Optional[Dict[str, Dict]] = None, 
@@ -23,7 +24,7 @@ class categorical_encoder(BaseEstimator, TransformerMixin):
         # Learn One-Hot columns to ensure consistency
         if self.one_hot_cols:
             X_oh = pd.get_dummies(X[self.one_hot_cols], columns=self.one_hot_cols, drop_first=self.drop_first)
-            self.one_hot_features_ = X_oh.columns
+            self.one_hot_features_ = X_oh.columns.tolist()
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
@@ -48,20 +49,20 @@ class categorical_encoder(BaseEstimator, TransformerMixin):
         if self.one_hot_cols:
             X_oh = pd.get_dummies(X, columns=self.one_hot_cols, drop_first=self.drop_first)
 
-            # Reindex to match training features
+            # Reindex to match training features in correct order
             if self.one_hot_features_ is not None:
                 for c in self.one_hot_features_:
                     if c not in X_oh.columns:
                         X_oh[c] = 0
-                X_oh = X_oh.reindex(columns=list(set(X_oh.columns)), fill_value=0)
+                X_oh = X_oh[self.one_hot_features_]
 
             # Cast bools to int
             bool_cols = X_oh.select_dtypes(include='bool').columns
             X_oh[bool_cols] = X_oh[bool_cols].astype(int)
 
-            return X_oh
+            return X_oh.reset_index(drop=True)
 
-        return X
+        return X.reset_index(drop=True)
 
 #--- Function : binary_encode_columns ---
 def binary_encode_columns(
