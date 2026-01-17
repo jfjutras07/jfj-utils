@@ -3,7 +3,6 @@ from typing import Dict, List, Union, Optional
 from sklearn.base import BaseEstimator, TransformerMixin
 import numpy as np
 
-
 #--- Class : categorical_encoder ---
 class categorical_encoder(BaseEstimator, TransformerMixin):
     """
