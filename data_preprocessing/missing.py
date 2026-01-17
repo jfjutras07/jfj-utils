@@ -34,7 +34,6 @@ class group_imputer(BaseEstimator, TransformerMixin):
             X[self.target_col] = X[self.target_col].fillna(self.global_fallback)
         return X
 
-#--- Class : logical_imputer ---
 class logical_imputer(BaseEstimator, TransformerMixin):
     """
     Generic transformer to apply deductive logic. 
@@ -47,17 +46,30 @@ class logical_imputer(BaseEstimator, TransformerMixin):
         self.fill_from_col = fill_from_col
 
     def fit(self, X, y=None):
+        # Validation: check if required columns exist during fit
+        cols_to_check = [self.target_col]
+        if self.fill_from_col:
+            cols_to_check.append(self.fill_from_col)
+            
+        missing_cols = [c for c in cols_to_check if c not in X.columns]
+        if missing_cols:
+            raise ValueError(f"Columns {missing_cols} not found in DataFrame.")
         return self
 
     def transform(self, X):
+        # Use copy only to avoid SettingWithCopyWarning on the original df
         X = X.copy()
+        
+        # Apply the logic: condition must be met AND target must be NaN
         mask = self.condition_func(X) & X[self.target_col].isna()
+        
         if self.fill_from_col:
             X.loc[mask, self.target_col] = X.loc[mask, self.fill_from_col]
         elif self.fill_value is not None:
             X.loc[mask, self.target_col] = self.fill_value
+            
         return X
-
+        
 #--- Function : missing_stats ---
 def missing_stats(df: pd.DataFrame) -> dict:
     """
