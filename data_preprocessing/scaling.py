@@ -1,6 +1,46 @@
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
+from sklearn.base import BaseEstimator, TransformerMixin
+from typing import List, Union
+
+#--- Class : feature_scaler ---
+class feature_scaler(BaseEstimator, TransformerMixin):
+    """
+    Generic numerical scaler supporting multiple methods.
+    Maintains DataFrame structure and column names.
+    """
+    def __init__(self, columns: List[str], method: str = 'robust'):
+        self.columns = columns
+        self.method = method
+        self.scaler_ = None
+        
+        # Mapping methods to Scikit-Learn classes
+        self._method_map = {
+            'robust': RobustScaler,
+            'standard': StandardScaler,
+            'minmax': MinMaxScaler
+        }
+        
+        if self.method not in self._method_map:
+            raise ValueError(f"Method '{self.method}' not supported. Choose from: {list(self._method_map.keys())}")
+
+    def fit(self, X: pd.DataFrame, y=None):
+        # Initialize and fit the chosen scaler
+        if self.columns:
+            # We filter columns that actually exist to avoid crashes
+            existing_cols = [c for c in self.columns if c in X.columns]
+            self.scaler_ = self._method_map[self.method]()
+            self.scaler_.fit(X[existing_cols])
+        return self
+
+    def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        X = X.copy()
+        if self.scaler_ and self.columns:
+            existing_cols = [c for c in self.columns if c in X.columns]
+            # Transformation and replacement in the DataFrame
+            X[existing_cols] = self.scaler_.transform(X[existing_cols])
+        return X
 
 #---Function:minmax_scaler---
 def minmax_scaler(train_df, test_df=None, columns=None):
