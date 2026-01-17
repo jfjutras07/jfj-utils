@@ -19,7 +19,7 @@ class group_imputer(BaseEstimator, TransformerMixin):
         if self.strategy == 'median':
             self.fill_values = X.groupby(self.group_col)[self.target_col].median()
             self.global_fallback = X[self.target_col].median()
-        else: # mode
+        else:  # mode
             self.fill_values = X.groupby(self.group_col)[self.target_col].apply(
                 lambda x: x.mode()[0] if not x.mode().empty else np.nan
             )
@@ -28,8 +28,10 @@ class group_imputer(BaseEstimator, TransformerMixin):
 
     def transform(self, X):
         X = X.copy()
-        X[self.target_col] = X[self.target_col].fillna(X[self.group_col].map(self.fill_values))
-        X[self.target_col] = X[self.target_col].fillna(self.global_fallback)
+        if self.fill_values is not None:
+            X[self.target_col] = X[self.target_col].fillna(X[self.group_col].map(self.fill_values))
+        if self.global_fallback is not None:
+            X[self.target_col] = X[self.target_col].fillna(self.global_fallback)
         return X
 
 #--- Class : logical_imputer ---
@@ -52,7 +54,7 @@ class logical_imputer(BaseEstimator, TransformerMixin):
         mask = self.condition_func(X) & X[self.target_col].isna()
         if self.fill_from_col:
             X.loc[mask, self.target_col] = X.loc[mask, self.fill_from_col]
-        else:
+        elif self.fill_value is not None:
             X.loc[mask, self.target_col] = self.fill_value
         return X
 
