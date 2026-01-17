@@ -5,6 +5,25 @@ import pandas as pd
 from sklearn.base import BaseEstimator, TransformerMixin
 from typing import Callable, Dict, Any, Optional
 
+#--- Class : type_cast_transformer ---
+class type_cast_transformer(BaseEstimator, TransformerMixin):
+    """
+    Transformer to enforce specific data types on columns.
+    Useful to ensure numeric, categorical, or integer types in a pipeline.
+    """
+    def __init__(self, dtype_mapping: dict):
+        self.dtype_mapping = dtype_mapping
+        self.feature_names_in_ = None
+
+    def fit(self, X: pd.DataFrame, y=None):
+        # Store column names to ensure consistency
+        self.feature_names_in_ = X.columns.tolist()
+        return self
+
+    def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        X = X.copy()
+        return X.astype(self.dtype_mapping)
+
 #--- Class : generic_transformer ---
 class generic_transformer(BaseEstimator, TransformerMixin):
     """
