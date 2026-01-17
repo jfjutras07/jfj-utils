@@ -9,39 +9,40 @@ class skewness_corrector(BaseEstimator, TransformerMixin):
     """
     Applies log1p transformation to numeric columns.
     You can either provide a manual list of columns, or let it detect skewed columns automatically.
+    Handles columns with zeros or negative values safely.
     """
     def __init__(self, threshold=0.75, manual_cols=None, epsilon=1e-6):
         self.threshold = threshold
         self.manual_cols = manual_cols
+        self.epsilon = epsilon
         self.cols_to_transform_ = []
-        self.epsilon = epsilon  # small value to avoid log(0)
 
     def fit(self, X, y=None):
         numeric_df = X.select_dtypes(include=[np.number])
         
         if self.manual_cols is not None:
-            # Use only manual columns that exist in X
+            # Only keep manual columns that exist in X
             self.cols_to_transform_ = [col for col in self.manual_cols if col in numeric_df.columns]
         else:
-            # Auto-detect skewed columns among numeric features
+            # Auto-detect skewed columns
             skewness = numeric_df.skew()
             self.cols_to_transform_ = skewness[abs(skewness) > self.threshold].index.tolist()
-            
+        
         return self
 
     def transform(self, X):
         X = X.copy()
         numeric_cols = X.select_dtypes(include=[np.number]).columns
-        
-        # Only transform columns that exist in X
+
         for col in self.cols_to_transform_:
             if col in numeric_cols:
-                # Shift if necessary to avoid negative/zero values
+                # Shift if there are zeros or negative values
                 min_val = X[col].min()
                 if min_val <= 0:
                     X[col] = X[col] - min_val + self.epsilon
+                # Apply log1p
                 X[col] = np.log1p(X[col])
-                
+        
         return X
 
 #--- Function : normalize_columns ---
