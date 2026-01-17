@@ -2,6 +2,57 @@ import re
 import string
 from typing import List, Optional, Dict
 import pandas as pd
+import numpy as np
+from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.compose import ColumnTransformer
+
+#--- Class : column_selector ---
+class column_selector(BaseEstimator, TransformerMixin):
+    """
+    Final generic processor that automatically detects constants and IDs 
+    to drop them, then routes numeric and categorical features.
+    """
+    def __init__(self, num_transformer: BaseEstimator, cat_transformer: BaseEstimator):
+        self.num_transformer = num_transformer
+        self.cat_transformer = cat_transformer
+
+    def fit(self, X: pd.DataFrame, y=None):
+        # Identify constant columns (only one unique value)
+        self.constant_cols_ = [c for c in X.columns if X[c].nunique() <= 1]
+        
+        # Identify ID-like columns (containing 'ID' or 'IDENTIFIER')
+        self.id_cols_ = [c for c in X.columns if 'ID' in c.upper() or 'IDENTIFIER' in c.upper()]
+        
+        # Merge all columns to be dropped automatically
+        self.auto_drop_ = list(set(self.constant_cols_ + self.id_cols_))
+
+        # Select valid numeric columns (excluding those to drop)
+        self.numeric_cols_ = [
+            c for c in X.select_dtypes(include=np.number).columns 
+            if c not in self.auto_drop_
+        ]
+        
+        # Select valid categorical columns (excluding those to drop)
+        self.categorical_cols_ = [
+            c for c in X.select_dtypes(include=['object', 'category']).columns 
+            if c not in self.auto_drop_
+        ]
+
+        # Configure the internal ColumnTransformer engine
+        self.preprocessor_ = ColumnTransformer(
+            transformers=[
+                ('num', self.num_transformer, self.numeric_cols_),
+                ('cat', self.cat_transformer, self.categorical_cols_)
+            ],
+            remainder='drop' # Ensures anything else is physically removed
+        )
+        
+        self.preprocessor_.fit(X, y)
+        return self
+
+    def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        # The result is a clean, transformed DataFrame or Array
+        return self.preprocessor_.transform(X)
 
 #--- Function: clean_names ---
 def clean_names(df: pd.DataFrame, first_col: str='first_name', last_col: str='last_name') -> pd.DataFrame:
