@@ -9,9 +9,8 @@ from sklearn.compose import ColumnTransformer
 #--- Class : column_selector ---
 class column_selector(BaseEstimator, TransformerMixin):
     """
-    Final feature router that automatically detects constants and IDs,
-    drops them, routes numerical/categorical features, and
-    returns a DataFrame with readable column names.
+    Final feature router. Identifies columns to drop, routes the rest,
+    and reconstructs a clean DataFrame with Scikit-Learn's output names.
     """
     def __init__(self, 
                  num_transformer: BaseEstimator, 
@@ -22,27 +21,16 @@ class column_selector(BaseEstimator, TransformerMixin):
         self.cols_to_drop = cols_to_drop or []
 
     def fit(self, X: pd.DataFrame, y=None):
-        # Identify constants (no predictive power)
+        # 1. Clear identification of what we drop
         self.constant_cols_ = [c for c in X.columns if X[c].nunique() <= 1]
-        
-        # Identify IDs (potential leakage or noise)
         self.id_cols_ = [c for c in X.columns if 'ID' in c.upper() or 'IDENTIFIER' in c.upper()]
-        
-        # Merge all columns to be dropped
         self.auto_drop_ = list(set(self.constant_cols_ + self.id_cols_ + self.cols_to_drop))
 
-        # Filter numeric and categorical columns
-        self.numeric_cols_ = [
-            c for c in X.select_dtypes(include=np.number).columns 
-            if c not in self.auto_drop_
-        ]
-        
-        self.categorical_cols_ = [
-            c for c in X.select_dtypes(include=['object', 'category']).columns 
-            if c not in self.auto_drop_
-        ]
+        # 2. Clear routing
+        self.numeric_cols_ = [c for c in X.select_dtypes(include=np.number).columns if c not in self.auto_drop_]
+        self.categorical_cols_ = [c for c in X.select_dtypes(include=['object', 'category']).columns if c not in self.auto_drop_]
 
-        # Setup internal engine
+        # 3. The engine
         self.preprocessor_ = ColumnTransformer(
             transformers=[
                 ('num', self.num_transformer, self.numeric_cols_),
@@ -52,20 +40,23 @@ class column_selector(BaseEstimator, TransformerMixin):
         )
         
         self.preprocessor_.fit(X, y)
-
-        # Store final feature names for DataFrame reconstruction
-        self.feature_names_out_ = self.preprocessor_.get_feature_names_out().tolist()
-
+        
+        # We store the names ONCE here during fit to be sure
+        self.feature_names_out_ = self.preprocessor_.get_feature_names_out()
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        # Transform into a matrix
         X_transformed = self.preprocessor_.transform(X)
 
-        # Handle sparse matrices (common with OneHotEncoding)
+        # Safety: handle sparse output from OneHot
         if hasattr(X_transformed, "toarray"):
             X_transformed = X_transformed.toarray()
 
-        # Return as DataFrame with correct names and index
+        # Control check: if the shape doesn't match our stored names, we stop everything
+        if X_transformed.shape[1] != len(self.feature_names_out_):
+            raise ValueError(f"CRITICAL ERROR: Data has {X_transformed.shape[1]} columns but we expected {len(self.feature_names_out_)} names.")
+
         return pd.DataFrame(
             X_transformed,
             columns=self.feature_names_out_,
