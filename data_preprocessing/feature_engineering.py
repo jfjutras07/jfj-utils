@@ -7,35 +7,39 @@ from typing import Dict, List
 #--- Class : ratio_generator ---
 class ratio_generator(BaseEstimator, TransformerMixin):
     """
-    Generates ratio features using only the given prefix as column name.
-    Input format: {'Prefix': ['NumeratorCol', 'DenominatorCol']}
-    Example output column: 'Tenure', 'ManagerStability', ...
+    Generates ratio features and handles division by zero.
     """
-    def __init__(self, ratio_mappings: Dict[str, List[str]], fill_na_value: float = 0.0):
+    def __init__(self, ratio_mappings: Dict[str, List[str]], fill_na_value: float = 0.0, drop_source: bool = True):
         self.ratio_mappings = ratio_mappings
         self.fill_na_value = fill_na_value
+        self.drop_source = drop_source
         self.feature_names_ = []
 
     def fit(self, X: pd.DataFrame, y=None):
+        # Define output features during fit
+        self.feature_names_ = list(self.ratio_mappings.keys())
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
         X = X.copy()
-        self.feature_names_ = []
         used_cols = set()
 
         for prefix, (num_col, den_col) in self.ratio_mappings.items():
+            # Ensure columns exist
+            if num_col not in X.columns or den_col not in X.columns:
+                continue
+                
+            # Replace 0 by NaN to avoid Inf values
             den_safe = X[den_col].replace(0, np.nan)
             X[prefix] = X[num_col] / den_safe
 
             if self.fill_na_value is not None:
                 X[prefix] = X[prefix].fillna(self.fill_na_value)
 
-            self.feature_names_.append(prefix)
             used_cols.update([num_col, den_col])
 
-        # Drop source columns AFTER all ratios are created
-        X = X.drop(columns=list(used_cols), errors='ignore')
+        if self.drop_source:
+            X = X.drop(columns=list(used_cols), errors='ignore')
 
         return X
 
