@@ -42,7 +42,6 @@ Active development — modules will be progressively added and refined.
 - `class_imbalance_correction`
 
 *cleaning.py*
-- Class : `column_dropper`
 - `clean_names`
 - `clean_names_multiple`
 - `clean_text`
