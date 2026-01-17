@@ -6,9 +6,9 @@ import numpy as np
 #--- Class : categorical_encoder ---
 class categorical_encoder(BaseEstimator, TransformerMixin):
     """
-    Encodeur ultra-robuste : Garantit une structure de sortie identique
-    entre le fit et le transform, gère les colonnes manquantes et 
-    assure l'alignement strict des noms de colonnes.
+    Ultra-robust encoder: Guarantees identical output structure between 
+    fit and transform, handles missing columns, and ensures strict 
+    alignment of feature names.
     """
     def __init__(self, 
                  mapping_rules: Optional[Dict[str, Dict]] = None, 
@@ -23,12 +23,12 @@ class categorical_encoder(BaseEstimator, TransformerMixin):
         self.feature_names_out_ = None
 
     def fit(self, X: pd.DataFrame, y=None):
-        # 1. Identifier les colonnes de mapping (Ordinal)
+        # Identify mapping columns (Ordinal/Binary)
         self.ordinal_cols_ = list(self.mapping_rules.keys())
 
-        # 2. Simuler le One-Hot pour capturer les noms de colonnes futurs
+        # Simulate One-Hot encoding to capture future column names
         if self.one_hot_cols:
-            # On s'assure que les colonnes existent avant get_dummies
+            # Ensure columns exist before calling get_dummies
             existing_oh = [c for c in self.one_hot_cols if c in X.columns]
             X_oh = pd.get_dummies(
                 X[existing_oh],
@@ -39,7 +39,7 @@ class categorical_encoder(BaseEstimator, TransformerMixin):
         else:
             self.one_hot_features_ = []
 
-        # 3. Définir la "Source de Vérité" pour les noms de colonnes
+        # Define the "Source of Truth" for feature names
         self.feature_names_out_ = np.array(self.ordinal_cols_ + self.one_hot_features_)
         
         return self
@@ -47,25 +47,25 @@ class categorical_encoder(BaseEstimator, TransformerMixin):
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
         X = X.copy()
 
-        # 1. Application des Mappings (Ordinal/Binary)
+        # Apply Mappings (Ordinal/Binary)
         for col, mapping in self.mapping_rules.items():
             if col in X.columns:
                 initial_na = X[col].isna()
                 X[col] = X[col].map(mapping)
 
                 if self.strict_mapping:
-                    # Détection de valeurs inconnues (non présentes dans le mapping)
+                    # Detect unknown values not present in mapping rules
                     invalid_mask = X[col].isna() & ~initial_na
                     if invalid_mask.any():
                         invalid_vals = X.loc[invalid_mask, col].unique()
-                        raise ValueError(f"Mapping error in '{col}': {invalid_vals} non définis.")
+                        raise ValueError(f"Mapping error in '{col}': {invalid_vals} undefined in rules.")
                 
                 X[col] = X[col].astype(float)
             else:
-                # Si une colonne de mapping manque, on la crée remplie de NaN
+                # If a mapping column is missing, create it filled with NaN
                 X[col] = np.nan
 
-        # 2. Application du One-Hot Encoding
+        # Apply One-Hot Encoding
         if self.one_hot_cols:
             existing_oh = [c for c in self.one_hot_cols if c in X.columns]
             X_transformed = pd.get_dummies(
@@ -74,19 +74,19 @@ class categorical_encoder(BaseEstimator, TransformerMixin):
                 drop_first=self.drop_first
             )
             
-            # Conversion immédiate des booléens en int (0/1)
+            # Immediately convert booleans to int (0/1)
             bool_cols = X_transformed.select_dtypes(include='bool').columns
             X_transformed[bool_cols] = X_transformed[bool_cols].astype(int)
         else:
             X_transformed = X
 
-        # 3. ALIGNEMENT CRITIQUE (L'assurance vie du pipeline)
-        # On s'assure que TOUTES les colonnes promises au FIT sont présentes
+        # CRITICAL ALIGNMENT (Pipeline safety net)
+        # Ensure ALL columns promised during FIT are present in the output
         for col in self.feature_names_out_:
             if col not in X_transformed.columns:
                 X_transformed[col] = 0
 
-        # On retourne uniquement ce qui a été promis, dans l'ordre exact
+        # Return ONLY the promised features in the EXACT order
         return X_transformed[self.feature_names_out_]
 
     def get_feature_names_out(self, input_features=None):
