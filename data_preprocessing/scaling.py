@@ -9,13 +9,13 @@ class feature_scaler(BaseEstimator, TransformerMixin):
     """
     Generic numerical scaler supporting multiple methods.
     Maintains DataFrame structure and column names.
+    If columns is None, it scales all numeric features received.
     """
-    def __init__(self, columns: List[str], method: str = 'robust'):
+    def __init__(self, columns: Optional[List[str]] = None, method: str = 'robust'):
         self.columns = columns
         self.method = method
         self.scaler_ = None
         
-        # Mapping methods to Scikit-Learn classes
         self._method_map = {
             'robust': RobustScaler,
             'standard': StandardScaler,
@@ -26,20 +26,22 @@ class feature_scaler(BaseEstimator, TransformerMixin):
             raise ValueError(f"Method '{self.method}' not supported. Choose from: {list(self._method_map.keys())}")
 
     def fit(self, X: pd.DataFrame, y=None):
-        # Initialize and fit the chosen scaler
-        if self.columns:
-            # We filter columns that actually exist to avoid crashes
-            existing_cols = [c for c in self.columns if c in X.columns]
-            self.scaler_ = self._method_map[self.method]()
-            self.scaler_.fit(X[existing_cols])
+        # Use provided columns or fallback to all columns in the received DataFrame
+        self.target_cols_ = self.columns if self.columns else X.columns.tolist()
+        
+        if self.target_cols_:
+            existing_cols = [c for c in self.target_cols_ if c in X.columns]
+            if existing_cols:
+                self.scaler_ = self._method_map[self.method]()
+                self.scaler_.fit(X[existing_cols])
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
         X = X.copy()
-        if self.scaler_ and self.columns:
-            existing_cols = [c for c in self.columns if c in X.columns]
-            # Transformation and replacement in the DataFrame
-            X[existing_cols] = self.scaler_.transform(X[existing_cols])
+        if self.scaler_ and hasattr(self, 'target_cols_'):
+            existing_cols = [c for c in self.target_cols_ if c in X.columns]
+            if existing_cols:
+                X[existing_cols] = self.scaler_.transform(X[existing_cols])
         return X
 
 #---Function:minmax_scaler---
