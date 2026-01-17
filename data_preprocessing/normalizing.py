@@ -4,23 +4,35 @@ from typing import List, Union, Tuple
 import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
 
-#--- Class : skewness_corrector ---
-class skewness_corrector(BaseEstimator, TransformerMixin):
+# --- Class : SkewnessCorrector ---
+class SkewnessCorrector(BaseEstimator, TransformerMixin):
     """
-    Applies log1p transformation to reduce skewness of numerical features.
+    Détecte automatiquement les colonnes numériques asymétriques 
+    et applique une transformation log1p.
     """
-    def __init__(self, columns: List[str], method: str = 'log1p'):
-        self.columns = columns
-        self.method = method
+    def __init__(self, threshold=0.75):
+        self.threshold = threshold
+        self.cols_to_transform_ = []
 
-    def fit(self, X: pd.DataFrame, y=None):
+    def fit(self, X, y=None):
+        # On ne travaille que sur les colonnes numériques
+        numeric_df = X.select_dtypes(include=[np.number])
+        
+        # On calcule la skewness pour chaque colonne
+        skewness = numeric_df.skew()
+        
+        # On mémorise les colonnes qui dépassent le seuil
+        self.cols_to_transform_ = skewness[abs(skewness) > self.threshold].index.tolist()
+        
         return self
 
-    def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+    def transform(self, X):
         X = X.copy()
-        for col in self.columns:
-            if col in X.columns and self.method == 'log1p':
-                X[col] = np.log1p(X[col])
+        for col in self.cols_to_transform_:
+            if col in X.columns:
+                # On s'assure que les valeurs sont positives pour le log
+                if (X[col] >= 0).all():
+                    X[col] = np.log1p(X[col])
         return X
 
 #--- Function : normalize_columns ---
