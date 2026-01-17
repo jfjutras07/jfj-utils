@@ -54,10 +54,15 @@ class column_selector(BaseEstimator, TransformerMixin):
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
-        # Transform and return as DataFrame with correct column names
         X_transformed = self.preprocessor_.transform(X)
-        final_cols = self.numeric_cols_ + self.categorical_cols_
-        return pd.DataFrame(X_transformed, columns=final_cols, index=X.index)
+        
+        # Récupérer les noms générés par le ColumnTransformer
+        try:
+            cols = self.preprocessor_.get_feature_names_out()
+        except AttributeError:
+            cols = [f"feat_{i}" for i in range(X_transformed.shape[1])]
+        
+        return pd.DataFrame(X_transformed, columns=cols, index=X.index)
 
 #--- Function: clean_names ---
 def clean_names(df: pd.DataFrame, first_col: str='first_name', last_col: str='last_name') -> pd.DataFrame:
