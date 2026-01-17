@@ -11,6 +11,7 @@ class column_selector(BaseEstimator, TransformerMixin):
     """
     Final feature router. Identifies columns to drop, routes the rest,
     and reconstructs a clean DataFrame with Scikit-Learn's output names.
+    Provides a safety check between expected feature names and actual output shape.
     """
     def __init__(self, 
                  num_transformer: BaseEstimator, 
@@ -21,16 +22,16 @@ class column_selector(BaseEstimator, TransformerMixin):
         self.cols_to_drop = cols_to_drop or []
 
     def fit(self, X: pd.DataFrame, y=None):
-        # 1. Clear identification of what we drop
+        # Identify constant columns and ID-like columns automatically
         self.constant_cols_ = [c for c in X.columns if X[c].nunique() <= 1]
         self.id_cols_ = [c for c in X.columns if 'ID' in c.upper() or 'IDENTIFIER' in c.upper()]
         self.auto_drop_ = list(set(self.constant_cols_ + self.id_cols_ + self.cols_to_drop))
 
-        # 2. Clear routing
+        # Separate numeric and categorical features excluding dropped ones
         self.numeric_cols_ = [c for c in X.select_dtypes(include=np.number).columns if c not in self.auto_drop_]
         self.categorical_cols_ = [c for c in X.select_dtypes(include=['object', 'category']).columns if c not in self.auto_drop_]
 
-        # 3. The engine
+        # Initialize and fit the internal ColumnTransformer
         self.preprocessor_ = ColumnTransformer(
             transformers=[
                 ('num', self.num_transformer, self.numeric_cols_),
@@ -41,22 +42,26 @@ class column_selector(BaseEstimator, TransformerMixin):
         
         self.preprocessor_.fit(X, y)
         
-        # We store the names ONCE here during fit to be sure
+        # Capture feature names once during fit to guarantee consistency
         self.feature_names_out_ = self.preprocessor_.get_feature_names_out()
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
-        # Transform into a matrix
+        # Generate the transformed matrix
         X_transformed = self.preprocessor_.transform(X)
 
-        # Safety: handle sparse output from OneHot
+        # Handle potential sparse matrix output
         if hasattr(X_transformed, "toarray"):
             X_transformed = X_transformed.toarray()
 
-        # Control check: if the shape doesn't match our stored names, we stop everything
+        # Strict dimensionality audit
         if X_transformed.shape[1] != len(self.feature_names_out_):
-            raise ValueError(f"CRITICAL ERROR: Data has {X_transformed.shape[1]} columns but we expected {len(self.feature_names_out_)} names.")
+            raise ValueError(
+                f"CRITICAL ERROR: Data shape {X_transformed.shape[1]} "
+                f"mismatches expected feature count {len(self.feature_names_out_)}."
+            )
 
+        # Return a reconstructed DataFrame with original index
         return pd.DataFrame(
             X_transformed,
             columns=self.feature_names_out_,
