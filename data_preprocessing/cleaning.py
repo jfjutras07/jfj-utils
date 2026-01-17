@@ -11,23 +11,21 @@ class column_selector(BaseEstimator, TransformerMixin):
     """
     Final feature router that automatically detects constants and IDs,
     drops them, routes numerical/categorical features, and
-    returns a DataFrame with readable column names including ratio features.
+    returns a DataFrame with readable column names.
     """
     def __init__(self, 
                  num_transformer: BaseEstimator, 
                  cat_transformer: BaseEstimator, 
-                 cols_to_drop: Optional[List[str]] = None,
-                 ratio_transformer: Optional[BaseEstimator] = None):
+                 cols_to_drop: Optional[List[str]] = None):
         self.num_transformer = num_transformer
         self.cat_transformer = cat_transformer
-        self.ratio_transformer = ratio_transformer
         self.cols_to_drop = cols_to_drop or []
 
     def fit(self, X: pd.DataFrame, y=None):
-        # Identify constants
+        # Identify constants (no predictive power)
         self.constant_cols_ = [c for c in X.columns if X[c].nunique() <= 1]
         
-        # Identify IDs
+        # Identify IDs (potential leakage or noise)
         self.id_cols_ = [c for c in X.columns if 'ID' in c.upper() or 'IDENTIFIER' in c.upper()]
         
         # Merge all columns to be dropped
@@ -55,7 +53,7 @@ class column_selector(BaseEstimator, TransformerMixin):
         
         self.preprocessor_.fit(X, y)
 
-        # --- STORE FINAL FEATURE NAMES (THE IMPORTANT FIX) ---
+        # Store final feature names for DataFrame reconstruction
         self.feature_names_out_ = self.preprocessor_.get_feature_names_out().tolist()
 
         return self
@@ -63,7 +61,11 @@ class column_selector(BaseEstimator, TransformerMixin):
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
         X_transformed = self.preprocessor_.transform(X)
 
-        # --- USE COLUMNTRANSFORMER NAMES, NO MANUAL RECONSTRUCTION ---
+        # Handle sparse matrices (common with OneHotEncoding)
+        if hasattr(X_transformed, "toarray"):
+            X_transformed = X_transformed.toarray()
+
+        # Return as DataFrame with correct names and index
         return pd.DataFrame(
             X_transformed,
             columns=self.feature_names_out_,
