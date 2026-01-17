@@ -1,6 +1,8 @@
 import pandas as pd
 from typing import Dict, List, Union, Optional
 from sklearn.base import BaseEstimator, TransformerMixin
+import numpy as np
+
 
 #--- Class : categorical_encoder ---
 class categorical_encoder(BaseEstimator, TransformerMixin):
@@ -21,16 +23,18 @@ class categorical_encoder(BaseEstimator, TransformerMixin):
         self.one_hot_features_ = None
 
     def fit(self, X: pd.DataFrame, y=None):
-        # Learn One-Hot columns to ensure consistency
         if self.one_hot_cols:
-            X_oh = pd.get_dummies(X[self.one_hot_cols], columns=self.one_hot_cols, drop_first=self.drop_first)
+            X_oh = pd.get_dummies(
+                X[self.one_hot_cols],
+                columns=self.one_hot_cols,
+                drop_first=self.drop_first
+            )
             self.one_hot_features_ = X_oh.columns.tolist()
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
         X = X.copy()
 
-        # Apply Manual Mappings (Binary & Ordinal)
         for col, mapping in self.mapping_rules.items():
             if col in X.columns and mapping:
                 initial_na = X[col].isna()
@@ -40,29 +44,38 @@ class categorical_encoder(BaseEstimator, TransformerMixin):
                     invalid_mask = X[col].isna() & ~initial_na
                     if invalid_mask.any():
                         invalid_vals = X.loc[invalid_mask, col].unique()
-                        raise ValueError(f"Mapping error in '{col}': {invalid_vals} not found in rules.")
+                        raise ValueError(
+                            f"Mapping error in '{col}': {invalid_vals} not found in rules."
+                        )
 
-                # Type cast to int only if mapping exists
                 X[col] = X[col].astype(pd.Int64Dtype())
 
-        # Apply One-Hot Encoding
         if self.one_hot_cols:
-            X_oh = pd.get_dummies(X, columns=self.one_hot_cols, drop_first=self.drop_first)
+            X_oh = pd.get_dummies(
+                X,
+                columns=self.one_hot_cols,
+                drop_first=self.drop_first
+            )
 
-            # Reindex to match training features in correct order
             if self.one_hot_features_ is not None:
                 for c in self.one_hot_features_:
                     if c not in X_oh.columns:
                         X_oh[c] = 0
                 X_oh = X_oh[self.one_hot_features_]
 
-            # Cast bools to int
             bool_cols = X_oh.select_dtypes(include='bool').columns
             X_oh[bool_cols] = X_oh[bool_cols].astype(int)
 
             return X_oh.reset_index(drop=True)
 
         return X.reset_index(drop=True)
+
+    def get_feature_names_out(self, input_features=None):
+        if self.one_hot_features_ is not None:
+            return np.array(self.one_hot_features_)
+        if input_features is not None:
+            return np.array(input_features)
+        return np.array([])
 
 #--- Function : binary_encode_columns ---
 def binary_encode_columns(
