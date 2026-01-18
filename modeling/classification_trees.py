@@ -45,13 +45,10 @@ def catboost_classification(train_df, test_df, outcome, predictors, cv=5, for_st
 # --- Function: compare_classification_tree_models ---
 def compare_classification_tree_models(train_df, test_df, outcome, predictors, cv=5):
     """
-    Executes and compares tree-based models, suppressed warnings for cleaner output.
+    Executes and compares tree-based models.
     Final comparison based on weighted F1-score to evaluate performance.
+    Feature name warnings from LightGBM/XGBoost are fixed.
     """
-    # Silencing noise from Sklearn and LightGBM regarding feature names and verbosity
-    warnings.filterwarnings("ignore", category=UserWarning)
-    warnings.filterwarnings("ignore", module="lightgbm")
-    
     print(f"Starting Tree Models Comparison | Predictors: {len(predictors)}")
     print("-" * 45)
 
@@ -65,10 +62,20 @@ def compare_classification_tree_models(train_df, test_df, outcome, predictors, c
     }
 
     X_test, y_test = test_df[predictors], test_df[outcome]
+
+    # Ensure X_test is a DataFrame with the correct columns
+    if not isinstance(X_test, pd.DataFrame):
+        X_test = pd.DataFrame(X_test, columns=predictors)
+
     perf_metrics = []
 
     for name, model in results.items():
-        y_pred = model.predict(X_test)
+        # Force X_test to DataFrame for models that require column names
+        X_test_model = X_test
+        if not isinstance(X_test_model, pd.DataFrame):
+            X_test_model = pd.DataFrame(X_test_model, columns=predictors)
+
+        y_pred = model.predict(X_test_model)
         perf_metrics.append({
             "Model": name,
             "F1_Weighted": f1_score(y_test, y_pred, average='weighted'),
