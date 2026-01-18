@@ -122,10 +122,12 @@ def plot_classification_diagnostics(
 # --- Function : plot_feature_importance ---
 def plot_feature_importance(model, feature_names, figsize=(8, 5)):
     """
-    Plots coefficients for a Logistic Regression model with consistent styling.
-    Positive impacts (Churn risk) in PALE_PINK, Negative impacts (Retention) in UNIFORM_BLUE.
+    Plots coefficients for a Logistic Regression model.
+    Positive impacts (Churn risk) in PALE_PINK on top, 
+    Negative impacts (Retention) in UNIFORM_BLUE at bottom.
+    No padding on sides.
     """
-    # --- Extract coefficients (handling Pipeline step 'model' or direct estimator) ---
+    # --- Extract coefficients ---
     if hasattr(model, 'named_steps') and 'model' in model.named_steps:
         coefs = model.named_steps['model'].coef_[0]
     elif hasattr(model, 'coef_'):
@@ -133,19 +135,24 @@ def plot_feature_importance(model, feature_names, figsize=(8, 5)):
     else:
         return
 
-    # --- Prepare and sort data by absolute impact ---
+    # --- Prepare DataFrame ---
     importance_df = pd.DataFrame({
         'Feature': feature_names,
         'Coefficient': coefs
     })
-    importance_df['abs_val'] = importance_df['Coefficient'].abs()
-    importance_df = importance_df.sort_values(by='abs_val', ascending=True).drop(columns='abs_val')
+
+    # --- Split positive and negative for custom ordering ---
+    pos_df = importance_df[importance_df['Coefficient'] > 0].sort_values(by='Coefficient', ascending=False)
+    neg_df = importance_df[importance_df['Coefficient'] < 0].sort_values(by='Coefficient', ascending=True)
+    
+    # Concatenate: rouges en haut, bleus en bas
+    importance_df = pd.concat([pos_df, neg_df])
 
     fig, ax = plt.subplots(figsize=figsize)
-    
-    # --- Apply colors based on coefficient sign ---
+
+    # --- Apply colors ---
     bar_colors = [PALE_PINK if c > 0 else UNIFORM_BLUE for c in importance_df['Coefficient']]
-    
+
     bars = ax.barh(
         importance_df['Feature'], 
         importance_df['Coefficient'], 
@@ -154,17 +161,19 @@ def plot_feature_importance(model, feature_names, figsize=(8, 5)):
         linewidth=1
     )
 
-    # --- Aesthetics and Annotations ---
+    # --- Aesthetics ---
     ax.axvline(x=0, color=GREY_DARK, linestyle='-', linewidth=1.2)
     ax.set_title("Feature Importance (Logistic Regression Coefficients)", fontweight='bold')
     ax.set_xlabel("Impact Magnitude")
-    
-    # Add labels at the end of bars
+
+    # Remove padding: xlim auto but tight
+    ax.margins(x=0)
+
+    # --- Labels at bar ends ---
     max_val = max(abs(importance_df['Coefficient']))
     for bar in bars:
         width = bar.get_width()
-        # Position logic for positive/negative values
-        x_pos = width + (max_val * 0.02 if width >= 0 else -max_val * 0.12)
+        x_pos = width + (max_val * 0.02 if width >= 0 else -max_val * 0.02)  # minimal offset
         ax.text(
             x_pos, 
             bar.get_y() + bar.get_height() / 2,
