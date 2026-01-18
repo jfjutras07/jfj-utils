@@ -1,44 +1,59 @@
 import numpy as np
 import pandas as pd
-from sklearn.linear_model import LassoCV, RidgeCV, ElasticNetCV
-from sklearn.metrics import r2_score, mean_absolute_error, mean_squared_error
+from sklearn.linear_model import LassoCV, RidgeCV, ElasticNetCV, LogisticRegressionCV
+from sklearn.metrics import (r2_score, mean_absolute_error, mean_squared_error,
+                             accuracy_score, recall_score, roc_auc_score)
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.impute import SimpleImputer
 from IPython.display import display
 
 #--- Function : compare_regularized_models ---
-def compare_regularized_models(train_df, test_df, outcome, predictors, cv=5):
+def compare_regularized_models(train_df, test_df, outcome, predictors, model_type='classification', cv=5):
     """
-    Executes and compares Lasso, Ridge, and ElasticNet regressions.
-    Displays logs, summary table, and non-zero coefficients for the champion.
+    Executes and compares Lasso, Ridge, and ElasticNet.
+    Adapts metrics and models based on model_type ('classification' or 'regression').
     """
-    print(f"Starting Regularized Models Comparison | Predictors: {len(predictors)}")
+    print(f"Starting Regularized Models Comparison | Mode: {model_type.upper()} | Predictors: {len(predictors)}")
     print("-" * 45)
 
-    # Dictionary to store results for ranking
+    # Dictionary to store results
     results = {
-        "ElasticNet": elasticnet_regression(train_df, test_df, outcome, predictors, cv=cv, for_compare=True),
-        "Lasso": lasso_regression(train_df, test_df, outcome, predictors, cv=cv, for_compare=True),
-        "Ridge": ridge_regression(train_df, test_df, outcome, predictors, cv=cv, for_compare=True)
+        "ElasticNet": elasticnet_model(train_df, test_df, outcome, predictors, model_type, cv=cv, for_compare=True),
+        "Lasso": lasso_model(train_df, test_df, outcome, predictors, model_type, cv=cv, for_compare=True),
+        "Ridge": ridge_model(train_df, test_df, outcome, predictors, model_type, cv=cv, for_compare=True)
     }
 
     comparison_list = []
     X_test, y_test = test_df[predictors], test_df[outcome]
+    
+    # Define primary metric for sorting
+    main_metric = "ROC_AUC" if model_type == 'classification' else "R2"
 
     for name, data in results.items():
-        y_pred = data['model'].predict(X_test)
-        comparison_list.append({
-            "Model": name,
-            "R2": r2_score(y_test, y_pred),
-            "MAE": mean_absolute_error(y_test, y_pred),
-            "RMSE": np.sqrt(mean_squared_error(y_test, y_pred)),
-            "Alpha": round(data['alpha'], 5)
-        })
+        model = data['model']
+        y_pred = model.predict(X_test)
+        
+        res = {"Model": name, "Alpha/C": round(data['alpha'], 5)}
+        
+        if model_type == 'classification':
+            y_proba = model.predict_proba(X_test)[:, 1]
+            res.update({
+                "ROC_AUC": roc_auc_score(y_test, y_proba),
+                "Recall": recall_score(y_test, y_pred),
+                "Accuracy": accuracy_score(y_test, y_pred)
+            })
+        else:
+            res.update({
+                "R2": r2_score(y_test, y_pred),
+                "MAE": mean_absolute_error(y_test, y_pred),
+                "RMSE": np.sqrt(mean_squared_error(y_test, y_pred))
+            })
+        comparison_list.append(res)
 
-    comparison_df = pd.DataFrame(comparison_list).set_index("Model").sort_values(by="R2", ascending=False)
+    comparison_df = pd.DataFrame(comparison_list).set_index("Model").sort_values(by=main_metric, ascending=False)
 
-    print("\n--- Final Regularized Comparison (Sorted by R2) ---")
+    print(f"\n--- Final Regularized Comparison (Sorted by {main_metric}) ---")
     print(comparison_df.to_string())
     print("-" * 45)
 
@@ -56,16 +71,49 @@ def compare_regularized_models(train_df, test_df, outcome, predictors, cv=5):
     
     return winner_data["model"]
 
-#--- Function : elasticnet_regression ---
-def elasticnet_regression(train_df, test_df, outcome, predictors, cv=5, for_stacking=False, for_compare=False):
+#--- Function : elasticnet_model ---
+def elasticnet_model(train_df, test_df, outcome, predictors, model_type='classification', cv=5, for_stacking=False, for_compare=False):
     """
-    Perform ElasticNet regression with automated L1/L2 ratio tuning.
-    Combination of Lasso and Ridge penalties.
+    Perform ElasticNet (L1 + L2).
     """
+    if model_type == 'classification':
+        model_obj = LogisticRegressionCV(penalty='elasticnet', l1_ratios=[.1, .5, .9], solver='saga', 
+                                         cv=cv, class_weight='balanced', random_state=42, max_iter=2000)
+    else:
+        model_obj = ElasticNetCV(l1_ratio=[.1, .5, .7, .9, 1], cv=cv, random_state=42)
+
+    return _fit_and_report(model_obj, train_df, test_df, outcome, predictors, "ElasticNet", model_type, for_stacking, for_compare)
+
+#--- Function : lasso_model ---
+def lasso_model(train_df, test_df, outcome, predictors, model_type='classification', cv=5, for_stacking=False, for_compare=False):
+    """
+    Perform Lasso (L1).
+    """
+    if model_type == 'classification':
+        model_obj = LogisticRegressionCV(penalty='l1', solver='liblinear', cv=cv, class_weight='balanced', random_state=42)
+    else:
+        model_obj = LassoCV(cv=cv, random_state=42)
+
+    return _fit_and_report(model_obj, train_df, test_df, outcome, predictors, "Lasso", model_type, for_stacking, for_compare)
+
+#--- Function : ridge_model ---
+def ridge_model(train_df, test_df, outcome, predictors, model_type='classification', cv=5, for_stacking=False, for_compare=False):
+    """
+    Perform Ridge (L2).
+    """
+    if model_type == 'classification':
+        model_obj = LogisticRegressionCV(penalty='l2', cv=cv, class_weight='balanced', random_state=42)
+    else:
+        model_obj = RidgeCV(alphas=np.logspace(-3, 3, 10), cv=cv)
+
+    return _fit_and_report(model_obj, train_df, test_df, outcome, predictors, "Ridge", model_type, for_stacking, for_compare)
+
+#--- Internal Helper : _fit_and_report ---
+def _fit_and_report(model_obj, train_df, test_df, outcome, predictors, name, model_type, for_stacking, for_compare):
     base_pipe = Pipeline([
         ('imputer', SimpleImputer(strategy='median')),
         ('scaler', StandardScaler()),
-        ('model', ElasticNetCV(l1_ratio=[.1, .5, .7, .9, .95, .99, 1], cv=cv, random_state=42))
+        ('model', model_obj)
     ])
 
     if for_stacking: return base_pipe
@@ -76,87 +124,22 @@ def elasticnet_regression(train_df, test_df, outcome, predictors, cv=5, for_stac
     base_pipe.fit(X_train, y_train)
     fitted_model = base_pipe.named_steps['model']
     
-    y_pred_train = base_pipe.predict(X_train)
-    y_pred_test = base_pipe.predict(X_test)
+    # Get alpha/C and coefficients
+    alpha = getattr(fitted_model, 'alpha_', getattr(fitted_model, 'C_', [0])[0])
+    if isinstance(alpha, np.ndarray): alpha = alpha[0]
     
-    coef_df = pd.DataFrame({'Feature': predictors, 'Coefficient': fitted_model.coef_})
-    active_count = len(coef_df[coef_df['Coefficient'] != 0])
+    raw_coefs = fitted_model.coef_
+    coefs = raw_coefs[0] if raw_coefs.ndim > 1 else raw_coefs
+    coef_df = pd.DataFrame({'Feature': predictors, 'Coefficient': coefs})
 
     if not for_compare:
-        print(f"--- ElasticNet Regression Summary ---")
-        print(f"Best Alpha: {fitted_model.alpha_:.5f} | L1 Ratio: {fitted_model.l1_ratio_:.2f}")
-        print(f"R2 Score (Train): {r2_score(y_train, y_pred_train):.4f}")
-        print(f"R2 Score (Test): {r2_score(y_test, y_pred_test):.4f} | Active Features: {active_count}/{len(predictors)}")
+        print(f"--- {name} {model_type.capitalize()} Summary ---")
+        y_pred = base_pipe.predict(X_test)
+        if model_type == 'classification':
+            print(f"ROC_AUC (Test): {roc_auc_score(y_test, base_pipe.predict_proba(X_test)[:, 1]):.4f}")
+            print(f"Recall (Test): {recall_score(y_test, y_pred):.4f}")
+        else:
+            print(f"R2 Score (Test): {r2_score(y_test, y_pred):.4f}")
         print("-" * 35)
 
-    return {"model": base_pipe, "alpha": fitted_model.alpha_, "coefficients": coef_df}
-
-#--- Function : lasso_regression ---
-def lasso_regression(train_df, test_df, outcome, predictors, cv=5, for_stacking=False, for_compare=False):
-    """
-    Perform Lasso regression (L1).
-    Excellent for automated feature selection by shrinking coefficients to zero.
-    """
-    base_pipe = Pipeline([
-        ('imputer', SimpleImputer(strategy='median')),
-        ('scaler', StandardScaler()),
-        ('model', LassoCV(cv=cv, random_state=42))
-    ])
-
-    if for_stacking: return base_pipe
-
-    X_train, y_train = train_df[predictors], train_df[outcome]
-    X_test, y_test = test_df[predictors], test_df[outcome]
-
-    base_pipe.fit(X_train, y_train)
-    fitted_model = base_pipe.named_steps['model']
-    
-    y_pred_train = base_pipe.predict(X_train)
-    y_pred_test = base_pipe.predict(X_test)
-    
-    coef_df = pd.DataFrame({'Feature': predictors, 'Coefficient': fitted_model.coef_})
-    active_count = len(coef_df[coef_df['Coefficient'] != 0])
-
-    if not for_compare:
-        print(f"--- Lasso Regression Summary ---")
-        print(f"Best Alpha: {fitted_model.alpha_:.5f}")
-        print(f"R2 Score (Train): {r2_score(y_train, y_pred_train):.4f}")
-        print(f"R2 Score (Test): {r2_score(y_test, y_pred_test):.4f} | Active Features: {active_count}/{len(predictors)}")
-        print("-" * 35)
-
-    return {"model": base_pipe, "alpha": fitted_model.alpha_, "coefficients": coef_df}
-
-#--- Function : ridge_regression ---
-def ridge_regression(train_df, test_df, outcome, predictors, cv=5, for_stacking=False, for_compare=False):
-    """
-    Perform Ridge regression (L2).
-    Best for handling multicollinearity by shrinking coefficients proportionally.
-    """
-    alphas = np.logspace(-3, 3, 100)
-    base_pipe = Pipeline([
-        ('imputer', SimpleImputer(strategy='median')),
-        ('scaler', StandardScaler()),
-        ('model', RidgeCV(alphas=alphas, cv=cv))
-    ])
-
-    if for_stacking: return base_pipe
-
-    X_train, y_train = train_df[predictors], train_df[outcome]
-    X_test, y_test = test_df[predictors], test_df[outcome]
-
-    base_pipe.fit(X_train, y_train)
-    fitted_model = base_pipe.named_steps['model']
-    
-    y_pred_train = base_pipe.predict(X_train)
-    y_pred_test = base_pipe.predict(X_test)
-    
-    coef_df = pd.DataFrame({'Feature': predictors, 'Coefficient': fitted_model.coef_})
-
-    if not for_compare:
-        print(f"--- Ridge Regression Summary ---")
-        print(f"Best Alpha: {fitted_model.alpha_:.5f}")
-        print(f"R2 Score (Train): {r2_score(y_train, y_pred_train):.4f}")
-        print(f"R2 Score (Test): {r2_score(y_test, y_pred_test):.4f}")
-        print("-" * 35)
-
-    return {"model": base_pipe, "alpha": fitted_model.alpha_, "coefficients": coef_df}
+    return {"model": base_pipe, "alpha": alpha, "coefficients": coef_df}
