@@ -1,3 +1,4 @@
+import warnings
 import numpy as np
 import pandas as pd
 from catboost import CatBoostClassifier
@@ -42,15 +43,19 @@ def catboost_classification(train_df, test_df, outcome, predictors, cv=5, for_st
     print("-" * 35)
     return best_model
 
-#---Function:compare_classification_tree_models---
+# --- Function: compare_classification_tree_models ---
 def compare_classification_tree_models(train_df, test_df, outcome, predictors, cv=5):
     """
-    Executes and compares tree-based models, sorted by alphabetical order.
-    Final comparison based on weighted F1-score to evaluate performance.
+    Executes and compares tree-based models, suppressed warnings for cleaner output.
     """
+    # Désactivation globale des warnings de validation et de bibliothèques tierces
+    warnings.filterwarnings("ignore", category=UserWarning)
+    warnings.filterwarnings("ignore", module="lightgbm")
+    
     print(f"Starting Tree Models Comparison | Predictors: {len(predictors)}")
     print("-" * 45)
 
+    # Dictionnaire pour stocker les modèles entraînés
     results = {
         'CatBoost': catboost_classification(train_df, test_df, outcome, predictors, cv),
         'DecisionTree': decision_tree_classification(train_df, test_df, outcome, predictors, cv),
@@ -80,6 +85,7 @@ def compare_classification_tree_models(train_df, test_df, outcome, predictors, c
     
     print(f"\nCHAMPION: {winner_name}")
     
+    # Extraction de l'importance des variables
     actual_model = winner_model.named_steps['model']
     feat_imp = pd.DataFrame({
         'Feature': predictors,
@@ -88,6 +94,7 @@ def compare_classification_tree_models(train_df, test_df, outcome, predictors, c
     
     print("\nTop 10 Feature Importances:")
     display(feat_imp)
+    
     return winner_model
 
 #---Function:decision_tree_classification---
