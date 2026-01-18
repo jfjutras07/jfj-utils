@@ -122,8 +122,9 @@ def plot_classification_diagnostics(
 # --- Function : plot_feature_importance ---
 def plot_feature_importance(model, feature_names, figsize=(8, 5)):
     """
-    Standard feature importance plot for Logistic Regression.
-    Positive coefficients indicate risk, negative coefficients indicate retention.
+    Standard feature importance plot for Logistic Regression with your colors.
+    Positive coefficients in PALE_PINK, negative coefficients in UNIFORM_BLUE.
+    Horizontal bars aligned on zero, sorted for readability.
     """
     # --- Extract coefficients ---
     if hasattr(model, 'named_steps') and 'model' in model.named_steps:
@@ -141,11 +142,11 @@ def plot_feature_importance(model, feature_names, figsize=(8, 5)):
 
     # --- Plot ---
     plt.figure(figsize=figsize)
-    plt.barh(importance_df['Feature'], importance_df['Coefficient'], color='skyblue', edgecolor='black')
-    plt.axvline(0, color='black', linewidth=1)
-    plt.title("Feature Importance (Logistic Regression Coefficients)")
+    colors = [PALE_PINK if c > 0 else UNIFORM_BLUE for c in importance_df['Coefficient']]
+    plt.barh(importance_df['Feature'], importance_df['Coefficient'], color=colors, edgecolor="black")
+    plt.axvline(0, color=GREY_DARK, linewidth=1)
+    plt.title("Feature Importance (Logistic Regression Coefficients)", fontweight='bold')
     plt.xlabel("Coefficient Value")
     plt.ylabel("Feature")
     plt.tight_layout()
     plt.show()
-
