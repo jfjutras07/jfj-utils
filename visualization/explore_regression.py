@@ -1,3 +1,11 @@
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.model_selection import learning_curve
+
+from visualization.style import UNIFORM_BLUE, PALE_PINK
+
 def plot_regression_diagnostics(model, X_train, y_train, X_test, y_test, critical_feature, cv=5, 
                                  colors=None, figsize=(16, 6)):
     """
