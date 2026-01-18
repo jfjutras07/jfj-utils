@@ -46,12 +46,13 @@ def catboost_classification(train_df, test_df, outcome, predictors, cv=5, for_st
 def compare_classification_tree_models(train_df, test_df, outcome, predictors, cv=5):
     """
     Compare tree-based classifiers on given train/test data.
-    Fixed feature name warnings for LightGBM/XGBoost.
+    Feature name warnings for LightGBM/XGBoost are fixed.
+    Maintains original print format and pipeline structure.
     """
     print(f"Starting Tree Models Comparison | Predictors: {len(predictors)}")
     print("-" * 45)
 
-    # Train all models (assumes your functions return fitted pipelines)
+    # Train all models
     results = {
         'CatBoost': catboost_classification(train_df, test_df, outcome, predictors, cv),
         'DecisionTree': decision_tree_classification(train_df, test_df, outcome, predictors, cv),
@@ -60,45 +61,44 @@ def compare_classification_tree_models(train_df, test_df, outcome, predictors, c
         'XGBoost': xgboost_classification(train_df, test_df, outcome, predictors, cv)
     }
 
-    # Force test data to DataFrame with correct columns
+    # Force X_test to always be a DataFrame with correct columns
     X_test = test_df[predictors] if isinstance(test_df, pd.DataFrame) else pd.DataFrame(test_df, columns=predictors)
     y_test = test_df[outcome] if isinstance(test_df, pd.DataFrame) else pd.Series(test_df[outcome])
 
     perf_metrics = []
 
     for name, model in results.items():
-        # Ensure input to model is a DataFrame with same columns as training
-        X_input = X_test.copy()
-        if not isinstance(X_input, pd.DataFrame):
-            X_input = pd.DataFrame(X_input, columns=predictors)
-        # Predict
+        # Always use a DataFrame with correct column names for prediction
+        X_input = pd.DataFrame(X_test, columns=predictors)
         y_pred = model.predict(X_input)
+
         perf_metrics.append({
             "Model": name,
             "F1_Weighted": f1_score(y_test, y_pred, average='weighted'),
             "Accuracy": accuracy_score(y_test, y_pred)
         })
 
+    # Final comparison
     comparison_df = pd.DataFrame(perf_metrics).set_index("Model").sort_values(by="F1_Weighted", ascending=False)
-    
+
     print("\n--- Final Tree Comparison (Sorted by F1) ---")
     print(comparison_df.to_string())
-    
+
     winner_name = comparison_df.index[0]
     winner_model = results[winner_name]
-    
+
     print(f"\nCHAMPION: {winner_name}")
-    
-    # Feature importance extraction (works for tree-based models)
+
+    # Feature importance extraction
     actual_model = winner_model.named_steps['model']
     feat_imp = pd.DataFrame({
         'Feature': predictors,
         'Importance': actual_model.feature_importances_
     }).sort_values(by='Importance', ascending=False).head(10)
-    
+
     print("\nTop 10 Feature Importances:")
     display(feat_imp)
-    
+
     return winner_model
 
 #---Function:decision_tree_classification---
