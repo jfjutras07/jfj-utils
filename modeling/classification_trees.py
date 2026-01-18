@@ -1,6 +1,7 @@
 import warnings
 import numpy as np
 import pandas as pd
+import sklearn
 from catboost import CatBoostClassifier
 from lightgbm import LGBMClassifier
 from xgboost import XGBClassifier
@@ -12,6 +13,9 @@ from sklearn.pipeline import Pipeline
 from sklearn.impute import SimpleImputer
 from IPython.display import display
 
+# Globally ensure transformers output DataFrames to keep feature names
+sklearn.set_config(transform_output="pandas")
+
 #---Function:catboost_classification---
 def catboost_classification(train_df, test_df, outcome, predictors, cv=5, for_stacking=False):
     """
@@ -22,6 +26,8 @@ def catboost_classification(train_df, test_df, outcome, predictors, cv=5, for_st
         ('imputer', SimpleImputer(strategy='median')),
         ('model', CatBoostClassifier(random_state=42, verbose=0, auto_class_weights='Balanced'))
     ])
+    base_pipe.set_output(transform="pandas")
+
     if for_stacking: return base_pipe
 
     X_train, y_train = train_df[predictors], train_df[outcome]
@@ -69,8 +75,7 @@ def compare_classification_tree_models(train_df, test_df, outcome, predictors, c
 
     for name, model in results.items():
         # Always use a DataFrame with correct column names for prediction
-        X_input = pd.DataFrame(X_test, columns=predictors)
-        y_pred = model.predict(X_input)
+        y_pred = model.predict(X_test)
 
         perf_metrics.append({
             "Model": name,
@@ -110,6 +115,8 @@ def decision_tree_classification(train_df, test_df, outcome, predictors, cv=5, f
         ('imputer', SimpleImputer(strategy='median')),
         ('model', DecisionTreeClassifier(random_state=42, class_weight='balanced'))
     ])
+    base_pipe.set_output(transform="pandas")
+
     if for_stacking: return base_pipe
 
     X_train, y_train = train_df[predictors], train_df[outcome]
@@ -139,6 +146,8 @@ def lightgbm_classification(train_df, test_df, outcome, predictors, cv=5, for_st
         ('imputer', SimpleImputer(strategy='median')),
         ('model', LGBMClassifier(random_state=42, verbosity=-1, class_weight='balanced'))
     ])
+    base_pipe.set_output(transform="pandas")
+
     if for_stacking: return base_pipe
 
     X_train, y_train = train_df[predictors], train_df[outcome]
@@ -168,6 +177,8 @@ def random_forest_classification(train_df, test_df, outcome, predictors, cv=5, f
         ('imputer', SimpleImputer(strategy='median')),
         ('model', RandomForestClassifier(random_state=42, class_weight='balanced'))
     ])
+    base_pipe.set_output(transform="pandas")
+
     if for_stacking: return base_pipe
 
     X_train, y_train = train_df[predictors], train_df[outcome]
@@ -203,6 +214,8 @@ def xgboost_classification(train_df, test_df, outcome, predictors, cv=5, for_sta
         ('imputer', SimpleImputer(strategy='median')),
         ('model', XGBClassifier(random_state=42, eval_metric='logloss', scale_pos_weight=ratio))
     ])
+    base_pipe.set_output(transform="pandas")
+
     if for_stacking: return base_pipe
 
     param_grid = {'model__n_estimators': [100, 200], 'model__learning_rate': [0.05, 0.1]}
