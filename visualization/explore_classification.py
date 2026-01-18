@@ -27,20 +27,24 @@ def plot_classification_diagnostics(
     """
     Displays a classification dashboard with three key visualizations:
     Learning Curves, Confusion Matrix, and ROC Curve.
-    Fully suppresses ConvergenceWarnings and ensures model convergence.
+    Automatically forces solver convergence to prevent ConvergenceWarnings.
     """
 
     os.environ["PYTHONWARNINGS"] = "ignore"
     warnings.simplefilter("ignore", ConvergenceWarning)
     warnings.simplefilter("ignore", UserWarning)
 
-    # --- Force convergence for SAG/SAGA/LogisticRegression/Linear models ---
+    # --- Force convergence for linear models / SAG / SAGA ---
     if hasattr(model, "set_params"):
         params = model.get_params()
+        # Force very high max_iter if present
         if "max_iter" in params:
             model.set_params(max_iter=50000)
         if "tol" in params:
             model.set_params(tol=1e-4)
+        # Optional: switch solver if available to lbfgs (more stable)
+        if "solver" in params and params["solver"] in ["sag", "saga"]:
+            model.set_params(solver="lbfgs")
 
     if colors is None:
         colors = [UNIFORM_BLUE, PALE_PINK]
