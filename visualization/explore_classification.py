@@ -1,9 +1,7 @@
 import os
+os.environ["PYTHONWARNINGS"] = "ignore:The max_iter was reached:sklearn.exceptions.ConvergenceWarning"
+
 import warnings
-
-# 1. Set environment variable BEFORE importing sklearn to silence sub-processes
-os.environ["PYTHONWARNINGS"] = "ignore::sklearn.exceptions.ConvergenceWarning"
-
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -14,9 +12,11 @@ from sklearn.model_selection import learning_curve
 from sklearn.metrics import confusion_matrix, roc_curve, auc
 from sklearn.exceptions import ConvergenceWarning
 
-# 2. Global filter for the main process
+# Additional global filter for the current process
 warnings.filterwarnings("ignore", category=ConvergenceWarning)
-warnings.filterwarnings("ignore", category=UserWarning)
+
+# Importing centralized style constants
+# from .style import UNIFORM_BLUE, PALE_PINK, SEQUENTIAL_CMAP, WHITE, GREY_DARK, DEFAULT_FIGSIZE
 
 # --- Function : plot_classification_diagnostics ---
 def plot_classification_diagnostics(
@@ -30,36 +30,22 @@ def plot_classification_diagnostics(
     figsize=(20, 6)
 ):
     """
-    Displays a classification dashboard with Learning Curves, Confusion Matrix, and ROC Curve.
-    Silences ConvergenceWarnings by adjusting model parameters and using warning filters.
+    Displays a classification dashboard. 
+    Specific ConvergenceWarnings are suppressed via environment variables and local filters.
     """
 
-    # --- Robust Model Configuration ---
+    # --- Forced Model Adjustments ---
     if hasattr(model, "set_params"):
-        params = model.get_params()
-        settings_to_update = {}
-        
-        # Increasing iterations and slightly relaxing tolerance to ensure "soft" convergence
-        if "max_iter" in params:
-            settings_to_update["max_iter"] = 10000
-        if "tol" in params:
-            settings_to_update["tol"] = 1e-3  # Slightly higher tolerance prevents endless oscillation
-            
-        if settings_to_update:
-            model.set_params(**settings_to_update)
+        # We relax the tolerance (tol) and set a high max_iter to reduce convergence friction
+        model.set_params(max_iter=20000, tol=1e-3)
 
     if colors is None:
-        # Fallback to defaults if style constants are missing
-        try:
-            from .style import UNIFORM_BLUE, PALE_PINK
-            colors = [UNIFORM_BLUE, PALE_PINK]
-        except (ImportError, ValueError):
-            colors = ["#4C72B0", "#DD8452"]
+        colors = ['#1f77b4', '#ff7f0e'] # Standard defaults
 
     fig, axes = plt.subplots(1, 3, figsize=figsize)
 
-    # --- Section 1: Learning Curves ---
-    # Wrap in a context manager to ensure silence during multi-processing
+    # --- Learning Curves ---
+    # Using catch_warnings here as a double safety layer for multi-processing
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore", category=ConvergenceWarning)
         train_sizes, train_scores, test_scores = learning_curve(
@@ -69,7 +55,7 @@ def plot_classification_diagnostics(
             cv=cv,
             scoring="f1_weighted",
             train_sizes=np.linspace(0.1, 1.0, 10),
-            n_jobs=-1
+            n_jobs=-1 # Warnings usually leak from here
         )
 
     train_mean = np.mean(train_scores, axis=1)
@@ -83,7 +69,7 @@ def plot_classification_diagnostics(
     axes[0].legend(loc="best")
     axes[0].grid(alpha=0.3)
 
-    # --- Section 2: Confusion Matrix ---
+    # --- Confusion Matrix ---
     y_pred = model.predict(X_test)
     cm = confusion_matrix(y_test, y_pred)
 
@@ -91,7 +77,7 @@ def plot_classification_diagnostics(
         cm,
         annot=True,
         fmt="d",
-        cmap="Blues", # Simplified for robustness
+        cmap="Blues",
         ax=axes[1],
         cbar=False,
         annot_kws={"size": 14, "weight": "bold"}
@@ -100,30 +86,20 @@ def plot_classification_diagnostics(
     axes[1].set_title("Confusion Matrix")
     axes[1].set_xlabel("Predicted Label")
     axes[1].set_ylabel("True Label")
-    axes[1].set_xticklabels(["Stay", "Leave"])
-    axes[1].set_yticklabels(["Stay", "Leave"])
-
-    # --- Section 3: ROC Curve ---
+    
+    # --- ROC Curve ---
     y_proba = model.predict_proba(X_test)[:, 1]
     fpr, tpr, _ = roc_curve(y_test, y_proba)
     roc_auc = auc(fpr, tpr)
 
-    axes[2].plot(fpr, tpr, color=colors[1], lw=2, label=f"ROC curve (area = {roc_auc:.2f})")
+    axes[2].plot(fpr, tpr, color=colors[1], lw=2, label=f"ROC (AUC = {roc_auc:.2f})")
     axes[2].plot([0, 1], [0, 1], color="grey", lw=2, linestyle="--")
-    axes[2].set_xlim([0.0, 1.0])
-    axes[2].set_ylim([0.0, 1.05])
-    axes[2].set_xlabel("False Positive Rate")
-    axes[2].set_ylabel("True Positive Rate (Recall)")
-    axes[2].set_title("Receiver Operating Characteristic (ROC)")
+    axes[2].set_title("ROC Curve")
     axes[2].legend(loc="lower right")
     axes[2].grid(alpha=0.3)
 
     plt.tight_layout()
     plt.show()
 
-    # --- Final Summary Logs ---
-    gap = train_mean[-1] - test_mean[-1]
-    print("--- Classification Diagnostics Summary ---")
-    print(f"Generalization Gap (Train-CV F1) : {gap:.4f}")
-    print(f"Final Test ROC-AUC : {roc_auc:.4f}")
-    print("-" * 42)
+    # --- Summary ---
+    print(f"Diagnostics completed. Final ROC-AUC: {roc_auc:.4f}")
