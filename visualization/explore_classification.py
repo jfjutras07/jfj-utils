@@ -68,7 +68,60 @@ def plot_classification_diagnostics(model, X_train, y_train, X_test, y_test, cv=
 
     # Numerical Logs
     gap = train_mean[-1] - test_mean[-1]
+                                     
     print(f"--- Classification Diagnostics Summary ---")
     print(f"Generalization Gap (Train-CV F1) : {gap:.4f}")
     print(f"Final Test ROC-AUC : {roc_auc:.4f}")
     print("-" * 42)
+
+#---Function: plot_feature_importance---
+def plot_feature_importance(model, predictors, title=None, figsize=None):
+    """
+    Generates a directional bar chart of model coefficients.
+    Supports both standalone models and Scikit-Learn Pipelines.
+    Filters out features with zero coefficients (Lasso).
+    """
+    
+    # Extraction of coefficients (handling Pipeline or raw model)
+    if hasattr(model, 'named_steps'):
+        coefs = model.named_steps['model'].coef_[0]
+    else:
+        coefs = model.coef_[0]
+        
+    # Prepare and sort data
+    importance_df = pd.DataFrame({'Feature': predictors, 'Coef': coefs})
+    # Keeping only non-zero coefficients
+    importance_df = importance_df[importance_df['Coef'] != 0].sort_values(by='Coef', ascending=True)
+
+    if importance_df.empty:
+        print("No non-zero coefficients to plot.")
+        return
+
+    # Setup plot
+    plot_figsize = figsize or (10, len(importance_df) * 0.4)
+    fig, ax = plt.subplots(figsize=plot_figsize)
+
+    # Apply colors: PALE_PINK for positive risk, UNIFORM_BLUE for negative retention
+    bar_colors = [PALE_PINK if x > 0 else UNIFORM_BLUE for x in importance_df['Coef']]
+
+    # Plotting
+    bars = ax.barh(importance_df['Feature'], importance_df['Coef'], color=bar_colors)
+
+    # Styling
+    title_text = title or 'Drivers of Attrition: Risk (+) vs. Retention (-)'
+    ax.set_title(title_text, fontsize=14, fontweight='bold', color=GREY_DARK, pad=20)
+    ax.axvline(x=0, color=GREY_DARK, linestyle='-', linewidth=1, alpha=0.5)
+    ax.set_xlabel('Coefficient Magnitude (Log-Odds)', color=GREY_DARK)
+    
+    # Clean spines
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['left'].set_visible(False)
+    
+    # Add grid for readability
+    ax.grid(axis='x', linestyle='--', alpha=0.3)
+    
+    plt.tight_layout()
+    plt.show()
+
+    return importance_df
