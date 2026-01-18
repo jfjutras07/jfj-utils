@@ -123,8 +123,8 @@ def plot_classification_diagnostics(
 def plot_feature_importance(model, feature_names, figsize=(8, 5)):
     """
     Plots coefficients for a Logistic Regression model.
-    Top: positive impacts (PALE_PINK) in descending order.
-    Then: negative impacts (UNIFORM_BLUE) in descending absolute value.
+    Positive impacts (PALE_PINK) on top in descending order.
+    Negative impacts (UNIFORM_BLUE) at bottom in ascending order (less negative to most negative).
     No padding on sides.
     """
     # --- Extract coefficients ---
@@ -141,14 +141,11 @@ def plot_feature_importance(model, feature_names, figsize=(8, 5)):
         'Coefficient': coefs
     })
 
-    # --- Split positive and negative for custom ordering ---
+    # --- Split positive and negative for ordering ---
     pos_df = importance_df[importance_df['Coefficient'] > 0].sort_values(by='Coefficient', ascending=False)
-    neg_df = importance_df[importance_df['Coefficient'] < 0].copy()
-    # Tri des négatifs par valeur absolue décroissante
-    neg_df['abs_val'] = neg_df['Coefficient'].abs()
-    neg_df = neg_df.sort_values(by='abs_val', ascending=False).drop(columns='abs_val')
-    
-    # Concatenate: rouges en haut, bleus juste en dessous
+    neg_df = importance_df[importance_df['Coefficient'] < 0].sort_values(by='Coefficient', ascending=True)
+
+    # Concatenate: rouges en haut, bleus en bas
     importance_df = pd.concat([pos_df, neg_df])
 
     fig, ax = plt.subplots(figsize=figsize)
