@@ -1,6 +1,5 @@
 import os
 import warnings
-
 os.environ["PYTHONWARNINGS"] = "ignore:The max_iter was reached:sklearn.exceptions.ConvergenceWarning"
 
 import numpy as np
@@ -12,6 +11,7 @@ from joblib import parallel_backend
 from sklearn.model_selection import learning_curve
 from sklearn.metrics import confusion_matrix, roc_curve, auc
 from sklearn.exceptions import ConvergenceWarning
+from .style import UNIFORM_BLUE, PALE_PINK, GREY_DARK
 
 # Global filter for the main process
 warnings.filterwarnings("ignore", category=ConvergenceWarning)
@@ -118,3 +118,62 @@ def plot_classification_diagnostics(
     plt.show()
 
     print(f"Diagnostics Summary: ROC-AUC = {roc_auc:.4f}")
+
+# --- Function : plot_feature_importance ---
+def plot_feature_importance(model, feature_names, figsize=(8, 5)):
+    """
+    Plots coefficients for a Logistic Regression model with consistent styling.
+    Positive impacts (Churn risk) in PALE_PINK, Negative impacts (Retention) in UNIFORM_BLUE.
+    """
+    # --- Extract coefficients (handling Pipeline step 'model' or direct estimator) ---
+    if hasattr(model, 'named_steps') and 'model' in model.named_steps:
+        coefs = model.named_steps['model'].coef_[0]
+    elif hasattr(model, 'coef_'):
+        coefs = model.coef_[0]
+    else:
+        return
+
+    # --- Prepare and sort data by absolute impact ---
+    importance_df = pd.DataFrame({
+        'Feature': feature_names,
+        'Coefficient': coefs
+    })
+    importance_df['abs_val'] = importance_df['Coefficient'].abs()
+    importance_df = importance_df.sort_values(by='abs_val', ascending=True).drop(columns='abs_val')
+
+    fig, ax = plt.subplots(figsize=figsize)
+    
+    # --- Apply colors based on coefficient sign ---
+    bar_colors = [PALE_PINK if c > 0 else UNIFORM_BLUE for c in importance_df['Coefficient']]
+    
+    bars = ax.barh(
+        importance_df['Feature'], 
+        importance_df['Coefficient'], 
+        color=bar_colors,
+        edgecolor="black", 
+        linewidth=1
+    )
+
+    # --- Aesthetics and Annotations ---
+    ax.axvline(x=0, color=GREY_DARK, linestyle='-', linewidth=1.2)
+    ax.set_title("Feature Importance (Logistic Regression Coefficients)", fontweight='bold')
+    ax.set_xlabel("Impact Magnitude")
+    
+    # Add labels at the end of bars
+    max_val = max(abs(importance_df['Coefficient']))
+    for bar in bars:
+        width = bar.get_width()
+        # Position logic for positive/negative values
+        x_pos = width + (max_val * 0.02 if width >= 0 else -max_val * 0.12)
+        ax.text(
+            x_pos, 
+            bar.get_y() + bar.get_height() / 2,
+            f"{width:.3f}", 
+            va="center", 
+            fontsize=9,
+            fontweight='bold'
+        )
+
+    plt.tight_layout()
+    plt.show()
+    plt.close()
