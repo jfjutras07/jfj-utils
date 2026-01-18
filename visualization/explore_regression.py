@@ -4,8 +4,10 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.model_selection import learning_curve
 
-from visualization.style import UNIFORM_BLUE, PALE_PINK
+# Importing centralized style constants
+from .style import UNIFORM_BLUE, PALE_PINK, SEQUENTIAL_CMAP, WHITE, GREY_DARK, DEFAULT_FIGSIZE
 
+# --- Function : plot_regression_diagnostics ---
 def plot_regression_diagnostics(model, X_train, y_train, X_test, y_test, critical_feature, cv=5, 
                                  colors=None, figsize=(16, 6)):
     """
