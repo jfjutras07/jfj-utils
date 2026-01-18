@@ -3,6 +3,12 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.model_selection import learning_curve
+import warnings
+from sklearn.exceptions import ConvergenceWarning
+
+# Ignore specific ConvergenceWarnings typically raised by linear models (e.g., LogisticRegression)
+# when the solver (SAGA/SAG) fails to converge within the default max_iter.
+warnings.filterwarnings("ignore", category=ConvergenceWarning)
 
 # Importing centralized style constants
 from .style import UNIFORM_BLUE, PALE_PINK, SEQUENTIAL_CMAP, WHITE, GREY_DARK, DEFAULT_FIGSIZE
