@@ -123,8 +123,8 @@ def plot_classification_diagnostics(
 def plot_feature_importance(model, feature_names, figsize=(8, 5)):
     """
     Plots coefficients for a Logistic Regression model.
-    Positive impacts (Churn risk) in PALE_PINK on top, 
-    Negative impacts (Retention) in UNIFORM_BLUE at bottom.
+    Top: positive impacts (PALE_PINK) in descending order.
+    Then: negative impacts (UNIFORM_BLUE) in descending absolute value.
     No padding on sides.
     """
     # --- Extract coefficients ---
@@ -143,9 +143,12 @@ def plot_feature_importance(model, feature_names, figsize=(8, 5)):
 
     # --- Split positive and negative for custom ordering ---
     pos_df = importance_df[importance_df['Coefficient'] > 0].sort_values(by='Coefficient', ascending=False)
-    neg_df = importance_df[importance_df['Coefficient'] < 0].sort_values(by='Coefficient', ascending=True)
+    neg_df = importance_df[importance_df['Coefficient'] < 0].copy()
+    # Tri des négatifs par valeur absolue décroissante
+    neg_df['abs_val'] = neg_df['Coefficient'].abs()
+    neg_df = neg_df.sort_values(by='abs_val', ascending=False).drop(columns='abs_val')
     
-    # Concatenate: rouges en haut, bleus en bas
+    # Concatenate: rouges en haut, bleus juste en dessous
     importance_df = pd.concat([pos_df, neg_df])
 
     fig, ax = plt.subplots(figsize=figsize)
@@ -165,15 +168,13 @@ def plot_feature_importance(model, feature_names, figsize=(8, 5)):
     ax.axvline(x=0, color=GREY_DARK, linestyle='-', linewidth=1.2)
     ax.set_title("Feature Importance (Logistic Regression Coefficients)", fontweight='bold')
     ax.set_xlabel("Impact Magnitude")
-
-    # Remove padding: xlim auto but tight
-    ax.margins(x=0)
+    ax.margins(x=0)  # No horizontal padding
 
     # --- Labels at bar ends ---
     max_val = max(abs(importance_df['Coefficient']))
     for bar in bars:
         width = bar.get_width()
-        x_pos = width + (max_val * 0.02 if width >= 0 else -max_val * 0.02)  # minimal offset
+        x_pos = width + (max_val * 0.02 if width >= 0 else -max_val * 0.02)
         ax.text(
             x_pos, 
             bar.get_y() + bar.get_height() / 2,
@@ -186,3 +187,4 @@ def plot_feature_importance(model, feature_names, figsize=(8, 5)):
     plt.tight_layout()
     plt.show()
     plt.close()
+
