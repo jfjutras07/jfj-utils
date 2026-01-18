@@ -23,7 +23,6 @@ def plot_regression_diagnostics(
 ):
     """
     Evaluates model capacity via learning curves and segment bias via error analysis.
-    Optimized for SAG / SAGA solvers with proper scaling and localized warning handling.
     """
 
     if colors is None:
@@ -38,6 +37,15 @@ def plot_regression_diagnostics(
                 ("model", model),
             ]
         )
+
+    if hasattr(model, "set_params"):
+        model.set_params(**{
+            k: v for k, v in {
+                "model__max_iter": 10000,
+                "max_iter": 10000,
+            }.items()
+            if k in model.get_params()
+        })
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", ConvergenceWarning)
