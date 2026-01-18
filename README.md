@@ -232,9 +232,9 @@ Active development — modules will be progressively added and refined.
 
 *regularization.py*
 - `compare_regularized_models`
-- `elasticnet_regression`
-- `lasso_regression`
-- `ridge_regression`
+- `elasticnet_model`
+- `lasso_model`
+- `ridge_model`
 
 *stacking.py*
 - `stacking_classification_ensemble`
