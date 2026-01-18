@@ -123,5 +123,3 @@ def plot_feature_importance(model, predictors, title=None, figsize=None):
     
     plt.tight_layout()
     plt.show()
-
-    return importance_df
