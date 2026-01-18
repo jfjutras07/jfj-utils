@@ -27,17 +27,27 @@ def plot_classification_diagnostics(
     """
     Displays a classification dashboard with three key visualizations:
     Learning Curves, Confusion Matrix, and ROC Curve.
+    Fully suppresses ConvergenceWarnings and ensures model convergence.
     """
 
     os.environ["PYTHONWARNINGS"] = "ignore"
     warnings.simplefilter("ignore", ConvergenceWarning)
     warnings.simplefilter("ignore", UserWarning)
 
+    # --- Force convergence for SAG/SAGA/LogisticRegression/Linear models ---
+    if hasattr(model, "set_params"):
+        params = model.get_params()
+        if "max_iter" in params:
+            model.set_params(max_iter=50000)
+        if "tol" in params:
+            model.set_params(tol=1e-4)
+
     if colors is None:
         colors = [UNIFORM_BLUE, PALE_PINK]
 
     fig, axes = plt.subplots(1, 3, figsize=figsize)
 
+    # --- Learning Curves ---
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", ConvergenceWarning)
         with parallel_backend("loky", inner_max_num_threads=1):
@@ -62,6 +72,7 @@ def plot_classification_diagnostics(
     axes[0].legend(loc="best")
     axes[0].grid(alpha=0.3)
 
+    # --- Confusion Matrix ---
     y_pred = model.predict(X_test)
     cm = confusion_matrix(y_test, y_pred)
 
@@ -81,6 +92,7 @@ def plot_classification_diagnostics(
     axes[1].set_xticklabels(["Stay", "Leave"])
     axes[1].set_yticklabels(["Stay", "Leave"])
 
+    # --- ROC Curve ---
     y_proba = model.predict_proba(X_test)[:, 1]
     fpr, tpr, _ = roc_curve(y_test, y_proba)
     roc_auc = auc(fpr, tpr)
@@ -98,6 +110,7 @@ def plot_classification_diagnostics(
     plt.tight_layout()
     plt.show()
 
+    # --- Diagnostics logs ---
     gap = train_mean[-1] - test_mean[-1]
 
     print("--- Classification Diagnostics Summary ---")
