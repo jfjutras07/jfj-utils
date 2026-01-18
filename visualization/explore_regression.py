@@ -15,6 +15,7 @@ from sklearn.preprocessing import StandardScaler
 warnings.filterwarnings("ignore", category=ConvergenceWarning)
 warnings.filterwarnings("ignore", category=UserWarning)
 
+# --- Function : plot_regression_diagnostics ---
 def plot_regression_diagnostics(
     model,
     X_train,
