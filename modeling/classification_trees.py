@@ -18,7 +18,6 @@ def catboost_classification(train_df, test_df, outcome, predictors, cv=5, for_st
     CatBoost Classifier with GridSearchCV.
     Handles categorical features efficiently using symmetric trees and gradient boosting.
     """
-    # Auto_class_weights='Balanced' adjusts weights for class imbalance
     base_pipe = Pipeline([
         ('imputer', SimpleImputer(strategy='median')),
         ('model', CatBoostClassifier(random_state=42, verbose=0, auto_class_weights='Balanced'))
@@ -47,15 +46,16 @@ def catboost_classification(train_df, test_df, outcome, predictors, cv=5, for_st
 def compare_classification_tree_models(train_df, test_df, outcome, predictors, cv=5):
     """
     Executes and compares tree-based models, suppressed warnings for cleaner output.
+    Final comparison based on weighted F1-score to evaluate performance.
     """
-    # Désactivation globale des warnings de validation et de bibliothèques tierces
+    # Silencing noise from Sklearn and LightGBM regarding feature names and verbosity
     warnings.filterwarnings("ignore", category=UserWarning)
     warnings.filterwarnings("ignore", module="lightgbm")
     
     print(f"Starting Tree Models Comparison | Predictors: {len(predictors)}")
     print("-" * 45)
 
-    # Dictionnaire pour stocker les modèles entraînés
+    # Dictionary to store trained models
     results = {
         'CatBoost': catboost_classification(train_df, test_df, outcome, predictors, cv),
         'DecisionTree': decision_tree_classification(train_df, test_df, outcome, predictors, cv),
@@ -85,7 +85,7 @@ def compare_classification_tree_models(train_df, test_df, outcome, predictors, c
     
     print(f"\nCHAMPION: {winner_name}")
     
-    # Extraction de l'importance des variables
+    # Extracting Feature Importances from the champion model
     actual_model = winner_model.named_steps['model']
     feat_imp = pd.DataFrame({
         'Feature': predictors,
@@ -101,9 +101,7 @@ def compare_classification_tree_models(train_df, test_df, outcome, predictors, c
 def decision_tree_classification(train_df, test_df, outcome, predictors, cv=5, for_stacking=False):
     """
     Decision Tree Classifier with depth optimization.
-    Simple partitioning model used as a baseline for more complex tree ensembles.
     """
-    # class_weight='balanced' handles imbalance
     base_pipe = Pipeline([
         ('imputer', SimpleImputer(strategy='median')),
         ('model', DecisionTreeClassifier(random_state=42, class_weight='balanced'))
@@ -132,9 +130,7 @@ def decision_tree_classification(train_df, test_df, outcome, predictors, cv=5, f
 def lightgbm_classification(train_df, test_df, outcome, predictors, cv=5, for_stacking=False):
     """
     LightGBM Classifier with leaf-wise growth optimization.
-    High-performance gradient boosting framework designed for speed and efficiency.
     """
-    # class_weight='balanced' handles imbalance
     base_pipe = Pipeline([
         ('imputer', SimpleImputer(strategy='median')),
         ('model', LGBMClassifier(random_state=42, verbosity=-1, class_weight='balanced'))
@@ -163,9 +159,7 @@ def lightgbm_classification(train_df, test_df, outcome, predictors, cv=5, for_st
 def random_forest_classification(train_df, test_df, outcome, predictors, cv=5, for_stacking=False):
     """
     Random Forest Classifier using Bagging technique.
-    Ensemble of decision trees that reduces variance through bootstrap aggregating.
     """
-    # class_weight='balanced' handles imbalance
     base_pipe = Pipeline([
         ('imputer', SimpleImputer(strategy='median')),
         ('model', RandomForestClassifier(random_state=42, class_weight='balanced'))
@@ -194,13 +188,10 @@ def random_forest_classification(train_df, test_df, outcome, predictors, cv=5, f
 def xgboost_classification(train_df, test_df, outcome, predictors, cv=5, for_stacking=False):
     """
     XGBoost Classifier with Gradient Boosting optimization.
-    Advanced implementation of gradient boosting with built-in regularization to prevent overfitting.
     """
     X_train, y_train = train_df[predictors], train_df[outcome]
     X_test, y_test = test_df[predictors], test_df[outcome]
 
-    # Calculate scale_pos_weight for binary classification
-    # For multi-class, XGBoost requires different handling, but this is the standard for imbalance
     counts = y_train.value_counts()
     ratio = counts.iloc[0] / counts.iloc[1] if len(counts) == 2 else 1
 
