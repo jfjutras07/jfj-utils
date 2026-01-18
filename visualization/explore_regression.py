@@ -1,10 +1,3 @@
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
-from sklearn.model_selection import learning_curve
-from .style import UNIFORM_BLUE, PALE_PINK
-
 def plot_regression_diagnostics(model, X_train, y_train, X_test, y_test, critical_feature, cv=5, 
                                  colors=None, figsize=(16, 6)):
     """
@@ -32,7 +25,12 @@ def plot_regression_diagnostics(model, X_train, y_train, X_test, y_test, critica
     axes[0].legend(loc='best')
 
     # --- Slice Analysis (Segment Bias) ---
-    y_pred = model.predict(X_test)
+    if hasattr(model, "feature_names_in_"):
+        X_pred = X_test[model.feature_names_in_]
+    else:
+        X_pred = X_test.select_dtypes(include=np.number)
+
+    y_pred = model.predict(X_pred)
     abs_error = np.abs(y_test - y_pred)
     feature_vals = X_test[critical_feature]
     
