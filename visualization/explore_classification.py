@@ -1,6 +1,6 @@
 import os
 import warnings
-os.environ["PYTHONWARNINGS"] = "ignore:The max_iter was reached:sklearn.exceptions.ConvergenceWarning"
+os.environ["PYTHONWARNINGS"] = "ignore"
 
 import numpy as np
 import pandas as pd
@@ -11,10 +11,10 @@ from joblib import parallel_backend
 from sklearn.model_selection import learning_curve
 from sklearn.metrics import confusion_matrix, roc_curve, auc
 from sklearn.exceptions import ConvergenceWarning
-from .style import UNIFORM_BLUE, PALE_PINK, GREY_DARK
 
-# Global filter for the main process
+# Global filter for warnings
 warnings.filterwarnings("ignore", category=ConvergenceWarning)
+warnings.filterwarnings("ignore", category=UserWarning, module="xgboost")
 
 # --- Function : plot_classification_diagnostics ---
 def plot_classification_diagnostics(
@@ -30,31 +30,35 @@ def plot_classification_diagnostics(
     """
     Displays a classification dashboard.
     Handles both direct estimators and Scikit-Learn Pipelines for parameter updates.
+    Checks parameter existence before injection to avoid XGBoost/Tree errors.
     """
 
-    # --- Section: Parameter Injection (Avoiding ValueError) ---
+    # --- Section: Parameter Injection (Avoiding ValueError & Warnings) ---
     if hasattr(model, "set_params"):
         params = model.get_params()
         settings = {}
         
-        # Check if it's a Pipeline by looking for the 'model' step
-        # Based on your error, your model step is named 'model'
+        # Define target parameters for linear models
+        potential_updates = {"max_iter": 20000, "tol": 1e-3}
+
         if 'model' in params:
-            settings["model__max_iter"] = 20000
-            settings["model__tol"] = 1e-3
+            # Logic for Pipelines: check if the inner model has these attributes
+            inner_params = params['model'].get_params()
+            for key, value in potential_updates.items():
+                if key in inner_params:
+                    settings[f"model__{key}"] = value
         else:
-            # Fallback for direct estimators
-            if "max_iter" in params:
-                settings["max_iter"] = 20000
-            if "tol" in params:
-                settings["tol"] = 1e-3
+            # Logic for direct estimators
+            for key, value in potential_updates.items():
+                if key in params:
+                    settings[key] = value
         
-        # Apply parameters only if they are valid for this specific object
-        try:
-            model.set_params(**settings)
-        except ValueError:
-            # Silently skip if parameters don't match the specific model type
-            pass
+        # Apply parameters only if they are relevant to this specific model
+        if settings:
+            try:
+                model.set_params(**settings)
+            except Exception:
+                pass
 
     if colors is None:
         colors = ['#1f77b4', '#ff7f0e']
@@ -63,8 +67,8 @@ def plot_classification_diagnostics(
 
     # --- Section: Learning Curves ---
     with warnings.catch_warnings():
-        # Double-lock to suppress warnings during parallel cross-validation
-        warnings.filterwarnings("ignore", category=ConvergenceWarning)
+        # Capture warnings from parallel workers
+        warnings.simplefilter("ignore")
         train_sizes, train_scores, test_scores = learning_curve(
             model,
             X_train,
