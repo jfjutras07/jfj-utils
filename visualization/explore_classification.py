@@ -11,6 +11,7 @@ from joblib import parallel_backend
 from sklearn.model_selection import learning_curve
 from sklearn.metrics import confusion_matrix, roc_curve, auc
 from sklearn.exceptions import ConvergenceWarning
+from .style import UNIFORM_BLUE, PALE_PINK, GREY_DARK
 
 # Global filter for warnings
 warnings.filterwarnings("ignore", category=ConvergenceWarning)
