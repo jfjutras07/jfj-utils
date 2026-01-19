@@ -14,13 +14,16 @@ from sklearn.preprocessing import StandardScaler
 from IPython.display import display
 
 #---Function:catboost_regression---
-def catboost_regression(train_df, test_df, outcome, predictors, cv=5, for_stacking=False):
+def catboost_regression(train_df, test_df, outcome, predictors, cv=5, for_stacking=False, **model_params):
     """
     CatBoost Regressor with GridSearchCV. Optimizes depth and iterations.
     """
+    params = {'random_state': 42, 'verbose': 0}
+    params.update(model_params)
+
     base_pipe = Pipeline([
         ('imputer', SimpleImputer(strategy='median')),
-        ('model', CatBoostRegressor(random_state=42, verbose=0))
+        ('model', CatBoostRegressor(**params))
     ])
 
     if for_stacking: return base_pipe
@@ -81,14 +84,13 @@ def compare_regression_tree_models(train_df, test_df, outcome, predictors, cv=5)
 
     comparison_df = pd.DataFrame(perf_metrics).set_index("Model").sort_values(by="R2", ascending=False)
     
-    print("\n--- Final Tree Comparison (Sorted by R2) ---")
+    print("\n--- Final Regression Comparison (Sorted by R2) ---")
     print(comparison_df.to_string())
     
     winner_name = comparison_df.index[0]
     winner_model = results[winner_name]
     print(f"\nCHAMPION: {winner_name}")
     
-    # Feature Importance for the winner
     actual_model = winner_model.named_steps['model']
     if hasattr(actual_model, 'feature_importances_'):
         feat_imp = pd.DataFrame({
@@ -101,13 +103,16 @@ def compare_regression_tree_models(train_df, test_df, outcome, predictors, cv=5)
     return winner_model
 
 #---Function:decision_tree_regression---
-def decision_tree_regression(train_df, test_df, outcome, predictors, cv=5, for_stacking=False):
+def decision_tree_regression(train_df, test_df, outcome, predictors, cv=5, for_stacking=False, **model_params):
     """
     Decision Tree Regressor with depth optimization.
     """
+    params = {'random_state': 42}
+    params.update(model_params)
+
     base_pipe = Pipeline([
         ('imputer', SimpleImputer(strategy='median')),
-        ('model', DecisionTreeRegressor(random_state=42))
+        ('model', DecisionTreeRegressor(**params))
     ])
 
     if for_stacking: return base_pipe
@@ -133,14 +138,14 @@ def decision_tree_regression(train_df, test_df, outcome, predictors, cv=5, for_s
     return best_model
 
 #---Function:knn_regression---
-def knn_regression(train_df, test_df, outcome, predictors, cv=5, for_stacking=False):
+def knn_regression(train_df, test_df, outcome, predictors, cv=5, for_stacking=False, **model_params):
     """
     K-Neighbors Regressor. Standardizes features for distance calculation.
     """
     base_pipe = Pipeline([
         ('imputer', SimpleImputer(strategy='median')),
         ('scaler', StandardScaler()),
-        ('model', KNeighborsRegressor())
+        ('model', KNeighborsRegressor(**model_params))
     ])
 
     if for_stacking: return base_pipe
@@ -166,13 +171,16 @@ def knn_regression(train_df, test_df, outcome, predictors, cv=5, for_stacking=Fa
     return best_model
 
 #---Function:lightgbm_regression---
-def lightgbm_regression(train_df, test_df, outcome, predictors, cv=5, for_stacking=False):
+def lightgbm_regression(train_df, test_df, outcome, predictors, cv=5, for_stacking=False, **model_params):
     """
     LightGBM Regressor with leaf-wise growth.
     """
+    params = {'random_state': 42, 'importance_type': 'gain', 'verbosity': -1}
+    params.update(model_params)
+
     base_pipe = Pipeline([
         ('imputer', SimpleImputer(strategy='median')),
-        ('model', LGBMRegressor(random_state=42, importance_type='gain', verbosity=-1))
+        ('model', LGBMRegressor(**params))
     ])
 
     if for_stacking: return base_pipe
@@ -198,13 +206,16 @@ def lightgbm_regression(train_df, test_df, outcome, predictors, cv=5, for_stacki
     return best_model
 
 #---Function:random_forest_regression---
-def random_forest_regression(train_df, test_df, outcome, predictors, cv=5, for_stacking=False):
+def random_forest_regression(train_df, test_df, outcome, predictors, cv=5, for_stacking=False, **model_params):
     """
     Random Forest Regressor. Reduces variance through bagging.
     """
+    params = {'random_state': 42}
+    params.update(model_params)
+
     base_pipe = Pipeline([
         ('imputer', SimpleImputer(strategy='median')),
-        ('model', RandomForestRegressor(random_state=42))
+        ('model', RandomForestRegressor(**params))
     ])
 
     if for_stacking: return base_pipe
@@ -230,13 +241,16 @@ def random_forest_regression(train_df, test_df, outcome, predictors, cv=5, for_s
     return best_model
 
 #---Function:xgboost_regression---
-def xgboost_regression(train_df, test_df, outcome, predictors, cv=5, for_stacking=False):
+def xgboost_regression(train_df, test_df, outcome, predictors, cv=5, for_stacking=False, **model_params):
     """
     XGBoost Regressor. Advanced gradient boosting with regularization.
     """
+    params = {'random_state': 42, 'objective': 'reg:squarederror'}
+    params.update(model_params)
+
     base_pipe = Pipeline([
         ('imputer', SimpleImputer(strategy='median')),
-        ('model', XGBRegressor(random_state=42, objective='reg:squarederror'))
+        ('model', XGBRegressor(**params))
     ])
 
     if for_stacking: return base_pipe
