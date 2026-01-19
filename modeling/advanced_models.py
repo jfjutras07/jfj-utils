@@ -19,15 +19,18 @@ from sklearn.gaussian_process.kernels import RBF, ConstantKernel as C, WhiteKern
 from sklearn.metrics import accuracy_score, f1_score, r2_score
 
 #---Function:bayesian_classification---
-def bayesian_classification(train_df, test_df, outcome, predictors, cv=5, for_stacking=False):
+def bayesian_classification(train_df, test_df, outcome, predictors, cv=5, for_stacking=False, **model_params):
     """
     Logistic Regression with L2 penalty as a Bayesian point estimate.
     """
-    # Added class_weight='balanced'
+    # Merging default params with user provided params
+    params = {'solver': 'saga', 'max_iter': 1000, 'class_weight': 'balanced'}
+    params.update(model_params)
+
     base_pipe = Pipeline([
         ('imputer', SimpleImputer(strategy='median')),
         ('scaler', StandardScaler()),
-        ('model', LogisticRegression(solver='saga', max_iter=1000, class_weight='balanced'))
+        ('model', LogisticRegression(**params))
     ])
     if for_stacking: return base_pipe
 
@@ -50,14 +53,14 @@ def bayesian_classification(train_df, test_df, outcome, predictors, cv=5, for_st
     return best_model
 
 #---Function:bayesian_regression---
-def bayesian_regression(train_df, test_df, outcome, predictors, cv=5, for_stacking=False):
+def bayesian_regression(train_df, test_df, outcome, predictors, cv=5, for_stacking=False, **model_params):
     """
     Bayesian Ridge Regression with automated tuning.
     """
     base_pipe = Pipeline([
         ('imputer', SimpleImputer(strategy='median')),
         ('scaler', StandardScaler()),
-        ('model', BayesianRidge())
+        ('model', BayesianRidge(**model_params))
     ])
     if for_stacking: return base_pipe
 
@@ -80,17 +83,18 @@ def bayesian_regression(train_df, test_df, outcome, predictors, cv=5, for_stacki
     return best_model
 
 #---Function:gaussian_process_classification---
-def gaussian_process_classification(train_df, test_df, outcome, predictors, cv=3, for_stacking=False):
+def gaussian_process_classification(train_df, test_df, outcome, predictors, cv=3, for_stacking=False, **model_params):
     """
     Gaussian Process Classifier (GPC) with RBF kernel.
     """
-    # Note: GPC doesn't have a direct 'class_weight' parameter. 
-    # It handles multi-class via one-vs-rest which inherently helps a bit.
     kernel = 1.0 * RBF(1.0)
+    params = {'kernel': kernel, 'random_state': 42}
+    params.update(model_params)
+
     base_pipe = Pipeline([
         ('imputer', SimpleImputer(strategy='median')),
         ('scaler', StandardScaler()),
-        ('model', GaussianProcessClassifier(kernel=kernel, random_state=42))
+        ('model', GaussianProcessClassifier(**params))
     ])
     if for_stacking: return base_pipe
 
@@ -112,15 +116,18 @@ def gaussian_process_classification(train_df, test_df, outcome, predictors, cv=3
     return best_model
 
 #---Function:gaussian_process_regression---
-def gaussian_process_regression(train_df, test_df, outcome, predictors, cv=3, for_stacking=False):
+def gaussian_process_regression(train_df, test_df, outcome, predictors, cv=3, for_stacking=False, **model_params):
     """
     Gaussian Process Regressor (GPR) with noise estimation.
     """
     kernel = C(1.0, (1e-3, 1e3)) * RBF(10, (1e-2, 1e2)) + WhiteKernel(noise_level=1)
+    params = {'kernel': kernel, 'n_restarts_optimizer': 10, 'random_state': 42}
+    params.update(model_params)
+
     base_pipe = Pipeline([
         ('imputer', SimpleImputer(strategy='median')),
         ('scaler', StandardScaler()),
-        ('model', GaussianProcessRegressor(kernel=kernel, n_restarts_optimizer=10, random_state=42))
+        ('model', GaussianProcessRegressor(**params))
     ])
     if for_stacking: return base_pipe
 
@@ -142,21 +149,20 @@ def gaussian_process_regression(train_df, test_df, outcome, predictors, cv=3, fo
     return best_model
 
 #---Function:knn_classification---
-def knn_classification(train_df, test_df, outcome, predictors, cv=5, for_stacking=False):
+def knn_classification(train_df, test_df, outcome, predictors, cv=5, for_stacking=False, **model_params):
     """
     K-Nearest Neighbors Classifier with weight='distance' to help with imbalance.
     """
     base_pipe = Pipeline([
         ('imputer', SimpleImputer(strategy='median')),
         ('scaler', StandardScaler()),
-        ('model', KNeighborsClassifier())
+        ('model', KNeighborsClassifier(**model_params))
     ])
     if for_stacking: return base_pipe
 
     X_train, y_train = train_df[predictors], train_df[outcome]
     X_test, y_test = test_df[predictors], test_df[outcome]
 
-    # Use 'distance' instead of 'uniform' as it's more robust to class imbalance
     param_grid = {'model__n_neighbors': [3, 5, 11], 'model__weights': ['distance']}
     grid_search = GridSearchCV(base_pipe, param_grid, cv=cv, scoring='f1_weighted', n_jobs=-1)
     grid_search.fit(X_train, y_train)
@@ -175,14 +181,14 @@ def knn_classification(train_df, test_df, outcome, predictors, cv=5, for_stackin
     return best_model
 
 #---Function:knn_regression---
-def knn_regression(train_df, test_df, outcome, predictors, cv=5, for_stacking=False):
+def knn_regression(train_df, test_df, outcome, predictors, cv=5, for_stacking=False, **model_params):
     """
     K-Nearest Neighbors Regressor with permutation importance.
     """
     base_pipe = Pipeline([
         ('imputer', SimpleImputer(strategy='median')),
         ('scaler', StandardScaler()),
-        ('model', KNeighborsRegressor())
+        ('model', KNeighborsRegressor(**model_params))
     ])
     if for_stacking: return base_pipe
 
@@ -204,16 +210,17 @@ def knn_regression(train_df, test_df, outcome, predictors, cv=5, for_stacking=Fa
     return best_model
 
 #---Function:mlp_classification---
-def mlp_classification(train_df, test_df, outcome, predictors, cv=5, for_stacking=False):
+def mlp_classification(train_df, test_df, outcome, predictors, cv=5, for_stacking=False, **model_params):
     """
     Multi-layer Perceptron Classifier.
     """
-    # Note: MLP in sklearn doesn't support class_weight. 
-    # The best way to handle imbalance here is through the scoring 'f1_weighted'.
+    params = {'max_iter': 1000, 'random_state': 42, 'early_stopping': True}
+    params.update(model_params)
+
     base_pipe = Pipeline([
         ('imputer', SimpleImputer(strategy='median')),
         ('scaler', StandardScaler()),
-        ('model', MLPClassifier(max_iter=1000, random_state=42, early_stopping=True))
+        ('model', MLPClassifier(**params))
     ])
     if for_stacking: return base_pipe
 
@@ -235,14 +242,17 @@ def mlp_classification(train_df, test_df, outcome, predictors, cv=5, for_stackin
     return best_model
 
 #---Function:mlp_regression---
-def mlp_regression(train_df, test_df, outcome, predictors, cv=5, for_stacking=False):
+def mlp_regression(train_df, test_df, outcome, predictors, cv=5, for_stacking=False, **model_params):
     """
     Multi-layer Perceptron Regressor.
     """
+    params = {'max_iter': 1000, 'random_state': 42, 'early_stopping': True}
+    params.update(model_params)
+
     base_pipe = Pipeline([
         ('imputer', SimpleImputer(strategy='median')),
         ('scaler', StandardScaler()),
-        ('model', MLPRegressor(max_iter=1000, random_state=42, early_stopping=True))
+        ('model', MLPRegressor(**params))
     ])
     if for_stacking: return base_pipe
 
@@ -264,15 +274,17 @@ def mlp_regression(train_df, test_df, outcome, predictors, cv=5, for_stacking=Fa
     return best_model
 
 #---Function:svm_classification---
-def svm_classification(train_df, test_df, outcome, predictors, cv=5, for_stacking=False):
+def svm_classification(train_df, test_df, outcome, predictors, cv=5, for_stacking=False, **model_params):
     """
     Support Vector Classification (SVC) with class_weight='balanced'.
     """
-    # Added class_weight='balanced'
+    params = {'probability': True, 'class_weight': 'balanced'}
+    params.update(model_params)
+
     base_pipe = Pipeline([
         ('imputer', SimpleImputer(strategy='median')),
         ('scaler', StandardScaler()),
-        ('model', SVC(probability=True, class_weight='balanced'))
+        ('model', SVC(**params))
     ])
     if for_stacking: return base_pipe
 
@@ -297,14 +309,14 @@ def svm_classification(train_df, test_df, outcome, predictors, cv=5, for_stackin
     return best_model
 
 #---Function:svm_regression---
-def svm_regression(train_df, test_df, outcome, predictors, cv=5, for_stacking=False):
+def svm_regression(train_df, test_df, outcome, predictors, cv=5, for_stacking=False, **model_params):
     """
     Support Vector Regression (SVR) with permutation importance.
     """
     base_pipe = Pipeline([
         ('imputer', SimpleImputer(strategy='median')),
         ('scaler', StandardScaler()),
-        ('model', SVR())
+        ('model', SVR(**model_params))
     ])
     if for_stacking: return base_pipe
 
