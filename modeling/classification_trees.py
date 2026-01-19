@@ -17,14 +17,17 @@ from IPython.display import display
 sklearn.set_config(transform_output="pandas")
 
 #---Function:catboost_classification---
-def catboost_classification(train_df, test_df, outcome, predictors, cv=5, for_stacking=False):
+def catboost_classification(train_df, test_df, outcome, predictors, cv=5, for_stacking=False, **model_params):
     """
     CatBoost Classifier with GridSearchCV.
     Handles categorical features efficiently using symmetric trees and gradient boosting.
     """
+    params = {'random_state': 42, 'verbose': 0, 'auto_class_weights': 'Balanced'}
+    params.update(model_params)
+
     base_pipe = Pipeline([
         ('imputer', SimpleImputer(strategy='median')),
-        ('model', CatBoostClassifier(random_state=42, verbose=0, auto_class_weights='Balanced'))
+        ('model', CatBoostClassifier(**params))
     ])
     base_pipe.set_output(transform="pandas")
 
@@ -58,7 +61,7 @@ def compare_classification_tree_models(train_df, test_df, outcome, predictors, c
     print(f"Starting Tree Models Comparison | Predictors: {len(predictors)}")
     print("-" * 45)
 
-    # Train all models
+    # Train all models (using their default internal settings)
     results = {
         'CatBoost': catboost_classification(train_df, test_df, outcome, predictors, cv),
         'DecisionTree': decision_tree_classification(train_df, test_df, outcome, predictors, cv),
@@ -74,7 +77,6 @@ def compare_classification_tree_models(train_df, test_df, outcome, predictors, c
     perf_metrics = []
 
     for name, model in results.items():
-        # Always use a DataFrame with correct column names for prediction
         y_pred = model.predict(X_test)
 
         perf_metrics.append({
@@ -107,13 +109,16 @@ def compare_classification_tree_models(train_df, test_df, outcome, predictors, c
     return winner_model
 
 #---Function:decision_tree_classification---
-def decision_tree_classification(train_df, test_df, outcome, predictors, cv=5, for_stacking=False):
+def decision_tree_classification(train_df, test_df, outcome, predictors, cv=5, for_stacking=False, **model_params):
     """
     Decision Tree Classifier with depth optimization.
     """
+    params = {'random_state': 42, 'class_weight': 'balanced'}
+    params.update(model_params)
+
     base_pipe = Pipeline([
         ('imputer', SimpleImputer(strategy='median')),
-        ('model', DecisionTreeClassifier(random_state=42, class_weight='balanced'))
+        ('model', DecisionTreeClassifier(**params))
     ])
     base_pipe.set_output(transform="pandas")
 
@@ -138,13 +143,16 @@ def decision_tree_classification(train_df, test_df, outcome, predictors, cv=5, f
     return best_model
 
 #---Function:lightgbm_classification---
-def lightgbm_classification(train_df, test_df, outcome, predictors, cv=5, for_stacking=False):
+def lightgbm_classification(train_df, test_df, outcome, predictors, cv=5, for_stacking=False, **model_params):
     """
     LightGBM Classifier with leaf-wise growth optimization.
     """
+    params = {'random_state': 42, 'verbosity': -1, 'class_weight': 'balanced'}
+    params.update(model_params)
+
     base_pipe = Pipeline([
         ('imputer', SimpleImputer(strategy='median')),
-        ('model', LGBMClassifier(random_state=42, verbosity=-1, class_weight='balanced'))
+        ('model', LGBMClassifier(**params))
     ])
     base_pipe.set_output(transform="pandas")
 
@@ -169,13 +177,16 @@ def lightgbm_classification(train_df, test_df, outcome, predictors, cv=5, for_st
     return best_model
 
 #---Function:random_forest_classification---
-def random_forest_classification(train_df, test_df, outcome, predictors, cv=5, for_stacking=False):
+def random_forest_classification(train_df, test_df, outcome, predictors, cv=5, for_stacking=False, **model_params):
     """
     Random Forest Classifier using Bagging technique.
     """
+    params = {'random_state': 42, 'class_weight': 'balanced'}
+    params.update(model_params)
+
     base_pipe = Pipeline([
         ('imputer', SimpleImputer(strategy='median')),
-        ('model', RandomForestClassifier(random_state=42, class_weight='balanced'))
+        ('model', RandomForestClassifier(**params))
     ])
     base_pipe.set_output(transform="pandas")
 
@@ -200,7 +211,7 @@ def random_forest_classification(train_df, test_df, outcome, predictors, cv=5, f
     return best_model
 
 #---Function:xgboost_classification---
-def xgboost_classification(train_df, test_df, outcome, predictors, cv=5, for_stacking=False):
+def xgboost_classification(train_df, test_df, outcome, predictors, cv=5, for_stacking=False, **model_params):
     """
     XGBoost Classifier with Gradient Boosting optimization.
     """
@@ -210,9 +221,12 @@ def xgboost_classification(train_df, test_df, outcome, predictors, cv=5, for_sta
     counts = y_train.value_counts()
     ratio = counts.iloc[0] / counts.iloc[1] if len(counts) == 2 else 1
 
+    params = {'random_state': 42, 'eval_metric': 'logloss', 'scale_pos_weight': ratio}
+    params.update(model_params)
+
     base_pipe = Pipeline([
         ('imputer', SimpleImputer(strategy='median')),
-        ('model', XGBClassifier(random_state=42, eval_metric='logloss', scale_pos_weight=ratio))
+        ('model', XGBClassifier(**params))
     ])
     base_pipe.set_output(transform="pandas")
 
