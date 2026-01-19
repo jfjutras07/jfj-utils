@@ -8,7 +8,7 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.metrics import r2_score, mean_absolute_error, mean_squared_error
 
 #---Function:linear_regression---
-def linear_regression(train_df, test_df, outcome, predictors, for_stacking=False):
+def linear_regression(train_df, test_df, outcome, predictors, for_stacking=False, **model_params):
     """
     Standard Linear Regression (Ordinary Least Squares).
     Handles both simple and multiple regression based on the predictors list.
@@ -16,7 +16,7 @@ def linear_regression(train_df, test_df, outcome, predictors, for_stacking=False
     base_pipe = Pipeline([
         ('imputer', SimpleImputer(strategy='median')),
         ('scaler', StandardScaler()),
-        ('model', LinearRegression())
+        ('model', LinearRegression(**model_params))
     ])
     
     if for_stacking: return base_pipe
@@ -49,7 +49,7 @@ def linear_regression(train_df, test_df, outcome, predictors, for_stacking=False
     return base_pipe
 
 #---Function:polynomial_regression---
-def polynomial_regression(train_df, test_df, outcome, predictors, cv=5, for_stacking=False):
+def polynomial_regression(train_df, test_df, outcome, predictors, cv=5, for_stacking=False, **model_params):
     """
     Polynomial regression with automated degree tuning.
     Finds the optimal degree to capture non-linear relationships.
@@ -58,7 +58,7 @@ def polynomial_regression(train_df, test_df, outcome, predictors, cv=5, for_stac
         ('imputer', SimpleImputer(strategy='median')),
         ('poly', PolynomialFeatures(include_bias=False)),
         ('scaler', StandardScaler()),
-        ('model', LinearRegression())
+        ('model', LinearRegression(**model_params))
     ])
     
     if for_stacking: return base_pipe
@@ -85,15 +85,19 @@ def polynomial_regression(train_df, test_df, outcome, predictors, cv=5, for_stac
     return best_model
 
 #---Function:quantile_regression---
-def quantile_regression(train_df, test_df, outcome, predictors, quantile=0.5, cv=5, for_stacking=False):
+def quantile_regression(train_df, test_df, outcome, predictors, quantile=0.5, cv=5, for_stacking=False, **model_params):
     """
     Quantile regression with automated alpha tuning.
     Predicts the specific quantile (e.g., 0.5 for median) instead of the mean.
     """
+    # Default params merge with user-specified model_params
+    params = {'quantile': quantile, 'solver': 'highs'}
+    params.update(model_params)
+
     base_pipe = Pipeline([
         ('imputer', SimpleImputer(strategy='median')),
         ('scaler', StandardScaler()),
-        ('model', QuantileRegressor(quantile=quantile, solver='highs'))
+        ('model', QuantileRegressor(**params))
     ])
     
     if for_stacking: return base_pipe
@@ -120,15 +124,18 @@ def quantile_regression(train_df, test_df, outcome, predictors, quantile=0.5, cv
     return best_model
 
 #---Function:robust_regression---
-def robust_regression(train_df, test_df, outcome, predictors, cv=5, for_stacking=False):
+def robust_regression(train_df, test_df, outcome, predictors, cv=5, for_stacking=False, **model_params):
     """
     Robust regression using Huber loss.
     Reduces the influence of outliers through automated epsilon tuning.
     """
+    params = {'max_iter': 1000}
+    params.update(model_params)
+
     base_pipe = Pipeline([
         ('imputer', SimpleImputer(strategy='median')),
         ('scaler', StandardScaler()),
-        ('model', HuberRegressor(max_iter=1000))
+        ('model', HuberRegressor(**params))
     ])
     
     if for_stacking: return base_pipe
