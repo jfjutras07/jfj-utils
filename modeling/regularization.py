@@ -72,39 +72,58 @@ def compare_regularized_models(train_df, test_df, outcome, predictors, model_typ
     return winner_data["model"]
 
 #--- Function : elasticnet_model ---
-def elasticnet_model(train_df, test_df, outcome, predictors, model_type='classification', cv=5, for_stacking=False, for_compare=False):
+def elasticnet_model(train_df, test_df, outcome, predictors, model_type='classification', cv=5, for_stacking=False, for_compare=False, **model_params):
     """
     Perform ElasticNet (L1 + L2).
     """
     if model_type == 'classification':
-        model_obj = LogisticRegressionCV(penalty='elasticnet', l1_ratios=[.1, .5, .9], solver='saga', 
-                                         cv=cv, class_weight='balanced', random_state=42, max_iter=2000)
+        params = {
+            'penalty': 'elasticnet', 
+            'l1_ratios': [.1, .5, .9], 
+            'solver': 'saga', 
+            'cv': cv, 
+            'class_weight': 'balanced', 
+            'random_state': 42, 
+            'max_iter': 2000
+        }
+        params.update(model_params)
+        model_obj = LogisticRegressionCV(**params)
     else:
-        model_obj = ElasticNetCV(l1_ratio=[.1, .5, .7, .9, 1], cv=cv, random_state=42)
+        params = {'l1_ratio': [.1, .5, .7, .9, 1], 'cv': cv, 'random_state': 42}
+        params.update(model_params)
+        model_obj = ElasticNetCV(**params)
 
     return _fit_and_report(model_obj, train_df, test_df, outcome, predictors, "ElasticNet", model_type, for_stacking, for_compare)
 
 #--- Function : lasso_model ---
-def lasso_model(train_df, test_df, outcome, predictors, model_type='classification', cv=5, for_stacking=False, for_compare=False):
+def lasso_model(train_df, test_df, outcome, predictors, model_type='classification', cv=5, for_stacking=False, for_compare=False, **model_params):
     """
     Perform Lasso (L1).
     """
     if model_type == 'classification':
-        model_obj = LogisticRegressionCV(penalty='l1', solver='liblinear', cv=cv, class_weight='balanced', random_state=42)
+        params = {'penalty': 'l1', 'solver': 'liblinear', 'cv': cv, 'class_weight': 'balanced', 'random_state': 42}
+        params.update(model_params)
+        model_obj = LogisticRegressionCV(**params)
     else:
-        model_obj = LassoCV(cv=cv, random_state=42)
+        params = {'cv': cv, 'random_state': 42}
+        params.update(model_params)
+        model_obj = LassoCV(**params)
 
     return _fit_and_report(model_obj, train_df, test_df, outcome, predictors, "Lasso", model_type, for_stacking, for_compare)
 
 #--- Function : ridge_model ---
-def ridge_model(train_df, test_df, outcome, predictors, model_type='classification', cv=5, for_stacking=False, for_compare=False):
+def ridge_model(train_df, test_df, outcome, predictors, model_type='classification', cv=5, for_stacking=False, for_compare=False, **model_params):
     """
     Perform Ridge (L2).
     """
     if model_type == 'classification':
-        model_obj = LogisticRegressionCV(penalty='l2', cv=cv, class_weight='balanced', random_state=42)
+        params = {'penalty': 'l2', 'cv': cv, 'class_weight': 'balanced', 'random_state': 42}
+        params.update(model_params)
+        model_obj = LogisticRegressionCV(**params)
     else:
-        model_obj = RidgeCV(alphas=np.logspace(-3, 3, 10), cv=cv)
+        params = {'alphas': np.logspace(-3, 3, 10), 'cv': cv}
+        params.update(model_params)
+        model_obj = RidgeCV(**params)
 
     return _fit_and_report(model_obj, train_df, test_df, outcome, predictors, "Ridge", model_type, for_stacking, for_compare)
 
@@ -136,7 +155,8 @@ def _fit_and_report(model_obj, train_df, test_df, outcome, predictors, name, mod
         print(f"--- {name} {model_type.capitalize()} Summary ---")
         y_pred = base_pipe.predict(X_test)
         if model_type == 'classification':
-            print(f"ROC_AUC (Test): {roc_auc_score(y_test, base_pipe.predict_proba(X_test)[:, 1]):.4f}")
+            y_proba = base_pipe.predict_proba(X_test)[:, 1]
+            print(f"ROC_AUC (Test): {roc_auc_score(y_test, y_proba):.4f}")
             print(f"Recall (Test): {recall_score(y_test, y_pred):.4f}")
         else:
             print(f"R2 Score (Test): {r2_score(y_test, y_pred):.4f}")
