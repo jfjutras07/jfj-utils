@@ -6,7 +6,7 @@ from sklearn.metrics import r2_score, mean_absolute_error, mean_squared_error
 from sklearn.metrics import accuracy_score, f1_score, classification_report
 
 #---Function:stacking_classification_ensemble---
-def stacking_classification_ensemble(train_df, test_df, outcome, predictors, base_estimators, final_estimator=None, cv=5):
+def stacking_classification_ensemble(train_df, test_df, outcome, predictors, base_estimators, final_estimator=None, cv=5, **meta_params):
     """
     Orchestrates a Stacking Ensemble for Classification.
     Combines multiple classifiers using a meta-model (default: Logistic Regression).
@@ -14,9 +14,9 @@ def stacking_classification_ensemble(train_df, test_df, outcome, predictors, bas
     X_train, y_train = train_df[predictors], train_df[outcome]
     X_test, y_test = test_df[predictors], test_df[outcome]
 
-    # If no meta-model is provided, LogisticRegression is the standard choice
+    # Initialize default meta-model if none provided, applying meta_params
     if final_estimator is None:
-        final_estimator = LogisticRegression()
+        final_estimator = LogisticRegression(**meta_params)
 
     # Initialize Stacking
     stacking_model = StackingClassifier(
@@ -46,7 +46,7 @@ def stacking_classification_ensemble(train_df, test_df, outcome, predictors, bas
     return stacking_model
 
 #---Function:stacking_regression_ensemble---
-def stacking_regression_ensemble(train_df, test_df, outcome, predictors, base_estimators, final_estimator=None, cv=5):
+def stacking_regression_ensemble(train_df, test_df, outcome, predictors, base_estimators, final_estimator=None, cv=5, **meta_params):
     """
     Orchestrates a Stacking Ensemble for Regression.
     Combines multiple regressors using a meta-model (default: RidgeCV).
@@ -54,9 +54,10 @@ def stacking_regression_ensemble(train_df, test_df, outcome, predictors, base_es
     X_train, y_train = train_df[predictors], train_df[outcome]
     X_test, y_test = test_df[predictors], test_df[outcome]
 
-    # If no meta-model is provided, RidgeCV is the gold standard for stacking
+    # Initialize default meta-model (RidgeCV) with meta_params if applicable
     if final_estimator is None:
-        final_estimator = RidgeCV()
+        # Note: RidgeCV specific params can be passed via meta_params
+        final_estimator = RidgeCV(**meta_params)
 
     # Initialize Stacking
     stacking_model = StackingRegressor(
