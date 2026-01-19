@@ -8,15 +8,19 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.metrics import accuracy_score, f1_score, classification_report
 
 #---Function:logistic_regression---
-def logistic_regression(train_df, test_df, outcome, predictors, cv=5, for_stacking=False):
+def logistic_regression(train_df, test_df, outcome, predictors, cv=5, for_stacking=False, **model_params):
     """
     Logistic Regression for binary or multiclass classification.
     Optimizes regularization strength (C) and penalty type using GridSearchCV.
     """
+    # Default parameters that can be overridden by model_params
+    params = {'max_iter': 1000, 'solver': 'saga', 'class_weight': 'balanced'}
+    params.update(model_params)
+
     base_pipe = Pipeline([
         ('imputer', SimpleImputer(strategy='median')),
         ('scaler', StandardScaler()),
-        ('model', LogisticRegression(max_iter=1000, solver='saga', class_weight='balanced'))
+        ('model', LogisticRegression(**params))
     ])
     
     if for_stacking: return base_pipe
