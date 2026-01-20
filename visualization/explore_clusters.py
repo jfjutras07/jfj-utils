@@ -185,16 +185,25 @@ def plot_cluster_radar_charts(df_scaled, labels, feature_names):
     angles += angles[:1]
     
     custom_colors = [UNIFORM_BLUE, PALE_PINK, "#9b59b6", "#34495e", "#16a085"]
-    fig, axes = plt.subplots(2, 2, figsize=(16, 12), subplot_kw=dict(polar=True))
-    axes_flat = axes.flatten()
-
+    
+    # Determine subplot grid dynamically
+    n_clusters = len(unique_labels)
+    n_cols = 2
+    n_rows = (n_clusters + 1) // n_cols
+    fig, axes = plt.subplots(n_rows, n_cols, figsize=(8 * n_cols, 6 * n_rows), subplot_kw=dict(polar=True))
+    
+    # Flatten axes and hide extras
+    axes_flat = axes.flatten() if n_clusters > 1 else [axes]
+    for i in range(len(axes_flat)):
+        if i >= n_clusters:
+            axes_flat[i].axis('off')  # hide empty subplots
+    
     for i, cluster_id in enumerate(unique_labels):
-        if i >= 4: break
         ax = axes_flat[i]
         values = cluster_means.loc[cluster_id].values.flatten().tolist()
         values += values[:1]
         
-        #English comment: Apply unified color to plot and fill
+        # Apply unified color to plot and fill
         ax.fill(angles, values, color=custom_colors[i % len(custom_colors)], alpha=0.3)
         ax.plot(angles, values, color=custom_colors[i % len(custom_colors)], linewidth=2)
         ax.set_xticks(angles[:-1])
