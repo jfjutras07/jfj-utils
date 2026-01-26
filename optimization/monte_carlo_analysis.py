@@ -1,3 +1,6 @@
+import pandas as pd
+import numpy as np
+
 # --- Function: monte_carlo_portfolio ---
 def monte_carlo_portfolio(df_portfolio: pd.DataFrame, n_simulations: int = 10000, budget_limit: float = 1000000, random_seed: int = 42) -> pd.DataFrame:
     """
