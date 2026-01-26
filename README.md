@@ -242,6 +242,10 @@ Active development — modules will be progressively added and refined.
   
 ### Optimization : Prescriptive analytics tools for simulation, decision support, and optimization.
 
+*monte_carlo_analysis.py*
+- `monte_carlo_portfolio`
+- `monte_carlo_portfolio_tracking`
+
 ### Visualization: High-level plotting utilities for exploring data and communicating analytical results.
 
 *chi_square_heatmap.py*
