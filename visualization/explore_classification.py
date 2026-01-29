@@ -26,35 +26,31 @@ def plot_classification_diagnostics(
     y_test,
     cv=5,
     colors=None,
-    figsize=(20, 6)
+    figsize=(16, 12)
 ):
     """
-    Displays a classification dashboard.
-    Handles both direct estimators and Scikit-Learn Pipelines for parameter updates.
-    Checks parameter existence before injection to avoid XGBoost/Tree errors.
+    Displays a 2x2 classification diagnostic dashboard.
+    Includes Learning Curves, Confusion Matrix, ROC Curve, and Calibration Curve.
+    Handles parameter injection for linear models and pipelines to ensure convergence.
     """
+    from sklearn.calibration import calibration_curve
 
-    # --- Section: Parameter Injection (Avoiding ValueError & Warnings) ---
+    # --- Section: Parameter Injection ---
     if hasattr(model, "set_params"):
         params = model.get_params()
         settings = {}
-        
-        # Define target parameters for linear models
         potential_updates = {"max_iter": 20000, "tol": 1e-3}
 
         if 'model' in params:
-            # Logic for Pipelines: check if the inner model has these attributes
             inner_params = params['model'].get_params()
             for key, value in potential_updates.items():
                 if key in inner_params:
                     settings[f"model__{key}"] = value
         else:
-            # Logic for direct estimators
             for key, value in potential_updates.items():
                 if key in params:
                     settings[key] = value
         
-        # Apply parameters only if they are relevant to this specific model
         if settings:
             try:
                 model.set_params(**settings)
@@ -62,13 +58,13 @@ def plot_classification_diagnostics(
                 pass
 
     if colors is None:
-        colors = ['#1f77b4', '#ff7f0e']
+        colors = [UNIFORM_BLUE, PALE_PINK]
 
-    fig, axes = plt.subplots(1, 3, figsize=figsize)
+    fig, axes = plt.subplots(2, 2, figsize=figsize)
+    axes = axes.flatten()
 
-    # --- Section: Learning Curves ---
+    # --- Section: Learning Curves (Top-Left) ---
     with warnings.catch_warnings():
-        # Capture warnings from parallel workers
         warnings.simplefilter("ignore")
         train_sizes, train_scores, test_scores = learning_curve(
             model,
@@ -85,13 +81,13 @@ def plot_classification_diagnostics(
 
     axes[0].plot(train_sizes, train_mean, label="Training F1", color=colors[0], lw=2)
     axes[0].plot(train_sizes, test_mean, label="Validation F1 (CV)", color=colors[1], linestyle="--", lw=2)
-    axes[0].set_title("Learning Curves")
+    axes[0].set_title("Learning Curves", fontweight='bold')
     axes[0].set_xlabel("Training Set Size")
     axes[0].set_ylabel("F1 Score")
     axes[0].legend(loc="best")
     axes[0].grid(alpha=0.3)
 
-    # --- Section: Confusion Matrix ---
+    # --- Section: Confusion Matrix (Top-Right) ---
     y_pred = model.predict(X_test)
     cm = confusion_matrix(y_test, y_pred)
 
@@ -104,20 +100,33 @@ def plot_classification_diagnostics(
         cbar=False,
         annot_kws={"size": 14, "weight": "bold"}
     )
-    axes[1].set_title("Confusion Matrix")
+    axes[1].set_title("Confusion Matrix", fontweight='bold')
     axes[1].set_xticklabels(["Stay", "Leave"])
     axes[1].set_yticklabels(["Stay", "Leave"])
 
-    # --- Section: ROC Curve ---
+    # --- Section: ROC Curve (Bottom-Left) ---
     y_proba = model.predict_proba(X_test)[:, 1]
     fpr, tpr, _ = roc_curve(y_test, y_proba)
     roc_auc = auc(fpr, tpr)
 
     axes[2].plot(fpr, tpr, color=colors[1], lw=2, label=f"AUC = {roc_auc:.2f}")
     axes[2].plot([0, 1], [0, 1], color="grey", lw=2, linestyle="--")
-    axes[2].set_title("ROC Curve")
+    axes[2].set_title("ROC Curve", fontweight='bold')
+    axes[2].set_xlabel("False Positive Rate")
+    axes[2].set_ylabel("True Positive Rate")
     axes[2].legend(loc="lower right")
     axes[2].grid(alpha=0.3)
+
+    # --- Section: Calibration Curve (Bottom-Right) ---
+    prob_true, prob_pred = calibration_curve(y_test, y_proba, n_bins=10)
+    
+    axes[3].plot(prob_pred, prob_true, "s-", color=colors[0], label="Model")
+    axes[3].plot([0, 1], [0, 1], color=GREY_DARK, linestyle="--", label="Perfectly Calibrated")
+    axes[3].set_title("Calibration Curve (Reliability)", fontweight='bold')
+    axes[3].set_xlabel("Mean Predicted Probability")
+    axes[3].set_ylabel("Fraction of Positives")
+    axes[3].legend(loc="lower right")
+    axes[3].grid(alpha=0.3)
 
     plt.tight_layout()
     plt.show()
