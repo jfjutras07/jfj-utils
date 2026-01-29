@@ -259,6 +259,9 @@ Active development — modules will be progressively added and refined.
 
 *explore_classification.py*
 - `plot_classification_diagnostics`
+- `plot_classification_impact`
+- `plot_feature_importance`
+- `plot_precision_recall`
 
 *explore_clusters.py*
 - `plot_cluster_diagnostics`
