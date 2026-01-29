@@ -31,9 +31,10 @@ def plot_classification_diagnostics(
     """
     Displays a 2x2 classification diagnostic dashboard.
     Includes Learning Curves, Confusion Matrix, ROC Curve, and Calibration Curve.
-    Handles parameter injection for linear models and pipelines to ensure convergence.
+    Now includes Brier Score in the final summary.
     """
     from sklearn.calibration import calibration_curve
+    from sklearn.metrics import brier_score_loss # Import ajouté ici
 
     # --- Section: Parameter Injection ---
     if hasattr(model, "set_params"):
@@ -120,7 +121,10 @@ def plot_classification_diagnostics(
     # --- Section: Calibration Curve (Bottom-Right) ---
     prob_true, prob_pred = calibration_curve(y_test, y_proba, n_bins=10)
     
-    axes[3].plot(prob_pred, prob_true, "s-", color=colors[0], label="Model")
+    # Calcul du Brier Score
+    brier = brier_score_loss(y_test, y_proba)
+    
+    axes[3].plot(prob_pred, prob_true, "s-", color=colors[0], label=f"Model (Brier: {brier:.3f})")
     axes[3].plot([0, 1], [0, 1], color=GREY_DARK, linestyle="--", label="Perfectly Calibrated")
     axes[3].set_title("Calibration Curve (Reliability)", fontweight='bold')
     axes[3].set_xlabel("Mean Predicted Probability")
@@ -131,7 +135,8 @@ def plot_classification_diagnostics(
     plt.tight_layout()
     plt.show()
 
-    print(f"Diagnostics Summary: ROC-AUC = {roc_auc:.4f}")
+    # Summary avec Brier Score ajouté
+    print(f"Diagnostics Summary: ROC-AUC = {roc_auc:.4f} | Brier Score = {brier:.4f}")
 
 # --- Function : plot_classification_impact ---
 def plot_classification_impact(
