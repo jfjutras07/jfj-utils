@@ -53,25 +53,25 @@ Active development — modules will be progressively added and refined.
 - `perform_pca`
   
 *encoding.py*
-- Class : `categorical_encoder`-
+- Class : `categorical_encoder`
 - `binary_encode_columns`
 - `label_encode_columns`
 - `one_hot_encode_columns`
 - `ordinal_encode_columns`
   
 *feature_engineering.py*
-- Class : `ratio_generator`-
+- Class : `ratio_generator`
 - `mi_classification`
 - `mi_regression`
   
 *missing.py*
-- Class : `group_imputer`-
+- Class : `group_imputer`
 - Class: `logical_imputer`
 - `missing_stats`
 - `missing_summary`
 
 *normalizing.py*
-- Class : `skewness_corrector`-
+- Class : `skewness_corrector`
 - `normalize_columns`
   
 *outliers.py*
@@ -80,7 +80,7 @@ Active development — modules will be progressively added and refined.
 - `winsorize_columns`
 
 *scaling.py*
-- Class : `feature_scaler`-
+- Class : `feature_scaler`
 - `minmax_scaler`
 - `robust_scaler`
 - `standard_scaler`
