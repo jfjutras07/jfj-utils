@@ -314,8 +314,10 @@ def plot_swarm_grid(df, value_cols, group_col='Economic_status', hue_col=None,
     y_col = value_cols[0]
     plots_per_fig = n_rows * n_cols
 
-    # FIX: Define hue order ONCE for the entire function to lock colors
-    fixed_hue_order = sorted(df[hue_col].unique().tolist()) if hue_col else None
+    # FIX: lock hue order WITHOUT hardcoding labels
+    fixed_hue_order = None
+    if hue_col:
+        fixed_hue_order = sorted(df[hue_col].dropna().unique().tolist())
 
     for i in range(0, len(group_cols), plots_per_fig):
         batch = group_cols[i:i + plots_per_fig]
@@ -333,8 +335,7 @@ def plot_swarm_grid(df, value_cols, group_col='Economic_status', hue_col=None,
             axes = axes.flatten()
 
         for ax, grp in zip(axes, batch):
-            # FIX: Define group order for X axis logic
-            group_order = sorted(df[grp].unique().tolist())
+            group_order = sorted(df[grp].dropna().unique().tolist())
 
             sns.swarmplot(
                 data=df,
@@ -342,7 +343,7 @@ def plot_swarm_grid(df, value_cols, group_col='Economic_status', hue_col=None,
                 y=y_col,
                 hue=hue_col,
                 order=group_order,
-                hue_order=fixed_hue_order, # Locked order
+                hue_order=fixed_hue_order,
                 dodge=dodge if hue_col else False,
                 palette=hue_palette if hue_col else None,
                 color=color if hue_col is None else None,
@@ -360,6 +361,7 @@ def plot_swarm_grid(df, value_cols, group_col='Economic_status', hue_col=None,
         plt.tight_layout()
         plt.show()
 
+
 #---Function: plot_violin_grid---
 def plot_violin_grid(df, value_cols, group_col='Economic_status', hue_col=None,
                       n_rows=2, n_cols=2, palette=BIVARIATE_PALETTE, dodge=True,
@@ -376,8 +378,10 @@ def plot_violin_grid(df, value_cols, group_col='Economic_status', hue_col=None,
 
     plots_per_fig = n_rows * n_cols
 
-    # FIX: Define hue order ONCE for the entire function to lock colors
-    fixed_hue_order = sorted(df[hue_col].unique().tolist()) if hue_col else None
+    # FIX: lock hue order WITHOUT hardcoding labels
+    fixed_hue_order = None
+    if hue_col:
+        fixed_hue_order = sorted(df[hue_col].dropna().unique().tolist())
 
     for i in range(0, len(group_cols), plots_per_fig):
         batch = group_cols[i:i + plots_per_fig]
@@ -396,8 +400,7 @@ def plot_violin_grid(df, value_cols, group_col='Economic_status', hue_col=None,
             axes = axes.flatten()
 
         for ax, grp in zip(axes, batch):
-            # FIX: Define group order for X axis logic
-            group_order = sorted(df[grp].unique().tolist())
+            group_order = sorted(df[grp].dropna().unique().tolist())
 
             sns.violinplot(
                 data=df,
@@ -405,7 +408,7 @@ def plot_violin_grid(df, value_cols, group_col='Economic_status', hue_col=None,
                 y=y_col,
                 hue=hue_col,
                 order=group_order,
-                hue_order=fixed_hue_order, # Locked order
+                hue_order=fixed_hue_order,
                 dodge=dodge if hue_col else False,
                 palette=palette if hue_col else None,
                 color=UNIFORM_BLUE if hue_col is None else None,
