@@ -200,24 +200,22 @@ def plot_faceted_countplot(df, x_col, hue_col, facet_col,
                            figsize_factor=(4, 4)):
     """
     Plots a faceted countplot using Seaborn catplot.
-    Enforces categorical ordering and explicit color mapping.
+    Handles axis label spacing to prevent overlap between rows.
     """
     # Define categorical orders
     x_order = sorted(df[x_col].unique().tolist())
     facet_order = sorted(df[facet_col].unique().tolist())
     
-    # Define hue order and palette
+    # Define hue order and palette mapping
     if hue_col:
         if hue_order is None:
             hue_order = sorted(df[hue_col].unique().tolist())
             
         if palette is None:
-            # Hardcoded check for GENDER_PALETTE to ensure style consistency
             try:
                 from style import GENDER_PALETTE
                 current_palette = GENDER_PALETTE
             except ImportError:
-                # Fallback to BIVARIATE_PALETTE if GENDER_PALETTE is missing
                 current_palette = ["#1f77b4", "#FF6F61"] 
         else:
             current_palette = palette
@@ -226,7 +224,7 @@ def plot_faceted_countplot(df, x_col, hue_col, facet_col,
         hue_order = None
 
     # Initialize FacetGrid
-    # sharex=False ensures labels are visible on all subplots
+    # sharex=False allows labels on every axis
     g = sns.catplot(
         data=df,
         kind="count",
@@ -240,20 +238,26 @@ def plot_faceted_countplot(df, x_col, hue_col, facet_col,
         palette=current_palette,
         height=figsize_factor[1],
         aspect=figsize_factor[0]/figsize_factor[1],
-        sharex=False 
+        sharex=False
     )
 
-    # Apply generic styling
+    # Generic labels and titles
     g.set_axis_labels(x_col, "Count")
     g.set_titles(f"{facet_col}: {{col_name}}", fontweight='bold')
     
-    plt.subplots_adjust(top=0.88)
+    # Adjust horizontal and vertical spacing between subplots
+    # hspace adds room for rotated x-labels between rows
+    g.fig.subplots_adjust(top=0.88, hspace=0.4, wspace=0.2)
+    
     g.fig.suptitle(f'Faceted Countplot: {x_col} by {hue_col} per {facet_col}', 
                    fontsize=14, fontweight='bold')
 
-    # Apply formatting and ensure visibility
+    # Formatting axes and forcing labels
     for ax in g.axes.flat:
         ax.tick_params(axis='x', labelbottom=True, rotation=45)
         ax.grid(axis='y', linestyle='--', alpha=0.5)
+        # Ensure x-axis labels are aligned to the right for better fit
+        for label in ax.get_xticklabels():
+            label.set_horizontalalignment('right')
 
     plt.show()
