@@ -193,3 +193,54 @@ def plot_stacked_grid(df, dependent_var, group_vars, n_rows=2, n_cols=2):
         fig.legend(handles, labels, title=dependent_var, bbox_to_anchor=(1.01, 0.9), loc='upper left')
         plt.tight_layout()
         plt.show()
+
+#---Function: plot_faceted_countplot---
+def plot_faceted_countplot(df, x_col, hue_col, facet_col, 
+                           n_cols=3, palette=BIVARIATE_PALETTE, 
+                           figsize_factor=(4, 4)):
+    """
+    Plots a faceted countplot (FacetGrid) for multivariate categorical analysis.
+    Ensures consistent ordering for X-axis, Hue (Gender), and Facets (Age Groups).
+    """
+    # 1. On définit les ordres de manière générique et triée
+    x_order = sorted(df[x_col].unique().tolist())
+    hue_order = sorted(df[hue_col].unique().tolist()) if hue_col else None
+    facet_order = sorted(df[facet_col].unique().tolist())
+
+    # 2. Utilisation de catplot (FacetGrid interne)
+    # On gère le NameError pour la palette si elle n'est pas définie globalement
+    try:
+        current_palette = palette
+    except NameError:
+        current_palette = 'husl'
+
+    g = sns.catplot(
+        data=df,
+        kind="count",
+        x=x_col,
+        hue=hue_col,
+        col=facet_col,
+        col_wrap=n_cols,
+        order=x_order,
+        hue_order=hue_order,
+        col_order=facet_order,
+        palette=current_palette,
+        height=figsize_factor[1],
+        aspect=figsize_factor[0]/figsize_factor[1]
+    )
+
+    # 3. Cosmétique et titres (nomenclature identique à tes autres fonctions)
+    g.set_axis_labels(x_col, "Count")
+    g.set_titles(f"{facet_col}: {{col_name}}", fontweight='bold')
+    
+    # Ajustement du titre principal
+    plt.subplots_adjust(top=0.88)
+    g.fig.suptitle(f'Multivariate Analysis: {x_col} by {hue_col} across {facet_col}', 
+                   fontsize=14, fontweight='bold')
+
+    # Rotation des labels pour chaque sous-graphique
+    for ax in g.axes.flat:
+        ax.tick_params(axis='x', rotation=45)
+        ax.grid(axis='y', linestyle='--', alpha=0.5)
+
+    plt.show()
