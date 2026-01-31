@@ -14,7 +14,7 @@ def get_counts(series, ascending_numeric=True):
     - Numeric series are sorted ascending by value
     - Non-numeric series are sorted ascending by frequency
     """
-    if pd.api.types.is_numeric_dtype(series):
+    if pd.api.types.is_numeric_dtype(series) or isinstance(series.dtype, pd.CategoricalDtype):
         return series.value_counts().sort_index(ascending=ascending_numeric)
     else:
         return series.value_counts().sort_values(ascending=True)
