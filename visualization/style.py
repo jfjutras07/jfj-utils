@@ -10,26 +10,50 @@ Professional BI standards for high data-ink ratio.
 # Core colors (HEX)
 # ======================
 # A professional, corporate blue
-UNIFORM_BLUE = "#1f77b4"  
+UNIFORM_BLUE = "#1f77b4"
+
 # A soft, non-aggressive coral for contrast
-PALE_PINK = "#FF6F61"     
+PALE_PINK = "#FF6F61"
+
 # Dark grey for text instead of pure black (reduces eye strain)
-GREY_DARK = "#2C3E50"     
+GREY_DARK = "#2C3E50"
+
 # Light grey for grids and secondary elements
-GREY_LIGHT = "#BDC3C7"    
+GREY_LIGHT = "#BDC3C7"
+
 WHITE = "#FFFFFF"
+
+# ======================
+# Semantic color mapping
+# ======================
+"""
+Explicit semantic mappings to guarantee consistency across all plots.
+Never rely on positional palettes for categorical variables.
+"""
+
+# Binary gender palette (locked mapping)
+GENDER_PALETTE = {
+    "Male": UNIFORM_BLUE,
+    "Female": PALE_PINK
+}
+
+# Generic binary palette (order enforced by hue_order in plots)
+BIVARIATE_PALETTE = [UNIFORM_BLUE, PALE_PINK]
 
 # ======================
 # Palettes & Colormaps
 # ======================
-# Qualitative: for distinct categories
-BIVARIATE_PALETTE = [UNIFORM_BLUE, PALE_PINK]
 # Sequential: for magnitudes (heatmaps, density)
 SEQUENTIAL_CMAP = sns.light_palette(UNIFORM_BLUE, as_cmap=True)
+
 # Diverging: for correlations or growth/decline
-DIVERGING_CMAP = "RdBu_r" 
-# Choropleth Map
-SEQUENTIAL_PLOTLY_SCALE = [[0, "#e3f2fd"], [1, "#1f77b4"]] # Light to Uniform Blue
+DIVERGING_CMAP = "RdBu_r"
+
+# Choropleth Map (Plotly)
+SEQUENTIAL_PLOTLY_SCALE = [
+    [0, "#e3f2fd"],
+    [1, UNIFORM_BLUE]
+]
 
 # ======================
 # BI Standards & Defaults
@@ -37,8 +61,8 @@ SEQUENTIAL_PLOTLY_SCALE = [[0, "#e3f2fd"], [1, "#1f77b4"]] # Light to Uniform Bl
 DEFAULT_FIGSIZE = (10, 6)
 DEFAULT_ALPHA = 0.85
 
-# Configuration dictionary for Matplotlib/Seaborn
-# This ensures consistency even if Seaborn defaults change
+# Configuration dictionary for Matplotlib / Seaborn
+# Guarantees stability even if library defaults change
 BI_RC_PARAMS = {
     "axes.facecolor": WHITE,
     "axes.edgecolor": GREY_LIGHT,
@@ -58,10 +82,13 @@ BI_RC_PARAMS = {
     "figure.dpi": 100
 }
 
+# ======================
+# Style application
+# ======================
 def apply_bi_style():
     """
     Apply the BI expert style to the global matplotlib environment.
-    Run this once at the start of your notebook or script.
+    Run once at the start of a notebook or script.
     """
     plt.rcParams.update(BI_RC_PARAMS)
     sns.set_palette(BIVARIATE_PALETTE)
