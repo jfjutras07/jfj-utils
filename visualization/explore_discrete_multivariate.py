@@ -196,24 +196,37 @@ def plot_stacked_grid(df, dependent_var, group_vars, n_rows=2, n_cols=2):
 
 #---Function: plot_faceted_countplot---
 def plot_faceted_countplot(df, x_col, hue_col, facet_col, 
-                           n_cols=3, palette=BIVARIATE_PALETTE, 
+                           n_cols=3, palette=None, hue_order=None,
                            figsize_factor=(4, 4)):
     """
-    Plots a faceted countplot (FacetGrid) for multivariate categorical analysis.
-    Ensures consistent ordering for X-axis, Hue (Gender), and Facets (Age Groups).
+    Plots a faceted countplot using Seaborn catplot.
+    Categorical ordering is enforced for x-axis, hue, and facets.
     """
-    # 1. On définit les ordres de manière générique et triée
+    # Define categorical orders based on data
     x_order = sorted(df[x_col].unique().tolist())
-    hue_order = sorted(df[hue_col].unique().tolist()) if hue_col else None
     facet_order = sorted(df[facet_col].unique().tolist())
+    
+    # Handle hue_order and palette mapping logic
+    if hue_col:
+        # If hue_order isn't provided, use natural sorted order
+        if hue_order is None:
+            hue_order = sorted(df[hue_col].unique().tolist())
+        
+        # Use provided palette or attempt to fetch GENDER_PALETTE/BIVARIATE_PALETTE
+        if palette is None:
+            # Check for GENDER_PALETTE in globals (from your style.py)
+            style_palette = globals().get('GENDER_PALETTE')
+            if style_palette and all(h in style_palette for h in hue_order):
+                current_palette = style_palette
+            else:
+                current_palette = globals().get('BIVARIATE_PALETTE', 'husl')
+        else:
+            current_palette = palette
+    else:
+        current_palette = None
+        hue_order = None
 
-    # 2. Utilisation de catplot (FacetGrid interne)
-    # On gère le NameError pour la palette si elle n'est pas définie globalement
-    try:
-        current_palette = palette
-    except NameError:
-        current_palette = 'husl'
-
+    # Initialize FacetGrid via catplot
     g = sns.catplot(
         data=df,
         kind="count",
@@ -229,16 +242,15 @@ def plot_faceted_countplot(df, x_col, hue_col, facet_col,
         aspect=figsize_factor[0]/figsize_factor[1]
     )
 
-    # 3. Cosmétique et titres (nomenclature identique à tes autres fonctions)
+    # Apply styling and titles
     g.set_axis_labels(x_col, "Count")
     g.set_titles(f"{facet_col}: {{col_name}}", fontweight='bold')
     
-    # Ajustement du titre principal
     plt.subplots_adjust(top=0.88)
-    g.fig.suptitle(f'Multivariate Analysis: {x_col} by {hue_col} across {facet_col}', 
+    g.fig.suptitle(f'Faceted Countplot: {x_col} by {hue_col} per {facet_col}', 
                    fontsize=14, fontweight='bold')
 
-    # Rotation des labels pour chaque sous-graphique
+    # Formatting axes
     for ax in g.axes.flat:
         ax.tick_params(axis='x', rotation=45)
         ax.grid(axis='y', linestyle='--', alpha=0.5)
