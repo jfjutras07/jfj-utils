@@ -200,33 +200,33 @@ def plot_faceted_countplot(df, x_col, hue_col, facet_col,
                            figsize_factor=(4, 4)):
     """
     Plots a faceted countplot using Seaborn catplot.
-    Categorical ordering is enforced for x-axis, hue, and facets.
+    Enforces categorical ordering and explicit color mapping.
     """
-    # Define categorical orders based on data
+    # Define categorical orders
     x_order = sorted(df[x_col].unique().tolist())
     facet_order = sorted(df[facet_col].unique().tolist())
     
-    # Handle hue_order and palette mapping logic
+    # Define hue order and palette
     if hue_col:
-        # If hue_order isn't provided, use natural sorted order
         if hue_order is None:
             hue_order = sorted(df[hue_col].unique().tolist())
-        
-        # Use provided palette or attempt to fetch GENDER_PALETTE/BIVARIATE_PALETTE
+            
         if palette is None:
-            # Check for GENDER_PALETTE in globals (from your style.py)
-            style_palette = globals().get('GENDER_PALETTE')
-            if style_palette and all(h in style_palette for h in hue_order):
-                current_palette = style_palette
-            else:
-                current_palette = globals().get('BIVARIATE_PALETTE', 'husl')
+            # Hardcoded check for GENDER_PALETTE to ensure style consistency
+            try:
+                from style import GENDER_PALETTE
+                current_palette = GENDER_PALETTE
+            except ImportError:
+                # Fallback to BIVARIATE_PALETTE if GENDER_PALETTE is missing
+                current_palette = ["#1f77b4", "#FF6F61"] 
         else:
             current_palette = palette
     else:
         current_palette = None
         hue_order = None
 
-    # Initialize FacetGrid via catplot
+    # Initialize FacetGrid
+    # sharex=False ensures labels are visible on all subplots
     g = sns.catplot(
         data=df,
         kind="count",
@@ -239,10 +239,11 @@ def plot_faceted_countplot(df, x_col, hue_col, facet_col,
         col_order=facet_order,
         palette=current_palette,
         height=figsize_factor[1],
-        aspect=figsize_factor[0]/figsize_factor[1]
+        aspect=figsize_factor[0]/figsize_factor[1],
+        sharex=False 
     )
 
-    # Apply styling and titles
+    # Apply generic styling
     g.set_axis_labels(x_col, "Count")
     g.set_titles(f"{facet_col}: {{col_name}}", fontweight='bold')
     
@@ -250,9 +251,9 @@ def plot_faceted_countplot(df, x_col, hue_col, facet_col,
     g.fig.suptitle(f'Faceted Countplot: {x_col} by {hue_col} per {facet_col}', 
                    fontsize=14, fontweight='bold')
 
-    # Formatting axes
+    # Apply formatting and ensure visibility
     for ax in g.axes.flat:
-        ax.tick_params(axis='x', rotation=45)
+        ax.tick_params(axis='x', labelbottom=True, rotation=45)
         ax.grid(axis='y', linestyle='--', alpha=0.5)
 
     plt.show()
