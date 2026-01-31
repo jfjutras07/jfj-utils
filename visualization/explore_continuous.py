@@ -305,6 +305,7 @@ def plot_swarm_grid(df, value_cols, group_col='Economic_status', hue_col=None,
                     dodge=True, figsize_single=(10,6), figsize_grid=(6,5)):
     """
     Plots swarm plots for one or multiple grouping variables, optionally with hue.
+    Ensures semantic color mapping for binary variables like Gender.
     """
     if isinstance(group_col, str):
         group_cols = [group_col]
@@ -314,10 +315,14 @@ def plot_swarm_grid(df, value_cols, group_col='Economic_status', hue_col=None,
     y_col = value_cols[0]
     plots_per_fig = n_rows * n_cols
 
-    # FIX: lock hue order WITHOUT hardcoding labels
-    fixed_hue_order = None
-    if hue_col:
-        fixed_hue_order = sorted(df[hue_col].dropna().unique().tolist())
+    # Prepare palette
+    if hue_col == "Gender":
+        from visualization.style import GENDER_PALETTE
+        palette_to_use = GENDER_PALETTE
+        hue_order = list(GENDER_PALETTE.keys())
+    else:
+        palette_to_use = hue_palette if hue_col else None
+        hue_order = sorted(df[hue_col].dropna().unique().tolist()) if hue_col else None
 
     for i in range(0, len(group_cols), plots_per_fig):
         batch = group_cols[i:i + plots_per_fig]
@@ -329,10 +334,7 @@ def plot_swarm_grid(df, value_cols, group_col='Economic_status', hue_col=None,
             sharey=True
         )
 
-        if not isinstance(axes, (list, np.ndarray)):
-            axes = [axes]
-        else:
-            axes = axes.flatten()
+        axes = np.atleast_1d(axes).flatten()
 
         for ax, grp in zip(axes, batch):
             group_order = sorted(df[grp].dropna().unique().tolist())
@@ -343,9 +345,9 @@ def plot_swarm_grid(df, value_cols, group_col='Economic_status', hue_col=None,
                 y=y_col,
                 hue=hue_col,
                 order=group_order,
-                hue_order=fixed_hue_order,
+                hue_order=hue_order,
                 dodge=dodge if hue_col else False,
-                palette=hue_palette if hue_col else None,
+                palette=palette_to_use,
                 color=color if hue_col is None else None,
                 ax=ax
             )
@@ -361,31 +363,33 @@ def plot_swarm_grid(df, value_cols, group_col='Economic_status', hue_col=None,
         plt.tight_layout()
         plt.show()
 
-
 #---Function: plot_violin_grid---
 def plot_violin_grid(df, value_cols, group_col='Economic_status', hue_col=None,
-                      n_rows=2, n_cols=2, palette=BIVARIATE_PALETTE, dodge=True,
-                      figsize_single=(10,6), figsize_grid=(6,5)):
+                     n_rows=2, n_cols=2, palette=BIVARIATE_PALETTE, dodge=True,
+                     figsize_single=(10,6), figsize_grid=(6,5)):
     """
     Plots violin plots for one or multiple grouping variables, optionally with hue.
+    Ensures semantic color mapping for binary variables like Gender.
     """
-    y_col = value_cols[0]
-
     if isinstance(group_col, str):
         group_cols = [group_col]
     else:
         group_cols = group_col
 
+    y_col = value_cols[0]
     plots_per_fig = n_rows * n_cols
 
-    # FIX: lock hue order WITHOUT hardcoding labels
-    fixed_hue_order = None
-    if hue_col:
-        fixed_hue_order = sorted(df[hue_col].dropna().unique().tolist())
+    # Prepare palette
+    if hue_col == "Gender":
+        from visualization.style import GENDER_PALETTE
+        palette_to_use = GENDER_PALETTE
+        hue_order = list(GENDER_PALETTE.keys())
+    else:
+        palette_to_use = palette if hue_col else None
+        hue_order = sorted(df[hue_col].dropna().unique().tolist()) if hue_col else None
 
     for i in range(0, len(group_cols), plots_per_fig):
         batch = group_cols[i:i + plots_per_fig]
-
         fig_size = figsize_single if len(batch) == 1 else (figsize_grid[0]*n_cols, figsize_grid[1]*n_rows)
         fig, axes = plt.subplots(
             nrows=1 if len(batch) == 1 else n_rows,
@@ -394,10 +398,7 @@ def plot_violin_grid(df, value_cols, group_col='Economic_status', hue_col=None,
             sharey=True
         )
 
-        if not isinstance(axes, (list, np.ndarray)):
-            axes = [axes]
-        else:
-            axes = axes.flatten()
+        axes = np.atleast_1d(axes).flatten()
 
         for ax, grp in zip(axes, batch):
             group_order = sorted(df[grp].dropna().unique().tolist())
@@ -408,9 +409,9 @@ def plot_violin_grid(df, value_cols, group_col='Economic_status', hue_col=None,
                 y=y_col,
                 hue=hue_col,
                 order=group_order,
-                hue_order=fixed_hue_order,
+                hue_order=hue_order,
                 dodge=dodge if hue_col else False,
-                palette=palette if hue_col else None,
+                palette=palette_to_use,
                 color=UNIFORM_BLUE if hue_col is None else None,
                 inner='quartile',
                 ax=ax
