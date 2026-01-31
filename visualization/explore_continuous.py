@@ -330,9 +330,9 @@ def plot_swarm_grid(df, value_cols, group_col='Economic_status', hue_col=None,
             axes = axes.flatten()
 
         for ax, grp in zip(axes, batch):
-            # Ensuring consistent order to prevent Male/Female inversion
-            group_order = df[grp].unique().tolist()
-            hue_order = df[hue_col].unique().tolist() if hue_col else None
+            # Sort categories to ensure consistent X-axis and Hue alignment
+            group_order = sorted(df[grp].unique().tolist())
+            hue_order = sorted(df[hue_col].unique().tolist()) if hue_col else None
 
             sns.swarmplot(
                 data=df,
@@ -391,9 +391,9 @@ def plot_violin_grid(df, value_cols, group_col='Economic_status', hue_col=None,
             axes = axes.flatten()
 
         for ax, grp in zip(axes, batch):
-            # Ensuring consistent order to prevent Male/Female inversion
-            group_order = df[grp].unique().tolist()
-            hue_order = df[hue_col].unique().tolist() if hue_col else None
+            # Sort categories to ensure consistent X-axis and Hue alignment
+            group_order = sorted(df[grp].unique().tolist())
+            hue_order = sorted(df[hue_col].unique().tolist()) if hue_col else None
 
             sns.violinplot(
                 data=df,
