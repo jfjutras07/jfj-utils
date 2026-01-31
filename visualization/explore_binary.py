@@ -4,7 +4,14 @@ import math
 import pandas as pd
 
 # Importing centralized style constants
-from .style import UNIFORM_BLUE, PALE_PINK, WHITE, GREY_DARK, DEFAULT_FIGSIZE
+from .style import (
+    UNIFORM_BLUE,
+    PALE_PINK,
+    WHITE,
+    GREY_DARK,
+    DEFAULT_FIGSIZE,
+    GENDER_PALETTE
+)
 
 warnings.filterwarnings("ignore")
 
@@ -20,26 +27,24 @@ def plot_binary_distribution(df, binary_cols, figsize=None):
     # Keep only existing columns to prevent errors
     binary_cols = [col for col in binary_cols if col in df.columns]
     n_cols = len(binary_cols)
-    
+
     if n_cols == 0:
         print("No valid binary columns provided.")
         return
 
     # Calculate grid dimensions
     n_rows = math.ceil(n_cols / 2)
-    plot_figsize = figsize or (14, 4 * n_rows) # Responsive height based on rows
-    
+    plot_figsize = figsize or (14, 4 * n_rows)
+
     fig, axes = plt.subplots(n_rows, 4, figsize=plot_figsize)
 
-    # Ensure axes is always a 2D array for consistent indexing
+    # Ensure axes is always a 2D array
     if n_rows == 1:
         axes = axes.reshape(1, -1)
 
-    colors = [UNIFORM_BLUE, PALE_PINK]
-
     for i, col in enumerate(binary_cols):
         row = i // 2
-        base_col = (i % 2) * 2  # Indexing: 0 for left pair, 2 for right pair
+        base_col = (i % 2) * 2
 
         # Data preparation
         series = df[col].dropna()
@@ -48,7 +53,12 @@ def plot_binary_distribution(df, binary_cols, figsize=None):
         sizes = counts.values
         total = sizes.sum()
 
-        # Shared styling for pie wedges
+        # Semantic color mapping (prevents inversion)
+        if col.lower() == "gender":
+            colors = [GENDER_PALETTE[label] for label in labels]
+        else:
+            colors = [UNIFORM_BLUE, PALE_PINK]
+
         wedge_style = {'edgecolor': WHITE, 'linewidth': 1.5}
 
         # Proportion plot
@@ -67,7 +77,7 @@ def plot_binary_distribution(df, binary_cols, figsize=None):
         axes[row, base_col + 1].pie(
             sizes,
             labels=labels,
-            autopct=lambda p: f"{int(round(p/100*total))}",
+            autopct=lambda p: f"{int(round(p / 100 * total))}",
             startangle=140,
             colors=colors,
             wedgeprops=wedge_style,
@@ -75,7 +85,7 @@ def plot_binary_distribution(df, binary_cols, figsize=None):
         )
         axes[row, base_col + 1].set_title(f"{col}\nCounts", color=GREY_DARK, pad=10)
 
-    # Turn off unused axes if the number of variables is odd
+    # Turn off unused axes
     for j in range(n_cols * 2, n_rows * 4):
         axes.flatten()[j].axis("off")
 
