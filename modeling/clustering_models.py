@@ -94,7 +94,7 @@ def compare_clustering_models(df, predictors, k=4, optimize=False):
     print(f"Starting Clustering Comparison | Predictors: {len(predictors)}")
     print("-" * 45)
 
-    X = StandardScaler().fit_transform(df[predictors])
+    X = df[predictors]
     # Execution using default parameters for comparison
     models = {
         'Agglomerative': agglomerative_clustering(df, predictors, k=k, optimize=optimize, for_compare=True),
