@@ -1,16 +1,16 @@
 ## jfj-utils
 
-An evolving collection of Python utilities designed to support analytics workflows. This library will gradually expand to include tools for data ingestion, cleaning, preprocessing, exploratory data analysis (EDA), visualization, feature engineering, modeling helpers, optimization, and general-purpose utilities.
+A modular Python framework for evidence-based decision intelligence, supporting data analytics, predictive modeling, explainable AI, and decision-oriented analytical workflows.
 
 ## Features and Goals
 
-Reusable helper functions for analytics and data science projects
+- Reusable analytical components for data science and decision intelligence workflows
 
-A clean, modular project structure that can scale over time
+- A clean, modular architecture designed to scale from exploratory analysis to production-oriented applications
 
-Easy integration into notebooks and production code
+- Easy integration into notebooks, research pipelines, and analytical systems
 
-Clear separation by functional area
+- Clear separation between data preparation, exploratory analysis, modeling, evaluation, explainability, and decision-support components
 
 ## Project Structure
 ```
