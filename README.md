@@ -249,8 +249,7 @@ Active development — modules will be progressively added and refined.
 ### Optimization : Tools for mathematical optimization, simulation, and uncertainty analysis.
 
 *monte_carlo_analysis.py*
-- `monte_carlo_portfolio`
-- `monte_carlo_portfolio_tracking`
+- `monte_carlo_simulation`
 
 ### Visualization: High-level plotting utilities for exploring data and communicating analytical results.
 
