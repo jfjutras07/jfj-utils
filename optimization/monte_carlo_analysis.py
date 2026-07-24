@@ -54,5 +54,3 @@ def monte_carlo_simulation(model_function,
     print(f"Minimum               : {simulation_df['Result'].min():.4f}")
     print(f"Maximum               : {simulation_df['Result'].max():.4f}")
     print("-" * 40)
-
-    return simulation_df
