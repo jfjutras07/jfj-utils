@@ -38,7 +38,7 @@ Active development — modules will be progressively added and refined.
 
 ## API Overview
 
-### AI_agents: Tools for AI-assisted workflows, analytical automation, reasoning support, and decision processes.
+### AI_agents: Tools for AI-assisted workflows, analytical automation, and reasoning support.
 
 ### Data_preprocessing: Functions for cleaning, transforming, and preparing datasets for analysis and modeling.
 
@@ -89,9 +89,9 @@ Active development — modules will be progressively added and refined.
 - `robust_scaler`
 - `standard_scaler`
 
-### Decision: Tools for evidence-based choices, multi-criteria analysis, and decision support.
+### Decision: Tools for evaluating alternatives through multi-criteria analysis and decision support.
 
-### EDA: Exploratory data analysis tools for understanding distributions, relationships, and data structure.
+### EDA: Tools for exploring data distributions, relationships, and underlying patterns.
 
 *best_transformation.py*
 - `best_transformation`
@@ -176,14 +176,14 @@ Active development — modules will be progressively added and refined.
 *topic_sentiment_analysis.py*
 - `topic_sentiment_analysis`
 
-### Ingestion: Utilities for loading, validating, and structuring raw data from files and folders.
+### Ingestion: Utilities for loading, validating, and structuring raw data.
 
 *readers.py*
 - `check_data`
 - `read_folder`
 - `read_table`
 
-### Modeling: Helpers for fitting, evaluating, and comparing statistical and machine learning models.
+### Modeling: Tools for building, comparing, and interpreting statistical and machine learning models.
 
 *advanced_models.py*
 - `bayesian_classification`
@@ -246,7 +246,7 @@ Active development — modules will be progressively added and refined.
 - `stacking_classification_ensemble`
 - `stacking_regression_ensemble`
   
-### Optimization : Prescriptive analytics tools for simulation, decision support, and optimization.
+### Optimization : Prescriptive analytics tools for simulation, uncertainty analysis, and resource allocation.
 
 *monte_carlo_analysis.py*
 - `monte_carlo_portfolio`
@@ -314,7 +314,7 @@ Active development — modules will be progressively added and refined.
 *text_exploration.py*
 - `text_exploration_basic`
 
-### Utils: Shared low-level utilities used across the library.
+### Utils: Shared utilities supporting library-wide functionality.
 
 *utils.py*
 - Class: `generic_transformer`
