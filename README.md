@@ -38,7 +38,7 @@ Active development — modules will be progressively added and refined.
 
 ## API Overview
 
-### AI_agents: Tools for building AI-assisted analytical workflows, automating reasoning tasks, orchestrating analytical processes, and supporting human decision-making.
+### AI_agents: Tools for AI-assisted workflows, analytical automation, reasoning support, and decision processes.
 
 ### Data_preprocessing: Functions for cleaning, transforming, and preparing datasets for analysis and modeling.
 
@@ -89,7 +89,7 @@ Active development — modules will be progressively added and refined.
 - `robust_scaler`
 - `standard_scaler`
 
-### Decision: Tools for supporting evidence-based choices through multi-criteria analysis, preference modeling, trade-off evaluation, and decision-support methodologies.
+### Decision: Tools for supporting evidence-based choices through multi-criteria analysis, trade-off evaluation, and decision-support methods.
 
 ### EDA: Exploratory data analysis tools for understanding distributions, relationships, and data structure.
 
