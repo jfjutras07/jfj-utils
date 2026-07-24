@@ -91,6 +91,16 @@ Active development — modules will be progressively added and refined.
 
 ### Decision: Tools for evaluating alternatives through multi-criteria analysis and decision support.
 
+*mcda.py*
+- `ahp_weights`
+- `topsis`
+   
+*scoring.py*
+- `weighted_score`
+
+*sensitivity_analysis.py*
+- `decision_sensitivity_analysis`
+
 ### EDA: Tools for exploring data distributions, relationships, and underlying patterns.
 
 *best_transformation.py*
