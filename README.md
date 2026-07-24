@@ -246,7 +246,7 @@ Active development — modules will be progressively added and refined.
 - `stacking_classification_ensemble`
 - `stacking_regression_ensemble`
   
-### Optimization : Prescriptive analytics tools for simulation, uncertainty analysis, and resource allocation.
+### Optimization : Tools for mathematical optimization, simulation, and uncertainty analysis.
 
 *monte_carlo_analysis.py*
 - `monte_carlo_portfolio`
