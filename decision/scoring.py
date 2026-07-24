@@ -1,7 +1,6 @@
 import pandas as pd
 import numpy as np
 
-
 #--- Function : weighted_score ---
 def weighted_score(df, criteria_weights):
     """
