@@ -1,6 +1,6 @@
 ## jfj-utils
 
-A modular Python framework for evidence-based decision intelligence, supporting data analytics, predictive modeling, explainable AI, and prescriptive decision workflows.
+A modular Python library for evidence-based decision intelligence, supporting data analytics, predictive modeling, explainable AI, and prescriptive decision workflows.
 
 ## Features and Goals
 
