@@ -91,6 +91,9 @@ Active development — modules will be progressively added and refined.
 
 ### Decision: Tools for evaluating alternatives through multi-criteria analysis and decision support.
 
+*decision_diagnostics.py*
+- `decision_matrix_diagnostics`
+  
 *mcda.py*
 - `ahp_weights`
 - `topsis`
