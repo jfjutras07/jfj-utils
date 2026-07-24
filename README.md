@@ -89,7 +89,7 @@ Active development — modules will be progressively added and refined.
 - `robust_scaler`
 - `standard_scaler`
 
-### Decision: Tools for supporting evidence-based choices through multi-criteria analysis, trade-off evaluation, and decision-support methods.
+### Decision: Tools for evidence-based choices, multi-criteria analysis, and decision support.
 
 ### EDA: Exploratory data analysis tools for understanding distributions, relationships, and data structure.
 
