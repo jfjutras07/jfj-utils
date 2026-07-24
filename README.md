@@ -15,7 +15,9 @@ A modular Python framework for evidence-based decision intelligence, supporting 
 ## Project Structure
 ```
 jfj_utils/
+  AI_agents/
   data_preprocessing/
+  decision/
   eda/
   ingestion/
   modeling/
@@ -35,6 +37,8 @@ Each submodule is intended to contain small, focused utilities related to its th
 Active development — modules will be progressively added and refined.
 
 ## API Overview
+
+### AI_agents: Tools for building AI-assisted analytical workflows, automating reasoning tasks, orchestrating analytical processes, and supporting human decision-making.
 
 ### Data_preprocessing: Functions for cleaning, transforming, and preparing datasets for analysis and modeling.
 
@@ -84,6 +88,8 @@ Active development — modules will be progressively added and refined.
 - `minmax_scaler`
 - `robust_scaler`
 - `standard_scaler`
+
+### Decision: Tools for supporting evidence-based choices through multi-criteria analysis, preference modeling, trade-off evaluation, and decision-support methodologies.
 
 ### EDA: Exploratory data analysis tools for understanding distributions, relationships, and data structure.
 
