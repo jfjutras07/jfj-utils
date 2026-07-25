@@ -215,7 +215,8 @@ def games_howell_posthoc(df, column, group, p_adjust_method=None):
 #--- Function: kruskal_wallis_test ---
 def kruskal_wallis_test(df, column, group):
     """
-    Perform a Kruskal-Wallis H test to compare the distributions of three or more groups.
+    Perform a Kruskal-Wallis H test to compare the distributions of three or more groups,
+    and compute epsilon squared as an effect size measure.
 
     Example:
     --------
@@ -224,7 +225,7 @@ def kruskal_wallis_test(df, column, group):
         'score': [85, 90, 88, 92, 78, 80, 82, 75, 70],
         'class': ['A', 'A', 'A', 'B', 'B', 'B', 'C', 'C', 'C']
     })
-    stat, p_value = kruskal_wallis_test(data, column='score', group='class')
+    data = kruskal_wallis_test(data, column='score', group='class')
 
     Parameters:
     -----------
@@ -233,14 +234,15 @@ def kruskal_wallis_test(df, column, group):
     column : str
         Name of the numeric column to test.
     group : str
-        Name of the categorical grouping column.
+        Name of the categorical grouping variable.
 
     Returns:
     --------
-    stat : float
-        Computed Kruskal-Wallis H statistic.
-    p_value : float
-        Two-tailed p-value for the test.
+    result_dict : dict
+        Dictionary containing:
+        - 'H_statistic': Kruskal-Wallis H statistic
+        - 'p_value': p-value
+        - 'epsilon_squared': effect size measure
     """
     #Ensure column is numeric
     if not pd.api.types.is_numeric_dtype(df[column]):
@@ -255,12 +257,23 @@ def kruskal_wallis_test(df, column, group):
     #Perform Kruskal-Wallis test
     stat, p_value = stats.kruskal(*groups_data)
     
+    #Compute epsilon squared effect size
+    n = df[column].notna().sum()
+    k = len(groups_data)
+
+    epsilon_squared = (stat - k + 1) / (n - k)
+
     #Print results
     print(f"Kruskal-Wallis test for {column} by {group}")
     print(f"H-statistic = {stat:.4f}, p-value = {p_value:.4f}")
+    print(f"Epsilon squared = {epsilon_squared:.4f}")
     
-    return stat, p_value
-
+    return {
+        "H_statistic": stat,
+        "p_value": p_value,
+        "epsilon_squared": epsilon_squared
+    }
+    
 #--- Function mann_whitney_cliff ---
 def mann_whitney_cliff(
     df,
