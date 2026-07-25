@@ -122,6 +122,7 @@ Active development — modules will be progressively added and refined.
 - `logistic_regression`
 
 *date_formats.py*
+- `date_quality`
 - `detect_date_patterns`
 
 *describe_structure.py*
