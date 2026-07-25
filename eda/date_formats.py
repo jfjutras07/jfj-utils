@@ -36,3 +36,70 @@ def detect_date_patterns(df, date_cols):
         patterns_dict[col] = patterns_found
     
     return patterns_dict
+
+#--- Function : date_quality ---
+def date_quality(df, date_cols):
+    """
+    Diagnoses date columns by detecting format ambiguities,
+    invalid values, mixed date conventions, and conversion issues.
+
+    Parameters:
+    - df: pandas DataFrame
+    - date_cols: list of column names containing date strings
+
+    Returns:
+    - diagnostics: dictionary containing quality indicators for each date column
+    """
+
+    diagnostics = {}
+
+    for col in date_cols:
+
+        if col not in df.columns:
+            continue
+
+        values = df[col].dropna().astype(str)
+
+        day_first = 0
+        month_first = 0
+        ambiguous = 0
+        invalid = 0
+
+        for value in values:
+
+            parts = re.split(r"[/-]", value)
+
+            if len(parts) != 3:
+                invalid += 1
+                continue
+
+            try:
+                first = int(parts[0])
+                second = int(parts[1])
+
+                if first > 12:
+                    day_first += 1
+
+                elif second > 12:
+                    month_first += 1
+
+                else:
+                    ambiguous += 1
+
+            except ValueError:
+                invalid += 1
+
+        total = len(values)
+
+        diagnostics[col] = {
+            "total_values": total,
+            "day_first_dates": day_first,
+            "month_first_dates": month_first,
+            "ambiguous_dates": ambiguous,
+            "invalid_dates": invalid,
+            "mixed_format_detected": day_first > 0 and month_first > 0,
+            "missing_values": df[col].isna().sum(),
+            "missing_percentage": round(df[col].isna().mean() * 100, 2)
+        }
+
+    return diagnostics
