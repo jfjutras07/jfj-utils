@@ -117,17 +117,8 @@ def dunn_posthoc(df, column, group, p_adjust='bonferroni'):
 #--- Function: friedman_test ---
 def friedman_test(df, dv, subject, within):
     """
-    Perform a Friedman test for repeated measures on a dataset.
-
-    Example:
-    --------
-    # Compare stress levels of participants at three times: morning, afternoon, evening
-    data = pd.DataFrame({
-        'participant': [1, 1, 1, 2, 2, 2, 3, 3, 3],
-        'time': ['morning', 'afternoon', 'evening'] * 3,
-        'stress': [5, 6, 4, 7, 6, 5, 6, 5, 5]
-    })
-    stat, p_value = friedman_test(data, dv='stress', subject='participant', within='time')
+    Perform a Friedman test for repeated measures on a dataset,
+    and compute Kendall's W as an effect size measure.
 
     Parameters:
     -----------
@@ -138,15 +129,17 @@ def friedman_test(df, dv, subject, within):
     subject : str
         Column name identifying the subjects.
     within : str
-        Column name for the within-subject factor (repeated measure).
+        Column name for the within-subject factor.
 
     Returns:
     --------
-    stat : float
-        Computed Friedman statistic.
-    p_value : float
-        Two-tailed p-value for the test.
+    result_dict : dict
+        Dictionary containing:
+        - 'friedman_statistic': Friedman statistic
+        - 'p_value': p-value
+        - 'kendalls_w': effect size measure
     """
+
     #Ensure DV is numeric
     if not pd.api.types.is_numeric_dtype(df[dv]):
         raise ValueError(f"Dependent variable {dv} must be numeric.")
@@ -163,14 +156,27 @@ def friedman_test(df, dv, subject, within):
         raise ValueError("Missing values detected. Each subject must have all repeated measures.")
     
     #Perform Friedman test
-    stat, p_value = stats.friedmanchisquare(*[pivot_df[col] for col in pivot_df.columns])
-    
+    stat, p_value = stats.friedmanchisquare(
+        *[pivot_df[col] for col in pivot_df.columns]
+    )
+
+    #Compute Kendall's W
+    n = pivot_df.shape[0]
+    k = pivot_df.shape[1]
+
+    kendalls_w = stat / (n * (k - 1))
+
     #Print results
     print(f"Friedman test for {dv} by {within} within subjects {subject}")
     print(f"Friedman statistic = {stat:.4f}, p-value = {p_value:.4f}")
-    
-    return stat, p_value
+    print(f"Kendall's W = {kendalls_w:.4f}")
 
+    return {
+        "friedman_statistic": stat,
+        "p_value": p_value,
+        "kendalls_w": kendalls_w
+    }
+    
 # --- Function: games_howell_posthoc ---
 def games_howell_posthoc(df, column, group, p_adjust_method=None):
     """
@@ -387,33 +393,10 @@ def one_sample_wilcoxon(df, column, popmedian):
 #--- Function: paired_wilcoxon ---
 def paired_wilcoxon(df, column_before, column_after):
     """
-    Perform a paired Wilcoxon signed-rank test between two related measurements.
-
-    Example:
-    --------
-    # Compare patients' weight before and after a diet
-    data = pd.DataFrame({
-        'weight_before': [80, 75, 90, 85, 78],
-        'weight_after': [78, 74, 88, 83, 77]
-    })
-    stat, p_value = paired_wilcoxon(data, column_before='weight_before', column_after='weight_after')
-
-    Parameters:
-    -----------
-    df : pd.DataFrame
-        Dataset containing the two numeric columns to test.
-    column_before : str
-        Name of the first numeric column (e.g., before intervention).
-    column_after : str
-        Name of the second numeric column (e.g., after intervention).
-
-    Returns:
-    --------
-    stat : float
-        Computed Wilcoxon test statistic.
-    p_value : float
-        Two-tailed p-value for the test.
+    Perform a paired Wilcoxon signed-rank test between two related measurements,
+    and compute rank-biserial correlation as an effect size measure.
     """
+
     #Ensure columns are numeric
     if not pd.api.types.is_numeric_dtype(df[column_before]):
         raise ValueError(f"Column {column_before} must be numeric.")
@@ -421,53 +404,54 @@ def paired_wilcoxon(df, column_before, column_after):
         raise ValueError(f"Column {column_after} must be numeric.")
     
     #Drop NaN values and ensure same length
-    data_before = df[column_before].dropna()
-    data_after = df[column_after].dropna()
-    if len(data_before) != len(data_after):
-        raise ValueError("Columns must have the same number of observations after dropping NaNs.")
+    data = df[[column_before, column_after]].dropna()
+
+    if len(data) == 0:
+        raise ValueError("No valid observations after removing missing values.")
 
     #Perform Wilcoxon signed-rank test
-    stat, p_value = stats.wilcoxon(data_before, data_after)
-    
+    stat, p_value = stats.wilcoxon(
+        data[column_before],
+        data[column_after]
+    )
+
+    #Rank-biserial correlation
+    differences = data[column_after] - data[column_before]
+
+    positive = differences[differences > 0].sum()
+    negative = abs(differences[differences < 0].sum())
+
+    if (positive + negative) == 0:
+        rank_biserial = 0
+    else:
+        rank_biserial = (positive - negative) / (positive + negative)
+
     #Print results
     print(f"Paired Wilcoxon test between '{column_before}' and '{column_after}'")
     print(f"statistic = {stat:.4f}, p-value = {p_value:.4f}")
-    
-    return stat, p_value
+    print(f"Rank-biserial correlation = {rank_biserial:.4f}")
 
+    return {
+        "statistic": stat,
+        "p_value": p_value,
+        "rank_biserial_correlation": rank_biserial
+    }
+    
 #--- Function: permanova_test ---
 def permanova_test(df, features, group_col, method='euclidean', permutations=999):
     """
-    Perform a PERMANOVA test to compare group differences on multivariate data.
-
-    Example:
-    --------
-    # Compare multivariate species abundances across sites
-    data = pd.DataFrame({
-        'species1': [5, 3, 6, 7, 2, 4],
-        'species2': [7, 8, 5, 6, 4, 3],
-        'site': ['A', 'A', 'B', 'B', 'C', 'C']
-    })
-    result = permanova_test(data, features=['species1', 'species2'], group_col='site')
-
-    Parameters:
-    -----------
-    df : pd.DataFrame
-        Dataset containing multivariate features and grouping variable.
-    features : list of str
-        Names of columns with multivariate features.
-    group_col : str
-        Name of the categorical grouping column.
-    method : str, optional
-        Distance metric (default='euclidean').
-    permutations : int, optional
-        Number of permutations for significance testing (default=999).
+    Perform a PERMANOVA test to compare groups on multivariate data,
+    and compute R² as the explained variance.
 
     Returns:
     --------
-    result : skbio.stats.distance._base.PERMANOVAResults
-        PERMANOVA result object containing F-statistic and p-value.
+    result_dict : dict
+        Dictionary containing:
+        - 'F_statistic'
+        - 'p_value'
+        - 'r_squared'
     """
+
     #Ensure features are numeric
     for f in features:
         if not pd.api.types.is_numeric_dtype(df[f]):
@@ -477,17 +461,38 @@ def permanova_test(df, features, group_col, method='euclidean', permutations=999
     df[group_col] = df[group_col].astype('category')
     
     #Compute distance matrix
-    dist_matrix = squareform(pdist(df[features], metric=method))
-    dm = DistanceMatrix(dist_matrix, ids=df.index.astype(str))
+    dist_matrix = squareform(
+        pdist(df[features], metric=method)
+    )
+
+    dm = DistanceMatrix(
+        dist_matrix,
+        ids=df.index.astype(str)
+    )
     
     #Run PERMANOVA
-    result = permanova(dm, df[group_col], permutations=permutations)
-    
+    result = permanova(
+        dm,
+        df[group_col],
+        permutations=permutations
+    )
+
+    #Compute R²
+    r_squared = result["test statistic"] / (
+        result["test statistic"] + result["number of groups"] - 1
+    )
+
     #Print results
     print(f"PERMANOVA for features {features} by {group_col} using {method} distance")
-    print(f"F-statistic = {result['test statistic']:.4f}, p-value = {result['p-value']:.4f}")
-    
-    return result
+    print(f"F-statistic = {result['test statistic']:.4f}")
+    print(f"p-value = {result['p-value']:.4f}")
+    print(f"R² = {r_squared:.4f}")
+
+    return {
+        "F_statistic": result["test statistic"],
+        "p_value": result["p-value"],
+        "r_squared": r_squared
+    }
 
 #--- Placeholder: Quade test (R) ---
 def quade_test_placeholder():
