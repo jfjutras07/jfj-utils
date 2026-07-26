@@ -110,7 +110,7 @@ def plot_distribution_by_period(
     period_col,
     kind="box",
     facet_col=None,
-    figsize=(7, 8),
+    figsize=(10, 5),
     title=None
 ):
     """
