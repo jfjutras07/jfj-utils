@@ -103,8 +103,6 @@ def plot_acf_pacf(
     plt.tight_layout(rect=[0, 0, 1, 0.95])
     plt.show()
 
-    return fig
-
 #--- Function : plot_distribution_by_period ---
 def plot_distribution_by_period(
     df,
@@ -276,8 +274,6 @@ def plot_distribution_by_period(
 
     plt.tight_layout(rect=[0, 0, 1, 0.95])
     plt.show()
-
-    return fig
 
 #--- Function : plot_line_grid_over_time ---
 def plot_line_grid_over_time(df, value_cols, time_col='Time', group_col=None, 
