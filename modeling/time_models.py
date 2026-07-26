@@ -5,6 +5,7 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error
 from statsmodels.tsa.arima.model import ARIMA
 from statsmodels.tsa.statespace.sarimax import SARIMAX
 from prophet import Prophet
+from pmdarima import auto_arima
 
 #--- Function : arima_forecast ---
 def arima_forecast(
@@ -113,6 +114,138 @@ def arima_forecast(
         "metrics": metrics,
         "parameters": {
             "order": order
+        }
+    }
+
+#--- Function : auto_arima_forecast ---
+def auto_arima_forecast(
+    train_series,
+    test_series,
+    seasonal=True,
+    m=7,
+    information_criterion="aic",
+    max_p=5,
+    max_q=5,
+    max_P=2,
+    max_Q=2
+):
+    """
+    Generate forecasts using AutoARIMA.
+
+    Automatically identifies optimal ARIMA/SARIMA parameters
+    based on statistical criteria.
+
+    Parameters
+    ----------
+    train_series : pandas.Series
+        Historical training time series.
+
+    test_series : pandas.Series
+        Observed values used for evaluation.
+
+    seasonal : bool, default=True
+        Enable seasonal ARIMA search.
+
+    m : int, default=7
+        Seasonal period length.
+
+    information_criterion : str, default="aic"
+        Model selection criterion.
+
+    max_p : int
+        Maximum autoregressive order.
+
+    max_q : int
+        Maximum moving average order.
+
+    max_P : int
+        Maximum seasonal autoregressive order.
+
+    max_Q : int
+        Maximum seasonal moving average order.
+
+    Returns
+    -------
+    dict
+        Fitted model, forecast, metrics,
+        and selected parameters.
+    """
+
+    # Validation
+    if not isinstance(train_series, pd.Series):
+        raise TypeError(
+            "train_series must be a pandas Series."
+        )
+
+    if not isinstance(test_series, pd.Series):
+        raise TypeError(
+            "test_series must be a pandas Series."
+        )
+
+    if train_series.empty:
+        raise ValueError(
+            "train_series cannot be empty."
+        )
+
+    if test_series.empty:
+        raise ValueError(
+            "test_series cannot be empty."
+        )
+
+    # Clean data
+    train_series = train_series.dropna()
+    test_series = test_series.dropna()
+
+    if len(train_series) < 20:
+        raise ValueError(
+            "train_series must contain at least 20 observations."
+        )
+
+    # Fit AutoARIMA
+    model = auto_arima(
+        train_series,
+        seasonal=seasonal,
+        m=m,
+        information_criterion=information_criterion,
+        stepwise=True,
+        suppress_warnings=True,
+        error_action="ignore",
+        max_p=max_p,
+        max_q=max_q,
+        max_P=max_P,
+        max_Q=max_Q
+    )
+
+    # Forecast
+    forecast = pd.Series(
+        model.predict(
+            n_periods=len(test_series)
+        ),
+        index=test_series.index,
+        name="Forecast"
+    )
+
+    # Metrics
+    metrics = {
+        "MAE": mean_absolute_error(
+            test_series,
+            forecast
+        ),
+        "RMSE": np.sqrt(
+            mean_squared_error(
+                test_series,
+                forecast
+            )
+        )
+    }
+
+    return {
+        "model": model,
+        "forecast": forecast,
+        "metrics": metrics,
+        "parameters": {
+            "order": model.order,
+            "seasonal_order": model.seasonal_order
         }
     }
 
