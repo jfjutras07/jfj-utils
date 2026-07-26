@@ -211,8 +211,8 @@ def describe_time_structure(df, date_col, value_col, expected_freq="D"):
         issues.append("Series not sorted chronologically")
 
     if len(issues) == 0:
-        print("✓ Time series passed all structural validation checks.")
+        print("Time series passed all structural validation checks.")
     else:
-        print("⚠ Potential issues detected:")
+        print("Potential issues detected:")
         for issue in issues:
             print(f"- {issue}")
