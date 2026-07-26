@@ -342,6 +342,7 @@ Active development — modules will be progressively added and refined.
 - `plot_distribution_by_period`
 - `plot_line_grid_over_time`
 - `plot_temporal_data`
+- `plot_time_diagnostics`
 - `plot_time_decomposition`
 
 *predicted_actual.py*
