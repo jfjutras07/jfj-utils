@@ -99,6 +99,7 @@ Active development — modules will be progressively added and refined.
 - `electre_i`
 - `promethee_ii`
 - `topsis`
+- `vikor`
    
 *scoring.py*
 - `weighted_score`
@@ -289,6 +290,13 @@ Active development — modules will be progressively added and refined.
   
 *monte_carlo_analysis.py*
 - `monte_carlo_simulation`
+
+*multiobjective_optimization.py*
+- `pareto_optimization`
+
+*uncertainty_optimization.py*
+- `stochastic_optimization`
+- `robust_optimization`
 
 ### Visualization: High-level plotting utilities for exploring data and communicating analytical results.
 
