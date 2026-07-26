@@ -187,6 +187,11 @@ Active development — modules will be progressively added and refined.
 - `tukey_posthoc`
 - `two_sample_ttest`
 - `welch_anova_test`
+
+*stats_time.py*
+- `adf_stationary_test`
+- `ljung_box_test`
+- `seasonal_strength_test`
   
 *topic_sentiment_analysis.py*
 - `topic_sentiment_analysis`
