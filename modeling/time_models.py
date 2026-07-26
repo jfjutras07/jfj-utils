@@ -274,26 +274,27 @@ def auto_arima_forecast(
 #--- Function : drift_forecast ---
 def drift_forecast(
     train_series,
-    forecast_horizon
+    test_series
 ):
     """
-    Generate a drift forecast based on the average historical trend.
+    Generate forecasts using the drift method.
 
-    The method assumes that future values will continue following
-    the average slope observed between the first and last observations.
+    The drift method extrapolates the average historical trend
+    observed between the first and last observations.
 
     Parameters
     ----------
     train_series : pandas.Series
-        Historical time series used for training.
+        Historical training time series.
 
-    forecast_horizon : int
-        Number of future periods to forecast.
+    test_series : pandas.Series
+        Observed values used for evaluation.
 
     Returns
     -------
-    pandas.Series
-        Forecasted values.
+    dict
+        Forecast, evaluation metrics,
+        and model parameters.
     """
 
     # Validate inputs
@@ -302,67 +303,86 @@ def drift_forecast(
             "train_series must be a pandas Series."
         )
 
+    if not isinstance(test_series, pd.Series):
+        raise TypeError(
+            "test_series must be a pandas Series."
+        )
+
     if train_series.empty:
         raise ValueError(
             "train_series cannot be empty."
         )
 
-    if not isinstance(forecast_horizon, int):
-        raise TypeError(
-            "forecast_horizon must be an integer."
-        )
-
-    if forecast_horizon <= 0:
+    if test_series.empty:
         raise ValueError(
-            "forecast_horizon must be positive."
+            "test_series cannot be empty."
         )
 
-    # Remove missing observations
-    train_series = train_series.dropna()
+    # Clean series
+    train_series = (
+        train_series
+        .dropna()
+        .sort_index()
+    )
+
+    test_series = (
+        test_series
+        .dropna()
+        .sort_index()
+    )
 
     if len(train_series) < 2:
         raise ValueError(
             "train_series must contain at least two observations."
         )
 
-    # Calculate drift
+    # Compute drift
     first_value = train_series.iloc[0]
     last_value = train_series.iloc[-1]
-
-    n_periods = len(train_series)
 
     drift = (
         (last_value - first_value)
         /
-        (n_periods - 1)
+        (len(train_series) - 1)
     )
 
     forecast_values = [
         last_value + drift * step
-        for step in range(1, forecast_horizon + 1)
+        for step in range(
+            1,
+            len(test_series) + 1
+        )
     ]
 
-    # Preserve datetime index when available
-    if isinstance(train_series.index, pd.DatetimeIndex):
-
-        future_index = pd.date_range(
-            start=train_series.index[-1],
-            periods=forecast_horizon + 1,
-            freq=train_series.index.inferred_freq
-        )[1:]
-
-    else:
-        future_index = range(
-            forecast_horizon
-        )
-
+    # Forecast
     forecast = pd.Series(
         forecast_values,
-        index=future_index,
+        index=test_series.index,
         name="Forecast"
     )
 
-    return forecast
+    # Evaluation metrics
+    metrics = {
+        "MAE": mean_absolute_error(
+            test_series,
+            forecast
+        ),
+        "RMSE": np.sqrt(
+            mean_squared_error(
+                test_series,
+                forecast
+            )
+        )
+    }
+
+    return {
+        "model": None,
+        "forecast": forecast,
+        "metrics": metrics,
+        "parameters": {
+            "method": "drift"
+        }
+    }
 
 #--- Function : exponential_smoothing_forecast ---
 def exponential_smoothing_forecast(
@@ -492,31 +512,32 @@ def exponential_smoothing_forecast(
 #--- Function : moving_average_forecast ---
 def moving_average_forecast(
     train_series,
-    forecast_horizon,
+    test_series,
     window_size=3
 ):
     """
-    Generate a moving average forecast.
+    Generate forecasts using the moving average method.
 
-    The method forecasts future values using the average of the most
-    recent observations. It assumes that short-term fluctuations are
-    smoothed and future demand follows the recent average level.
+    The moving average method assumes that future observations
+    will remain close to the average of the most recent values.
 
     Parameters
     ----------
     train_series : pandas.Series
-        Historical time series used for training.
+        Historical training time series.
 
-    forecast_horizon : int
-        Number of future periods to forecast.
+    test_series : pandas.Series
+        Observed values used for evaluation.
 
     window_size : int, default=3
-        Number of recent observations used to compute the moving average.
+        Number of recent observations used to compute
+        the moving average.
 
     Returns
     -------
-    pandas.Series
-        Forecasted values.
+    dict
+        Forecast, evaluation metrics,
+        and model parameters.
     """
 
     # Validate inputs
@@ -525,19 +546,19 @@ def moving_average_forecast(
             "train_series must be a pandas Series."
         )
 
+    if not isinstance(test_series, pd.Series):
+        raise TypeError(
+            "test_series must be a pandas Series."
+        )
+
     if train_series.empty:
         raise ValueError(
             "train_series cannot be empty."
         )
 
-    if not isinstance(forecast_horizon, int):
-        raise TypeError(
-            "forecast_horizon must be an integer."
-        )
-
-    if forecast_horizon <= 0:
+    if test_series.empty:
         raise ValueError(
-            "forecast_horizon must be positive."
+            "test_series cannot be empty."
         )
 
     if not isinstance(window_size, int):
@@ -550,87 +571,162 @@ def moving_average_forecast(
             "window_size must be positive."
         )
 
-    # Remove missing observations
-    train_series = train_series.dropna()
+    # Clean series
+    train_series = (
+        train_series
+        .dropna()
+        .sort_index()
+    )
+
+    test_series = (
+        test_series
+        .dropna()
+        .sort_index()
+    )
 
     if len(train_series) < window_size:
         raise ValueError(
             "train_series must contain at least window_size observations."
         )
 
-    # Calculate recent average
-    recent_average = (
+    # Compute moving average
+    moving_average = (
         train_series
         .iloc[-window_size:]
         .mean()
     )
 
-    # Preserve datetime index when available
-    if isinstance(train_series.index, pd.DatetimeIndex):
-
-        future_index = pd.date_range(
-            start=train_series.index[-1],
-            periods=forecast_horizon + 1,
-            freq=train_series.index.inferred_freq
-        )[1:]
-
-    else:
-        future_index = range(
-            forecast_horizon
-        )
-
+    # Forecast
     forecast = pd.Series(
-        [recent_average] * forecast_horizon,
-        index=future_index,
+        np.repeat(
+            moving_average,
+            len(test_series)
+        ),
+        index=test_series.index,
         name="Forecast"
     )
 
-    return forecast
+    # Evaluation metrics
+    metrics = {
+        "MAE": mean_absolute_error(
+            test_series,
+            forecast
+        ),
+        "RMSE": np.sqrt(
+            mean_squared_error(
+                test_series,
+                forecast
+            )
+        )
+    }
+
+    return {
+        "model": None,
+        "forecast": forecast,
+        "metrics": metrics,
+        "parameters": {
+            "window_size": window_size
+        }
+    }
 
 #--- Function : naive_forecast ---
 def naive_forecast(
     train_series,
-    forecast_horizon
+    test_series
 ):
     """
-    Generate a naive time series forecast using the last observed value.
+    Generate forecasts using the naive forecasting method.
 
-    The forecast assumes that future values will remain equal
-    to the most recent observed value.
+    The naive method assumes that future observations
+    will remain equal to the last observed value.
 
     Parameters
     ----------
     train_series : pandas.Series
-        Historical time series used for training.
+        Historical training time series.
 
-    forecast_horizon : int
-        Number of future periods to forecast.
+    test_series : pandas.Series
+        Observed values used for evaluation.
 
     Returns
     -------
-    pandas.Series
-        Forecasted values.
-
+    dict
+        Forecast, evaluation metrics,
+        and model parameters.
     """
 
+    # Validate inputs
     if not isinstance(train_series, pd.Series):
-        raise TypeError("train_series must be a pandas Series.")
+        raise TypeError(
+            "train_series must be a pandas Series."
+        )
+
+    if not isinstance(test_series, pd.Series):
+        raise TypeError(
+            "test_series must be a pandas Series."
+        )
 
     if train_series.empty:
-        raise ValueError("train_series cannot be empty.")
+        raise ValueError(
+            "train_series cannot be empty."
+        )
 
-    if forecast_horizon <= 0:
-        raise ValueError("forecast_horizon must be positive.")
+    if test_series.empty:
+        raise ValueError(
+            "test_series cannot be empty."
+        )
 
-    last_value = train_series.iloc[-1]
+    # Clean series
+    train_series = (
+        train_series
+        .dropna()
+        .sort_index()
+    )
 
+    test_series = (
+        test_series
+        .dropna()
+        .sort_index()
+    )
+
+    if len(train_series) < 2:
+        raise ValueError(
+            "train_series must contain at least 2 observations."
+        )
+
+    # Generate forecast
     forecast = pd.Series(
-        np.repeat(last_value, forecast_horizon),
+        np.repeat(
+            train_series.iloc[-1],
+            len(test_series)
+        ),
+        index=test_series.index,
         name="Forecast"
     )
 
-    return forecast
+    # Evaluation metrics
+    metrics = {
+        "MAE": mean_absolute_error(
+            test_series,
+            forecast
+        ),
+        "RMSE": np.sqrt(
+            mean_squared_error(
+                test_series,
+                forecast
+            )
+        )
+    }
 
+    return {
+        "model": None,
+        "forecast": forecast,
+        "metrics": metrics,
+        "parameters": {
+            "method": "naive"
+        }
+    }
+    
 #--- Function : prophet_forecast ---
 def prophet_forecast(
     train_series,
@@ -923,34 +1019,32 @@ def sarima_forecast(
 #--- Function : seasonal_naive_forecast ---
 def seasonal_naive_forecast(
     train_series,
-    forecast_horizon,
+    test_series,
     season_length
 ):
     """
-    Generate a seasonal naive time series forecast.
+    Generate forecasts using the seasonal naive method.
 
-    The forecast assumes that future values will repeat the values
-    observed during the previous seasonal cycle.
+    The seasonal naive method assumes that future observations
+    will repeat the values observed during the previous
+    seasonal cycle.
 
     Parameters
     ----------
     train_series : pandas.Series
-        Historical time series used for training.
+        Historical training time series.
 
-    forecast_horizon : int
-        Number of future periods to forecast.
+    test_series : pandas.Series
+        Observed values used for evaluation.
 
     season_length : int
         Number of observations in one seasonal cycle.
-        Examples:
-            7  -> weekly seasonality in daily data
-            12 -> yearly seasonality in monthly data
-            24 -> daily seasonality in hourly data
 
     Returns
     -------
-    pandas.Series
-        Forecasted values.
+    dict
+        Forecast, evaluation metrics,
+        and model parameters.
     """
 
     # Validate inputs
@@ -959,19 +1053,19 @@ def seasonal_naive_forecast(
             "train_series must be a pandas Series."
         )
 
+    if not isinstance(test_series, pd.Series):
+        raise TypeError(
+            "test_series must be a pandas Series."
+        )
+
     if train_series.empty:
         raise ValueError(
             "train_series cannot be empty."
         )
 
-    if not isinstance(forecast_horizon, int):
-        raise TypeError(
-            "forecast_horizon must be an integer."
-        )
-
-    if forecast_horizon <= 0:
+    if test_series.empty:
         raise ValueError(
-            "forecast_horizon must be positive."
+            "test_series cannot be empty."
         )
 
     if not isinstance(season_length, int):
@@ -985,39 +1079,67 @@ def seasonal_naive_forecast(
         )
 
     # Clean series
-    train_series = train_series.dropna()
+    train_series = (
+        train_series
+        .dropna()
+        .sort_index()
+    )
+
+    test_series = (
+        test_series
+        .dropna()
+        .sort_index()
+    )
 
     if len(train_series) < season_length:
         raise ValueError(
             "train_series must contain at least one complete seasonal cycle."
         )
 
-    # Extract last seasonal pattern
-    seasonal_pattern = train_series.iloc[-season_length:]
+    # Extract seasonal pattern
+    seasonal_pattern = (
+        train_series
+        .iloc[-season_length:]
+        .values
+    )
 
     forecast_values = np.tile(
-        seasonal_pattern.values,
-        int(np.ceil(forecast_horizon / season_length))
-    )[:forecast_horizon]
-
-    # Preserve datetime index when available
-    if isinstance(train_series.index, pd.DatetimeIndex):
-
-        future_index = pd.date_range(
-            start=train_series.index[-1],
-            periods=forecast_horizon + 1,
-            freq=train_series.index.inferred_freq
-        )[1:]
-
-    else:
-        future_index = range(
-            forecast_horizon
+        seasonal_pattern,
+        int(
+            np.ceil(
+                len(test_series)
+                /
+                season_length
+            )
         )
+    )[:len(test_series)]
 
+    # Forecast
     forecast = pd.Series(
         forecast_values,
-        index=future_index,
+        index=test_series.index,
         name="Forecast"
     )
 
-    return forecast
+    # Evaluation metrics
+    metrics = {
+        "MAE": mean_absolute_error(
+            test_series,
+            forecast
+        ),
+        "RMSE": np.sqrt(
+            mean_squared_error(
+                test_series,
+                forecast
+            )
+        )
+    }
+
+    return {
+        "model": None,
+        "forecast": forecast,
+        "metrics": metrics,
+        "parameters": {
+            "season_length": season_length
+        }
+    }
