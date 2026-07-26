@@ -192,6 +192,11 @@ def auto_arima_forecast(
             "test_series cannot be empty."
         )
 
+    if m <= 0:
+        raise ValueError(
+            "m must be a positive integer."
+        )
+
     # Clean data
     train_series = train_series.dropna()
     test_series = test_series.dropna()
@@ -201,20 +206,26 @@ def auto_arima_forecast(
             "train_series must contain at least 20 observations."
         )
 
+    # Seasonal models require enough cycles
+    if seasonal and len(train_series) < 2 * m:
+        seasonal = False
+
+
     # Fit AutoARIMA
     model = auto_arima(
         train_series,
         seasonal=seasonal,
-        m=m,
+        m=m if seasonal else 1,
         information_criterion=information_criterion,
         stepwise=True,
         suppress_warnings=True,
         error_action="ignore",
         max_p=max_p,
         max_q=max_q,
-        max_P=max_P,
-        max_Q=max_Q
+        max_P=max_P if seasonal else 0,
+        max_Q=max_Q if seasonal else 0
     )
+
 
     # Forecast
     forecast = pd.Series(
@@ -224,6 +235,16 @@ def auto_arima_forecast(
         index=test_series.index,
         name="Forecast"
     )
+
+
+    # Check invalid forecasts
+    if forecast.isna().any():
+
+        raise ValueError(
+            "AutoARIMA generated NaN forecasts. "
+            "Increase training data or modify seasonal parameters."
+        )
+
 
     # Metrics
     metrics = {
@@ -239,6 +260,7 @@ def auto_arima_forecast(
         )
     }
 
+
     return {
         "model": model,
         "forecast": forecast,
@@ -248,7 +270,7 @@ def auto_arima_forecast(
             "seasonal_order": model.seasonal_order
         }
     }
-
+    
 #--- Function : drift_forecast ---
 def drift_forecast(
     train_series,
