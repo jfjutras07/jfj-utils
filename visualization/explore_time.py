@@ -5,6 +5,10 @@ import math
 import warnings
 from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 from statsmodels.tsa.seasonal import STL
+from sklearn.metrics import (
+    mean_absolute_error,
+    mean_squared_error
+)
 from .style import UNIFORM_BLUE, PALE_PINK
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -407,6 +411,211 @@ def plot_temporal_data(df, value_cols, time_col='Time', group_col=None,
 
     for i in range(n_facets, n_rows * n_cols):
         fig.delaxes(axes[i // 2, i % 2])
+
+#--- Function : plot_time_diagnostics ---
+def plot_time_diagnostics(
+    y_true,
+    forecasts,
+    selection_metric="RMSE",
+    title=None,
+    figsize=(18, 10)
+):
+    """
+    Display a time series forecasting diagnostic dashboard.
+
+    Includes:
+    - Model performance comparison
+    - Actual vs best forecast visualization
+    - Residual analysis
+    - Residual distribution
+
+    Parameters
+    ----------
+    y_true : pandas.Series
+        Actual observed values.
+
+    forecasts : dict
+        Dictionary containing model forecasts.
+
+        Example:
+        {
+            "Naive": forecast_series,
+            "ARIMA": forecast_series,
+            "Prophet": forecast_series
+        }
+
+    selection_metric : {"RMSE", "MAE"}, default="RMSE"
+        Metric used to select the best model.
+
+    title : str, optional
+
+    figsize : tuple
+        Figure size.
+
+    Returns
+    -------
+    dict
+        Diagnostic summary including metrics and best model.
+    """
+
+    if not isinstance(y_true, pd.Series):
+        raise TypeError(
+            "y_true must be a pandas Series."
+        )
+
+    if not isinstance(forecasts, dict):
+        raise TypeError(
+            "forecasts must be a dictionary."
+        )
+
+    if len(forecasts) == 0:
+        raise ValueError(
+            "forecasts dictionary cannot be empty."
+        )
+
+    results = []
+
+    for model_name, forecast in forecasts.items():
+
+        if not isinstance(forecast, pd.Series):
+            raise TypeError(
+                f"{model_name} forecast must be a pandas Series."
+            )
+
+        if len(forecast) != len(y_true):
+            raise ValueError(
+                f"Length mismatch for model {model_name}."
+            )
+
+        rmse = np.sqrt(
+            mean_squared_error(
+                y_true,
+                forecast
+            )
+        )
+
+        mae = mean_absolute_error(
+            y_true,
+            forecast
+        )
+
+        results.append(
+            {
+                "Model": model_name,
+                "RMSE": rmse,
+                "MAE": mae
+            }
+        )
+
+    metrics_df = (
+        pd.DataFrame(results)
+        .sort_values(
+            by=selection_metric,
+            ascending=True
+        )
+        .reset_index(drop=True)
+    )
+
+    best_model = metrics_df.loc[0, "Model"]
+
+    best_forecast = forecasts[best_model]
+
+    residuals = (
+        y_true - best_forecast
+    )
+
+    # Dashboard
+    fig, axes = plt.subplots(
+        2,
+        2,
+        figsize=figsize
+    )
+
+    # 1 - Model comparison
+    axes[0, 0].bar(
+        metrics_df["Model"],
+        metrics_df[selection_metric],
+        color=PALE_PINK
+    )
+
+    axes[0, 0].set_title(
+        f"Model Comparison ({selection_metric})"
+    )
+
+    axes[0, 0].tick_params(
+        axis="x",
+        rotation=45
+    )
+
+
+    # 2 - Actual vs best forecast
+    axes[0, 1].plot(
+        y_true.index,
+        y_true,
+        label="Actual",
+        color=UNIFORM_BLUE,
+        linewidth=2
+    )
+
+    axes[0, 1].plot(
+        best_forecast.index,
+        best_forecast,
+        label=best_model,
+        color=PALE_PINK,
+        linewidth=2
+    )
+
+    axes[0, 1].set_title(
+        f"Best Forecast: {best_model}"
+    )
+
+    axes[0, 1].legend()
+
+
+    # 3 - Residuals over time
+    axes[1, 0].plot(
+        residuals.index,
+        residuals,
+        color=UNIFORM_BLUE
+    )
+
+    axes[1, 0].axhline(
+        0,
+        linestyle="--",
+        color="black"
+    )
+
+    axes[1, 0].set_title(
+        "Forecast Residuals Over Time"
+    )
+
+
+    # 4 - Residual distribution
+    axes[1, 1].hist(
+        residuals,
+        bins=30,
+        color=PALE_PINK
+    )
+
+    axes[1, 1].set_title(
+        "Residual Distribution"
+    )
+
+    fig.suptitle(
+        title or "Time Series Forecasting Diagnostics",
+        fontsize=16,
+        fontweight="bold"
+    )
+
+    plt.tight_layout()
+    plt.show()
+
+
+    return {
+        "metrics": metrics_df,
+        "best_model": best_model,
+        "residuals": residuals
+    }
 
 #--- Function : plot_time_decomposition ---
 def plot_time_decomposition(
