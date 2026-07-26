@@ -7,9 +7,6 @@ def describe_structure(df, id_cols=None, date_cols=None, cat_threshold=20, max_u
     Display a clear EDA summary for a pandas DataFrame.
     Strict exclusion logic ensures columns don't repeat across categories.
     """
-    import pandas as pd
-    import numpy as np
-
     # Normalize inputs to lists
     if id_cols is None: id_cols = []
     if isinstance(id_cols, str): id_cols = [id_cols]
