@@ -322,8 +322,11 @@ Active development — modules will be progressively added and refined.
 - `plot_regression_diagnostics`
 
 *explore_time.py*
+- `plot_acf_pacf`
+- `plot_distribution_by_period`
 - `plot_line_grid_over_time`
 - `plot_temporal_data`
+- `plot_time_decomposition`
 
 *predicted_actual.py*
 - `plot_predicted_actual`
