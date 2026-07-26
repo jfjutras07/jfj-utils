@@ -96,6 +96,8 @@ Active development — modules will be progressively added and refined.
   
 *mcda.py*
 - `ahp_weights`
+- `electre_i`
+- `promethee_ii`
 - `topsis`
    
 *scoring.py*
@@ -279,11 +281,11 @@ Active development — modules will be progressively added and refined.
   
 ### Optimization : Tools for mathematical optimization, simulation, and uncertainty analysis.
 
-*integer_programming.py*
-- `integer_programming`
-
 *linear_programming.py*
 - `linear_programming`
+
+*mixed_integer_programming.py*
+- `mixed_integer_programming`
   
 *monte_carlo_analysis.py*
 - `monte_carlo_simulation`
