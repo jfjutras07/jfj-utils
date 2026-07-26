@@ -265,6 +265,17 @@ Active development — modules will be progressively added and refined.
 *stacking.py*
 - `stacking_classification_ensemble`
 - `stacking_regression_ensemble`
+
+*time_models.py*
+- `arima_forecast`
+- `auto_arima_forecast`
+- `drift_forecast`
+- `exponential_moving_forecast`
+- `moving_average_forecast`
+- `naive_forecast`
+- `prophet_forecast`
+- `sarima_forecast`
+- `seasonal_naive_forecast`
   
 ### Optimization : Tools for mathematical optimization, simulation, and uncertainty analysis.
 
