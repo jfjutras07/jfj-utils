@@ -109,3 +109,110 @@ def describe_structure(df, id_cols=None, date_cols=None, cat_threshold=20, max_u
         print(date_summary)
     else:
         print("Empty DataFrame\nColumns: []\nIndex: []")
+
+# --- Function : describe_time_structure ---
+def describe_time_structure(df, date_col, value_col, expected_freq="D"):
+    """
+    Display a structural summary of a time series before forecasting.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        Input dataframe.
+    date_col : str
+        Datetime column.
+    value_col : str
+        Numeric series to forecast.
+    expected_freq : str, default="D"
+        Expected frequency ("D", "H", "M", etc.).
+    """
+
+    df = df.copy()
+
+    # Ensure datetime
+    df[date_col] = pd.to_datetime(df[date_col])
+
+    # Sort chronologically
+    df = df.sort_values(date_col)
+
+    # Complete date index
+    full_index = pd.date_range(
+        start=df[date_col].min(),
+        end=df[date_col].max(),
+        freq=expected_freq
+    )
+
+    observed = pd.Index(df[date_col])
+    missing_dates = full_index.difference(observed)
+
+    print("\n=== Time Series Overview ===\n")
+
+    overview = pd.DataFrame(index=[value_col])
+
+    overview.loc[value_col, "observations"] = len(df)
+    overview.loc[value_col, "start_date"] = df[date_col].min()
+    overview.loc[value_col, "end_date"] = df[date_col].max()
+    overview.loc[value_col, "expected_frequency"] = expected_freq
+    overview.loc[value_col, "time_span_days"] = (
+        df[date_col].max() - df[date_col].min()
+    ).days + 1
+
+    print(overview)
+
+    print("\n=== Timestamp Quality ===\n")
+
+    timestamp = pd.DataFrame(index=[date_col])
+
+    timestamp.loc[date_col, "duplicate_timestamps"] = (
+        df[date_col].duplicated().sum()
+    )
+
+    timestamp.loc[date_col, "missing_timestamps"] = len(missing_dates)
+
+    timestamp.loc[date_col, "missing_values"] = (
+        df[date_col].isna().sum()
+    )
+
+    timestamp.loc[date_col, "is_sorted"] = (
+        df[date_col].is_monotonic_increasing
+    )
+
+    print(timestamp)
+
+    print("\n=== Series Statistics ===\n")
+
+    stats = df[value_col].describe().to_frame().T
+
+    stats["missing_values"] = df[value_col].isna().sum()
+    stats["zero_values"] = (df[value_col] == 0).sum()
+    stats["negative_values"] = (df[value_col] < 0).sum()
+    stats["coefficient_variation"] = (
+        df[value_col].std() / df[value_col].mean()
+        if df[value_col].mean() != 0
+        else np.nan
+    )
+
+    print(stats)
+
+    print("\n=== Ready for Forecasting ===\n")
+
+    issues = []
+
+    if df[date_col].duplicated().sum() > 0:
+        issues.append("Duplicate timestamps")
+
+    if len(missing_dates) > 0:
+        issues.append("Missing timestamps")
+
+    if df[value_col].isna().sum() > 0:
+        issues.append("Missing values")
+
+    if not df[date_col].is_monotonic_increasing:
+        issues.append("Series not sorted chronologically")
+
+    if len(issues) == 0:
+        print("✓ Time series passed all structural validation checks.")
+    else:
+        print("⚠ Potential issues detected:")
+        for issue in issues:
+            print(f"- {issue}")
