@@ -127,6 +127,7 @@ Active development — modules will be progressively added and refined.
 
 *describe_structure.py*
 - `describe_structure`
+- `describe_time_structure`
 
 *explainability.py*
 - `feature_importance`
