@@ -1,13 +1,16 @@
 import numpy as np
 import pandas as pd
 
+
 # --- Function : monte_carlo_simulation ---
 def monte_carlo_simulation(model_function,
                            distributions,
                            n_simulations=10000,
-                           random_state=42):
+                           random_state=42,
+                           sensitivity_analysis=True):
     """
-    Perform a generic Monte Carlo simulation.
+    Perform a generic Monte Carlo simulation with summary statistics
+    and sensitivity analysis.
 
     Parameters
     ----------
@@ -23,16 +26,21 @@ def monte_carlo_simulation(model_function,
     random_state : int
         Random seed for reproducibility.
 
+    sensitivity_analysis : bool
+        Calculate input-output correlations.
+
     Returns
     -------
-    pandas.DataFrame
-        Simulated results.
+    dict
+        Simulation results, summary statistics and sensitivity analysis.
     """
 
     np.random.seed(random_state)
 
+    simulation_inputs = []
     results = []
 
+    # Simulation engine
     for _ in range(n_simulations):
 
         inputs = {
@@ -40,17 +48,73 @@ def monte_carlo_simulation(model_function,
             for name, distribution in distributions.items()
         }
 
-        results.append(model_function(**inputs))
+        simulation_inputs.append(inputs)
 
-    simulation_df = pd.DataFrame({
-        "Simulation": range(1, n_simulations + 1),
-        "Result": results
+        results.append(
+            model_function(**inputs)
+        )
+
+    inputs_df = pd.DataFrame(simulation_inputs)
+
+    simulation_df = inputs_df.copy()
+
+    simulation_df["Result"] = results
+
+    simulation_df["Simulation"] = range(
+        1,
+        n_simulations + 1
+    )
+
+    # Summary statistics
+    result_series = simulation_df["Result"]
+
+    summary = pd.Series({
+        "Mean": result_series.mean(),
+        "Median": result_series.median(),
+        "Std_Dev": result_series.std(),
+        "Minimum": result_series.min(),
+        "Maximum": result_series.max(),
+        "P5": result_series.quantile(0.05),
+        "P25": result_series.quantile(0.25),
+        "P75": result_series.quantile(0.75),
+        "P95": result_series.quantile(0.95)
     })
 
+    # Sensitivity analysis
+    sensitivity = None
+
+    if sensitivity_analysis:
+
+        correlation_matrix = (
+            simulation_df.corr()
+        )
+
+        sensitivity = (
+            correlation_matrix["Result"]
+            .drop("Result")
+            .sort_values(
+                ascending=False
+            )
+        )
+
+    # Display summary
     print("--- Monte Carlo Simulation Summary ---")
-    print(f"Number of simulations : {n_simulations}")
-    print(f"Mean                  : {simulation_df['Result'].mean():.4f}")
-    print(f"Std. Dev.             : {simulation_df['Result'].std():.4f}")
-    print(f"Minimum               : {simulation_df['Result'].min():.4f}")
-    print(f"Maximum               : {simulation_df['Result'].max():.4f}")
+    print(
+        f"Number of simulations : {n_simulations}"
+    )
+
+    print("\nResult statistics:")
+    print(summary)
+
+    if sensitivity_analysis:
+
+        print("\n--- Sensitivity Analysis ---")
+        print(sensitivity)
+
     print("-" * 40)
+
+    return {
+        "simulation_results": simulation_df,
+        "summary": summary,
+        "sensitivity_analysis": sensitivity
+    }
