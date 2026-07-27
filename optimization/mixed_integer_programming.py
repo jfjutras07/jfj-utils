@@ -1,13 +1,13 @@
 import numpy as np
 from scipy.optimize import milp, LinearConstraint, Bounds
 
-# --- Function : mixed_integer_linear_programming ---
-def mixed_integer_linear_programming(objective,
-                                     constraints_matrix,
-                                     constraints_values,
-                                     integrality,
-                                     bounds=None,
-                                     maximize=True):
+# --- Function : mixed_integer_programming ---
+def mixed_integer_programming(objective,
+                              constraints_matrix,
+                              constraints_values,
+                              integrality=None,
+                              bounds=None,
+                              maximize=True):
     """
     Solve a Mixed Integer Linear Programming (MILP) optimization problem.
 
@@ -22,11 +22,15 @@ def mixed_integer_linear_programming(objective,
     constraints_values : array-like
         Constraint limits.
 
-    integrality : list
-        Variable integrality definition:
+    integrality : list, optional
+        Variable integrality definition.
+
         0 : continuous variable
         1 : integer variable
-        2 : binary variable
+        2 : semi-continuous variable
+        3 : semi-integer variable
+
+        If None, all variables are assumed to be integer.
 
     bounds : scipy.optimize.Bounds, optional
         Lower and upper bounds for variables.
@@ -40,16 +44,31 @@ def mixed_integer_linear_programming(objective,
         Optimization solution.
     """
 
-    objective = np.array(objective)
+    objective = np.array(objective, dtype=float)
 
     if maximize:
         objective = -objective
 
-    integrality = np.array(integrality)
+    if integrality is None:
+
+        integrality = np.ones(
+            len(objective),
+            dtype=int
+        )
+
+    else:
+
+        integrality = np.array(
+            integrality,
+            dtype=int
+        )
 
     if bounds is None:
 
-        lower_bounds = np.zeros(len(objective))
+        lower_bounds = np.zeros(
+            len(objective)
+        )
+
         upper_bounds = np.full(
             len(objective),
             np.inf
@@ -82,7 +101,7 @@ def mixed_integer_linear_programming(objective,
         )
     }
 
-    print("--- Mixed Integer Linear Programming Summary ---")
+    print("--- Mixed Integer Programming Summary ---")
     print(f"Optimization successful : {result.success}")
     print(f"Objective value         : {solution['objective_value']:.4f}")
     print(f"Optimal variables       : {solution['optimal_values']}")
