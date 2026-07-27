@@ -1,5 +1,4 @@
 import pandas as pd
-
 from decision.mcda import promethee_ii
 
 #--- Function : test_promethee_ii_basic ---
