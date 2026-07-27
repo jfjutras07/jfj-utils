@@ -355,6 +355,9 @@ Active development — modules will be progressively added and refined.
 - `plot_time_diagnostics`
 - `plot_time_decomposition`
 
+*explore_uncertainty.py*
+- `plot_monte_carlo`
+
 *predicted_actual.py*
 - `plot_predicted_actual`
 
