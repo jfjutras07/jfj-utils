@@ -36,6 +36,7 @@ def plot_monte_carlo(
         - simulation_results : pandas.DataFrame
         - summary : pandas.Series
         - sensitivity_analysis : pandas.Series or None
+        - correlation_method : str, optional
 
     bins : int, default=50
         Number of histogram bins.
@@ -230,8 +231,15 @@ def plot_monte_carlo(
             color=UNIFORM_BLUE
         )
 
+        correlation_method = (
+            mc_results.get(
+                "correlation_method",
+                "unknown"
+            )
+        )
+
         axes[1, 1].set_title(
-            "Input Sensitivity Analysis"
+            f"Input Sensitivity Analysis ({correlation_method.capitalize()})"
         )
 
         axes[1, 1].set_xlabel(
