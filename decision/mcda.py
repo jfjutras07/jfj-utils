@@ -483,7 +483,7 @@ def vikor(df,
         criteria_weights
     )
 
-    # Determine best and worst values
+    # Determine ideal best and worst values
     best = {}
     worst = {}
 
@@ -506,7 +506,6 @@ def vikor(df,
     for index, row in matrix.iterrows():
 
         utility = 0
-        regret = 0
 
         criterion_distances = []
 
@@ -519,25 +518,16 @@ def vikor(df,
             )
 
             if denominator == 0:
+
                 distance = 0
 
             else:
 
-                if criterion in benefit_criteria:
-
-                    distance = (
-                        best[criterion]
-                        -
-                        row[criterion]
-                    ) / denominator
-
-                else:
-
-                    distance = (
-                        row[criterion]
-                        -
-                        best[criterion]
-                    ) / denominator
+                distance = (
+                    best[criterion]
+                    -
+                    row[criterion]
+                ) / denominator
 
             weighted_distance = (
                 weights[criterion]
@@ -567,6 +557,7 @@ def vikor(df,
     R = np.array(R)
 
     # Normalize S and R
+
     S_best = S.min()
     S_worst = S.max()
 
