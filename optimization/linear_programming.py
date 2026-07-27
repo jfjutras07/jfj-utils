@@ -1,7 +1,6 @@
 import numpy as np
 from scipy.optimize import linprog
 
-
 # --- Function : linear_programming ---
 def linear_programming(objective,
                        constraints_matrix,
