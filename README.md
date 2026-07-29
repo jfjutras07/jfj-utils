@@ -93,6 +93,8 @@ Active development — modules will be progressively added and refined.
   
 *mcda.py*
 - `ahp_weights`
+- `fuzzy_ahp_weights`
+- `fuzzy_topsis`
 - `electre_i`
 - `promethee_ii`
 - `topsis`
