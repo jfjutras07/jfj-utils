@@ -15,7 +15,6 @@ A modular Python library for evidence-based decision intelligence, supporting da
 ## Project Structure
 ```
 jfj_utils/
-  ai_agents/
   data_preprocessing/
   decision/
   eda/
@@ -37,8 +36,6 @@ Each submodule is intended to contain small, focused utilities related to its th
 Active development — modules will be progressively added and refined.
 
 ## API Overview
-
-### AI_agents: Tools for AI-assisted workflows, analytical automation, and reasoning support.
 
 ### Data_preprocessing: Functions for cleaning, transforming, and preparing datasets for analysis and modeling.
 
