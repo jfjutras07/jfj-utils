@@ -157,6 +157,406 @@ def electre_i(df,
 
     return result
 
+#--- Function : fuzzy_ahp_weights ---
+def fuzzy_ahp_weights(fuzzy_pairwise_matrix):
+    """
+    Calculate criteria weights using Fuzzy Analytic Hierarchy Process (Fuzzy AHP).
+
+    Uses triangular fuzzy numbers:
+        (l, m, u)
+
+    where:
+        l = lower bound
+        m = most likely value
+        u = upper bound
+
+    Parameters
+    ----------
+    fuzzy_pairwise_matrix : list or np.array
+        Pairwise comparison matrix containing triangular fuzzy numbers.
+
+        Example:
+        [
+            [(1,1,1), (2,3,4)],
+            [(1/4,1/3,1/2), (1,1,1)]
+        ]
+
+    Returns
+    -------
+    pandas.Series
+        Defuzzified criteria weights.
+
+    Notes
+    -----
+    The method:
+    1. Calculates fuzzy geometric means.
+    2. Normalizes fuzzy weights.
+    3. Defuzzifies using centroid method.
+
+    Formula:
+
+    Defuzzification:
+
+        W = (l + m + u) / 3
+
+    """
+
+    matrix = np.array(
+        fuzzy_pairwise_matrix,
+        dtype=object
+    )
+
+    if len(matrix.shape) != 2:
+        raise ValueError(
+            "Fuzzy pairwise matrix must be two-dimensional."
+        )
+
+    n_rows, n_cols = matrix.shape
+
+    if n_rows != n_cols:
+        raise ValueError(
+            "Fuzzy pairwise matrix must be square."
+        )
+
+    fuzzy_weights = []
+
+    # Fuzzy geometric mean
+    for i in range(n_rows):
+
+        lower = 1
+        middle = 1
+        upper = 1
+
+        for j in range(n_cols):
+
+            value = matrix[i][j]
+
+            lower *= value[0]
+            middle *= value[1]
+            upper *= value[2]
+
+        fuzzy_weights.append(
+            (
+                lower ** (1/n_cols),
+                middle ** (1/n_cols),
+                upper ** (1/n_cols)
+            )
+        )
+
+    # Normalize fuzzy weights
+
+    sum_lower = sum(
+        x[0] for x in fuzzy_weights
+    )
+
+    sum_middle = sum(
+        x[1] for x in fuzzy_weights
+    )
+
+    sum_upper = sum(
+        x[2] for x in fuzzy_weights
+    )
+
+    normalized_weights = []
+
+    for w in fuzzy_weights:
+
+        normalized_weights.append(
+            (
+                w[0] / sum_upper,
+                w[1] / sum_middle,
+                w[2] / sum_lower
+            )
+        )
+
+    # Defuzzification
+
+    crisp_weights = [
+        (
+            w[0] +
+            w[1] +
+            w[2]
+        ) / 3
+        for w in normalized_weights
+    ]
+
+    crisp_weights = np.array(
+        crisp_weights
+    )
+
+    crisp_weights = (
+        crisp_weights /
+        crisp_weights.sum()
+    )
+
+    result = pd.Series(
+        crisp_weights,
+        name="Fuzzy_AHP_Weight"
+    )
+
+    print("--- Fuzzy AHP Weights Summary ---")
+    print(result)
+    print("-" * 35)
+
+    return result
+
+#--- Function : fuzzy_topsis ---
+def fuzzy_topsis(df,
+                 criteria_weights,
+                 benefit_criteria):
+    """
+    Fuzzy TOPSIS multi-criteria decision analysis.
+
+    Uses triangular fuzzy numbers:
+
+        (lower, most likely, upper)
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        Decision matrix where each value is a triangular fuzzy number.
+
+        Example:
+
+        Partner_A:
+            capacity = (7,8,9)
+
+    criteria_weights : dict or Series
+        Criteria weights.
+
+    benefit_criteria : list
+        Criteria where higher values are preferred.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Alternatives ranked by fuzzy TOPSIS score.
+
+    Method
+    ------
+    1. Normalize fuzzy decision matrix.
+    2. Apply criteria weights.
+    3. Determine fuzzy ideal best/worst solutions.
+    4. Calculate fuzzy distances.
+    5. Compute closeness coefficient.
+
+    """
+
+    criteria = list(
+        criteria_weights.keys()
+    )
+
+    missing_columns = (
+        set(criteria)
+        -
+        set(df.columns)
+    )
+
+    if missing_columns:
+        raise ValueError(
+            f"Missing criteria columns: {missing_columns}"
+        )
+
+
+    matrix = df[criteria]
+
+    alternatives = df.index
+
+
+    # Convert fuzzy numbers to arrays
+
+    fuzzy_matrix = np.array(
+        [
+            [
+                matrix.iloc[i][j]
+                for j in range(len(criteria))
+            ]
+            for i in range(len(matrix))
+        ],
+        dtype=object
+    )
+
+
+    # Normalize fuzzy matrix
+
+    normalized = np.empty_like(
+        fuzzy_matrix
+    )
+
+    for j, criterion in enumerate(criteria):
+
+        column = [
+            fuzzy_matrix[i][j]
+            for i in range(len(matrix))
+        ]
+
+        if criterion in benefit_criteria:
+
+            max_value = max(
+                x[2]
+                for x in column
+            )
+
+            for i in range(len(matrix)):
+
+                x = fuzzy_matrix[i][j]
+
+                normalized[i][j] = (
+                    x[0] / max_value,
+                    x[1] / max_value,
+                    x[2] / max_value
+                )
+
+        else:
+
+            min_value = min(
+                x[0]
+                for x in column
+            )
+
+            for i in range(len(matrix)):
+
+                x = fuzzy_matrix[i][j]
+
+                normalized[i][j] = (
+                    min_value / x[2],
+                    min_value / x[1],
+                    min_value / x[0]
+                )
+
+    # Weighted normalized matrix
+
+    weighted = np.empty_like(
+        normalized
+    )
+
+    for i in range(len(matrix)):
+
+        for j, criterion in enumerate(criteria):
+
+            weight = criteria_weights[criterion]
+
+            x = normalized[i][j]
+
+            weighted[i][j] = (
+                x[0] * weight,
+                x[1] * weight,
+                x[2] * weight
+            )
+
+    # Ideal solutions
+
+    ideal_best = []
+    ideal_worst = []
+
+    for j, criterion in enumerate(criteria):
+
+        values = [
+            weighted[i][j]
+            for i in range(len(matrix))
+        ]
+
+        if criterion in benefit_criteria:
+
+            ideal_best.append(
+                max(
+                    values,
+                    key=lambda x: x[1]
+                )
+            )
+
+            ideal_worst.append(
+                min(
+                    values,
+                    key=lambda x: x[1]
+                )
+            )
+
+        else:
+
+            ideal_best.append(
+                min(
+                    values,
+                    key=lambda x: x[1]
+                )
+            )
+
+            ideal_worst.append(
+                max(
+                    values,
+                    key=lambda x: x[1]
+                )
+            )
+
+    # Vertex distance
+
+    def fuzzy_distance(a, b):
+
+        return np.sqrt(
+            (
+                (a[0]-b[0])**2 +
+                (a[1]-b[1])**2 +
+                (a[2]-b[2])**2
+            ) / 3
+        )
+
+    scores = []
+
+    for i in range(len(matrix)):
+
+        distance_best = 0
+        distance_worst = 0
+
+        for j in range(len(criteria)):
+
+            distance_best += fuzzy_distance(
+                weighted[i][j],
+                ideal_best[j]
+            )
+
+            distance_worst += fuzzy_distance(
+                weighted[i][j],
+                ideal_worst[j]
+            )
+
+        score = (
+            distance_worst /
+            (
+                distance_best +
+                distance_worst
+            )
+        )
+
+        scores.append(score)
+
+    result = df.copy()
+
+    result["Fuzzy_TOPSIS_Score"] = scores
+
+    result = result.sort_values(
+        by="Fuzzy_TOPSIS_Score",
+        ascending=False
+    )
+
+    print("--- Fuzzy TOPSIS Summary ---")
+    print(
+        f"Number of alternatives : {len(result)}"
+    )
+
+    print(
+        "\nRanking:"
+    )
+
+    print(
+        result[
+            ["Fuzzy_TOPSIS_Score"]
+        ].to_string()
+    )
+
+    print("-" * 35)
+
+    return result
+
 #--- Function : promethee_ii ---
 def promethee_ii(df,
                  criteria_weights,
